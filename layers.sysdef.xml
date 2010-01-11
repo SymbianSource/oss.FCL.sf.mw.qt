@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE SystemDefinition SYSTEM "sysdef_1_4_0.dtd" [
+  <!ENTITY layer_real_source_path "sf/mw/qt" >
+]>
+
+<SystemDefinition name="qt" schema="1.4.0">
+  <systemModel>
+    <layer name="tools_layer">
+      <module name="qtconf">
+        <unit unitID="qtdo.qt.qtconf" mrp="" bldFile="&layer_real_source_path;/group" name="qtconf" />
+      </module>
+    </layer>
+    <layer name="mw_layer">
+      <module name="qt">
+        <unit unitID="qtdo.qt" mrp="" bldFile="&layer_real_source_path;" name="qt" />
+      </module>
+    </layer>
+  </systemModel>
+</SystemDefinition>

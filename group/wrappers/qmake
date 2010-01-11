@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies). 
+# All rights reserved.
+
+PRGDIR=`dirname "$0"`
+PRGDIR=`cd "$PRGDIR"; pwd`
+
+if $QMAKESPEC=""
+then
+    export QMAKESPEC=$PRGDIR/qt/mkspecs/symbian-abld
+fi
+
+"$PRGDIR/qt/qmake" "$@"

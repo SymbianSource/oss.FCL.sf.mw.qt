@@ -1,0 +1,145 @@
+Qt 4.6 introduces many new features and improvements as well as bugfixes
+over the 4.5.x series. For more details, refer to the online documentation
+included in this distribution. The documentation is also available online:
+
+  http://qt.nokia.com/doc/4.6
+
+The Qt version 4.6 series is binary compatible with the 4.5.x series.
+Applications compiled for 4.5 will continue to run with 4.6.
+
+Some of the changes listed in this file include issue tracking numbers
+corresponding to tasks in the Task Tracker:
+
+  http://qt.nokia.com/developer/task-tracker
+
+Each of these identifiers can be entered in the task tracker to obtain more
+information about a particular change.
+
+****************************************************************************
+*                           General                                        *
+****************************************************************************
+
+ - QtDBus
+   * The minimum required version of the D-Bus reference library is
+     now 0.93.
+
+
+****************************************************************************
+*                          Library                                         *
+****************************************************************************
+
+    * [245219] Added QXmlQuery::setFocus(const QString &focus);
+
+ - QVariant
+    * Many optimisations
+    * Added QVariant::toFloat() and QVariant::toReal()
+    * Added QVariant(float) constructor
+
+****************************************************************************
+*                      Platform Specific Changes                           *
+****************************************************************************
+
+ - Significant external contribution from Milan Burda for planned removal
+   of (non-unicode) Windows 9x/ME support.
+
+ - QRegion is no longer a GDI object by default. This means it is no
+   longer subject to gui-thread only nor does it potentially impact
+   the 10.000 GDI object limit per process. By explicitly calling
+   .handle() a GDI object will be created and memory managed by
+   QRegion. The native handle is for reading out only. Any GDI calls
+   made on the HRGN handle will not affect the QRegion.
+
+ - [259221] QFileInfo::symLinkTarget() now supports NTFS symbolic links
+   thanks to Konstantin Ritt (merge request 1217).
+
+ - The reading code of QLocalSocket on Windows has been rewritten to improve
+   reading performance.
+
+****************************************************************************
+* Important Behavior Changes *
+****************************************************************************
+
+ - The experimental Direct3D paint engine has been removed. The reason for
+   this is that Nokia focuses on OpenGL for desktop hardware accelerated
+   rendering.
+
+ - The default engine used to draw onto OpenGL buffers has changed in
+   Qt 4.6. The QPaintEngine::OpenGL2 engine is now used as the default
+   engine. This *may* cause compatibility problems for applications
+   that use a mix of QPainter and native OpenGL calls to draw into a GL
+   buffer. Use the QGL::setPreferredPaintEngine() function to enforce
+   usage of the old GL paint engine.
+
+ - When mixing OpenGL and QPainter calls you need to surround your
+   custom OpenGL calls with QPainter::beginNativePainting() and
+   QPainter::endNativePainting().
+   This is to ensure that the paint engine flushes any pending drawing and sets
+   up the GL modelview/projection matrices properly before you can issue custom
+   OpenGL calls, and to let the paint engine synchronize to the painter state
+   before resuming regular QPainter based drawing.
+
+ - Graphics View has undergone heavy optimization work, and as a result of
+   this work, the following behavior changes were introduced.
+
+   a) QStyleOptionGraphicsItem::exposedRect now contains the item's bounding
+      rectangle, and QStyleOptionGraphicsItem::matrix is uninitialized by
+      default. You can enable an exact exposed rectangle and a correct matrix
+      by enabling the flag QGraphicsItem::ItemUsesExtendedStyleOptions.
+
+   b) QStyleOptionGraphicsItem::levelOfDetails is obsoleted and its value is
+      always initialized to 1. Instead you can call
+      QStyleOptionGraphicsItem::levelOfDetailFromTransform(const QTransform &)
+      to determine the level of detail.
+
+   c) QGraphicsView no longer calls QGraphicsView::drawItems(), and in turn
+      QGraphicsScene::drawItems(), by default. You can get the old behavior
+      back by enabling QGraphicsView::IndirectPainting.
+
+   d) QGraphicsItem no longer calls itemChange() for position and
+      transformation changes. If you want to receive notifications for changes
+      to the item's position and transformation, you can set the flag
+      QGraphicsItem::ItemSendsGeometryChanges (which is enabled by default by
+      QGraphicsWidget and QGraphicsProxyWidget).
+
+ - QDesktopWidget on X11 no longer emits the resized(int) signal when screens
+   are added or removed. This was not done on other platforms. Use the
+   screenCountChanged signal instead
+
+ - QUrl's parser is more strict when for hostnames in URLs. QUrl now
+   enforces STD 3 rules:
+
+    * each individual hostname section (between dots) must be at most
+      63 ASCII characters in length;
+
+    * only letters, digits, and the hyphen character are allowed in the
+      ASCII range; letters outside the ASCII range follow the normal
+      IDN rules
+
+   That means QUrl no longer accepts some URLs that were invalid
+   before, but weren't interpreted as such.
+
+ - The Unix configure-time check for STL is stricter now in Qt
+   4.6.0. This means some legacy STL implementations may fail to pass
+   the test and, therefore, Qt will automatically disable STL support.
+
+   This is a binary-compatible change: existing code will continue to
+   work without being recompiled. However, it affects the source code,
+   since some STL-compatibility API will not be enabled.
+
+   Platforms affected by this change:
+     * solaris-cc-* with the default (Cstd) C++ STL library
+       recommendation: use -library=stlport4
+       See Sun Studio's documentation for the effects of this option
+
+ - QVariant has now a new implicit constructor that takes a float. This
+   means that code that assigned a float to a variant would create a
+   variant with userType QMetaType::Float, instead of QVariant::Double.
+
+ - QDataStream will now read and write all floating point numbers with the 
+   same precision, regardless of whether it's streamed into or out from a 
+   float or double. This is to maintain compatibility across platforms with
+   a different default precision for qreal. The default is 64-bit precision
+   for all floating point numbers, and this can be changed using the new 
+   function setFloatingPointPrecision(). Set Qt_4_5 as the version of the 
+   QDataStream to get the behavior of previous versions.
+   

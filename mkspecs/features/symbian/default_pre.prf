@@ -1,0 +1,2 @@
+# :QTP: stl by default on
+load(default_pre)

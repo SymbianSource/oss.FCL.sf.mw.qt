@@ -1,0 +1,54 @@
+# /****************************************************************************
+# **
+# ** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+# ** Contact: 
+# **
+# ****************************************************************************/
+
+# FLM to build Qt tools.
+
+TARGETDIR:=$(EPOCROOT)/$(INSTALLPATH)
+SOURCEDIR:=$(EXTENSION_ROOT)/$(QT_ROOT)/bin
+
+$(call makepath,$(TARGETDIR))
+
+ifeq ($(OSTYPE),unix)
+PLATFORM:=$(PLATFORM.LINUX)
+else
+PLATFORM:=$(PLATFORM.WIN32)
+endif
+
+TARGET_TOOLS:=$(TARGETDIR)/qmake$(DOTEXE) $(TARGETDIR)/moc$(DOTEXE) $(TARGETDIR)/rcc$(DOTEXE) $(TARGETDIR)/uic$(DOTEXE)
+TARGET_LIB:=$(TARGETDIR)/mingwm10.dll
+SOURCE_TOOLS:=$(SOURCEDIR)/qmake$(DOTEXE) $(SOURCEDIR)/moc$(DOTEXE) $(SOURCEDIR)/rcc$(DOTEXE) $(SOURCEDIR)/uic$(DOTEXE)
+
+define QtConfiguration
+$(TARGET_LIB): $(SOURCEDIR)/qmake$(DOTEXE)
+	$(call startrule,mingw_deploy) \
+	$(GNUCP) $(EPOCROOT)/epoc32/gcc_mingw/bin/mingwm10.dll $$@ ; \
+	$(GNUCP) $(EPOCROOT)/epoc32/gcc_mingw/bin/mingwm10.dll $(SOURCEDIR) \
+	$(call endrule,mingw_deploy)
+
+$(TARGET_TOOLS): $(SOURCEDIR)/qmake$(DOTEXE)
+	$(call startrule,qtconf_deploy) \
+	$(GNUCP) $(SOURCEDIR)/$$(notdir $$@) $$@ \
+	$(call endrule,qtconf_deploy)
+
+$(SOURCEDIR)/qmake$(DOTEXE): $(EXTENSION_ROOT)/$(QT_ROOT)/configure$(DOTEXE)
+	$(call startrule,qtconf) \
+	cd $(EXTENSION_ROOT)/$(QT_ROOT) && \
+	$(EXTENSION_ROOT)/$(QT_ROOT)/configure$(DOTEXE) -platform $(PLATFORM) -xplatform $(XPLATFORM) $(OPTIONS) \
+	$(call endrule,qtconf)
+endef
+
+# Here a variable named "done_<sanitised $SISFILE>" gets created
+GUARD:=done_$(call sanitise,$(TARGETDIR)/qmake$(DOTEXE))
+# If variable "done_..." not set, set it to 1, so that
+# UREL and UDEB do not execute makesis twice on the same target 
+ifeq ($($(GUARD)),)
+$(GUARD):=1
+ALL:: $(TARGET_TOOLS) $(TARGET_LIB)
+$(eval $(call QtConfiguration))
+$(eval $(call whatmacro,$(TARGET_TOOLS)))
+$(eval $(call GenerateStandardCleanTarget,$(TARGET_TOOLS) $(SOURCE_TOOLS),$(TARGETDIR)))
+endif
