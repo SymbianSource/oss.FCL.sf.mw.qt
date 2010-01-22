@@ -293,18 +293,32 @@ void initProjectDeploySymbian(QMakeProject* project,
                     devicePath = epocRoot() + "epoc32\\winscw\\c" + devicePath;
                 }
             } else {
-                // Drive letter needed if targetpath contains one and it is not already in
+                //The logic of the calling the initProjectDeploySymbian function depends only 
+                //from devicePathHasDriveLetter in pro files.
                 //:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
-                if (targetPathHasDriveLetter && !devicePathHasDriveLetter) {
-                   //temporary fix for Raptor building for plugins
-                   if (devicePath.indexOf("plugins", Qt::CaseInsensitive) != -1) {
-                    devicePath = deploymentDrive + "\\epoc32\\data\\z" + devicePath;
-				   } else {
-                    devicePath = deploymentDrive + devicePath;
-				   }
+                if (!devicePathHasDriveLetter) {
+                    if (targetPathHasDriveLetter) {
+                        // Drive letter needed if targetpath contains one and it is not already in
+                        if (devicePath.indexOf("plugins", Qt::CaseInsensitive) != -1 && !platform.compare("armv5") ) {
+                         //For plugin deployment under ARM no needed drive letter
+                         devicePath = epocRoot() + "epoc32\\data\\z" + devicePath;
+                         } else {
+                         devicePath = deploymentDrive + devicePath;
+                       }
+                    } else {
+                        // Only deployment for ARM need full path for the deployment
+                        if (devicePath.indexOf("plugins", Qt::CaseInsensitive) != -1 && !platform.compare("armv5") ) {
+                         devicePath = epocRoot() + "epoc32\\data\\z" + devicePath;
+				       } 
+                    }
+
                 } else {
-                    devicePath = epocRoot() + "epoc32\\data\\z" + devicePath;
-				   }
+                    //it is necessary to delete drive letter for ARM deployment
+                    if (!platform.compare("armv5")) {
+                        devicePath.remove(0,2);
+                        devicePath = epocRoot() + "epoc32\\data\\z" + devicePath;
+                    }
+                }
             }
         }
 
