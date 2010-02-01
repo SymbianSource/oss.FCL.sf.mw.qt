@@ -86,6 +86,8 @@ void AddressBar::resizeEvent(QResizeEvent *event)
 {
     int x, y, w, h;
 
+	Q_UNUSED(event);
+
     m_toolButton->adjustSize();
     x = width() - m_toolButton->width();
     y = 0;

@@ -99,5 +99,5 @@ PRJ_TESTMMPFILES
 PRJ_EXTENSIONS
 START EXTENSION qt/qtconfig
 OPTION QT_ROOT ..
-OPTION OPTIONS -nokia-developer -openvg -no-phonon -script -no-scripttools -webkit -make make -graphicssystem openvg -no-style-s60
+OPTION OPTIONS -nokia-developer -openvg -script -no-scripttools -webkit -make make -graphicssystem openvg
 END

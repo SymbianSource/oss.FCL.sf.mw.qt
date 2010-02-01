@@ -4,7 +4,7 @@
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** This file is part of the QtGui of the Qt Toolkit.
+** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** No Commercial Usage
@@ -52,7 +52,7 @@
 #include "qdnd_p.h"
 #include "qt_s60_p.h"
 
-#include <COECNTRL.H>
+#include <coecntrl.h>
 // pointer cursor
 #include <w32std.h>
 #include <gdi.h>

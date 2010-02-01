@@ -29,8 +29,7 @@
 #include "config.h"
 #include "ProfileNode.h"
 
-// QTPROD-235: pick up proper Profiler.h file
-#include "profiler/Profiler.h"
+#include "Profiler.h"
 #include <stdio.h>
 #include <wtf/DateMath.h>
 

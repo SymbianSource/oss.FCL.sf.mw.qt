@@ -40,15 +40,9 @@
 ****************************************************************************/
 
 #include <QApplication>
+
+#include <QtTest>
+#include "startest.h"
 #include "starwidget.h"
 
-int main(int argc, char *argv[])
-{
-#ifdef Q_OS_SYMBIAN
-    QApplication::setGraphicsSystem("openvg");
-#endif
-    QApplication app(argc, argv);
-    StarWidget mw;
-    mw.show();
-    return app.exec();
-}
+QTEST_MAIN(starTests)

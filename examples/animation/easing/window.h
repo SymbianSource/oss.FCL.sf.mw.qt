@@ -43,7 +43,6 @@
 
 #include "ui_form.h"
 #include "animation.h"
-class Animation; // S60MODIFICATION: Line added.
 
 class PixmapItem : public QObject, public QGraphicsPixmapItem
 {

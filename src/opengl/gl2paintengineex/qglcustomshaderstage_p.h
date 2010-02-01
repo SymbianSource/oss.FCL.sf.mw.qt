@@ -68,14 +68,15 @@ class Q_OPENGL_EXPORT QGLCustomShaderStage
 public:
     QGLCustomShaderStage();
     virtual ~QGLCustomShaderStage();
-    virtual void setUniforms(QGLShaderProgram*) = 0;
+    virtual void setUniforms(QGLShaderProgram*) {}
 
     void setUniformsDirty();
 
     bool setOnPainter(QPainter*);
     void removeFromPainter(QPainter*);
-    const char* source() const;
+    QByteArray source() const;
 
+    void setInactive();
 protected:
     void setSource(const QByteArray&);
 

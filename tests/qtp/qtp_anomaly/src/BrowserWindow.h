@@ -56,6 +56,10 @@ class BrowserWindow : public QWidget
 public:
     BrowserWindow();
 
+    HomeView *getHomeView() { return m_homeView; };
+    BrowserView *getBrowserView() { return m_browserView; };
+    QTimeLine *getTimeLine() { return m_timeLine; };
+
 private slots:
     void initialize();
     void navigate(const QUrl &url);

@@ -8,9 +8,9 @@ wince*:{
 } else:symbian {
   SRC_SUBDIRS += src_s60main src_corelib src_xml src_gui src_network src_sql src_testlib src_s60installs
 } else {
-    include(tools/tools.pro)
     SRC_SUBDIRS += src_corelib src_xml src_network src_gui src_sql src_testlib
     !vxworks:contains(QT_CONFIG, qt3support): SRC_SUBDIRS += src_qt3support
+    include(tools/tools.pro)
     contains(QT_CONFIG, dbus):SRC_SUBDIRS += src_dbus
 }
 win32:SRC_SUBDIRS += src_activeqt
@@ -27,6 +27,7 @@ contains(QT_CONFIG, webkit)  {
 }
 contains(QT_CONFIG, script): SRC_SUBDIRS += src_script
 contains(QT_CONFIG, scripttools): SRC_SUBDIRS += src_scripttools
+contains(QT_CONFIG, declarative): SRC_SUBDIRS += src_declarative
 SRC_SUBDIRS += src_plugins
 
 src_s60main.subdir = $$QT_SOURCE_TREE/src/s60main
@@ -75,6 +76,8 @@ src_javascriptcore.subdir = $$QT_SOURCE_TREE/src/3rdparty/webkit/JavaScriptCore
 src_javascriptcore.target = sub-javascriptcore
 src_webkit.subdir = $$QT_SOURCE_TREE/src/3rdparty/webkit/WebCore
 src_webkit.target = sub-webkit
+src_declarative.subdir = $$QT_SOURCE_TREE/src/declarative
+src_declarative.target = sub-declarative
 
 #CONFIG += ordered
 !wince*:!symbian:!ordered {
@@ -93,13 +96,17 @@ src_webkit.target = sub-webkit
    src_sql.depends = src_corelib
    src_testlib.depends = src_corelib
    src_qt3support.depends = src_gui src_xml src_network src_sql
+   src_tools_idc.depends = src_corelib             # target defined in tools.pro
+   src_tools_uic3.depends = src_qt3support src_xml # target defined in tools.pro
    src_phonon.depends = src_gui
    src_multimedia.depends = src_gui
    src_tools_activeqt.depends = src_tools_idc src_gui
+   src_declarative.depends = src_xml src_gui src_script src_network src_svg
    src_plugins.depends = src_gui src_sql src_svg
    contains(QT_CONFIG, webkit)  {
       src_webkit.depends = src_gui src_sql src_network src_xml 
       contains(QT_CONFIG, phonon):src_webkit.depends += src_phonon
+      contains(QT_CONFIG, declarative):src_declarative.depends += src_webkit
       #exists($$QT_SOURCE_TREE/src/3rdparty/webkit/JavaScriptCore/JavaScriptCore.pro): src_webkit.depends += src_javascriptcore
    }
    contains(QT_CONFIG, qt3support): src_plugins.depends += src_qt3support
@@ -113,7 +120,7 @@ src_webkit.target = sub-webkit
 !symbian {
 # This creates a sub-src rule
 sub_src_target.CONFIG = recursive
-sub_src_target.recurse = $$SRC_SUBDIRS
+sub_src_target.recurse = $$TOOLS_SUBDIRS $$SRC_SUBDIRS
 sub_src_target.target = sub-src
 sub_src_target.recurse_target =
 QMAKE_EXTRA_TARGETS += sub_src_target

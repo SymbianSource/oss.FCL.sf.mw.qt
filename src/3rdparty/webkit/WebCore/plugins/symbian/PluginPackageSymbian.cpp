@@ -59,7 +59,7 @@ bool PluginPackage::fetchInfo()
                 m_mimeToDescriptions.add(mime[0], mime[2]); // <MIME>,<Description>
         }
     }
-    //unload();
+    unload();
     return true;
 }
 

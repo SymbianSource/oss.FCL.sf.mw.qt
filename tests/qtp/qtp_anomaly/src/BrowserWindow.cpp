@@ -179,6 +179,8 @@ void BrowserWindow::keyReleaseEvent(QKeyEvent *event)
 
 void BrowserWindow::resizeEvent(QResizeEvent *event)
 {
+		Q_UNUSED(event);
+
     if (m_homeView)
         m_homeView->resize(size());
 

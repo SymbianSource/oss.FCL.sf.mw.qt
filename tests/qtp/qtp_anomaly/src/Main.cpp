@@ -44,31 +44,6 @@
 #include <QtWebKit>
 
 #include "BrowserWindow.h"
+#include "autotest.h"
 
-int main(int argc, char *argv[])
-{
-#if !defined(Q_WS_S60)
-    QApplication::setGraphicsSystem("raster");
-#endif
-
-    QApplication app(argc, argv);
-
-    app.setApplicationName("Anomaly");
-    app.setApplicationVersion("0.0.0");
-
-    BrowserWindow window;
-#ifdef Q_OS_SYMBIAN
-    window.showFullScreen();
-    QWebSettings::globalSettings()->setObjectCacheCapacities(128*1024, 1024*1024, 1024*1024);
-    QWebSettings::globalSettings()->setMaximumPagesInCache(3);
-#else
-    window.resize(360, 640);
-    window.show();
-    app.setStyle("windows");
-#endif
-
-#ifdef QT_KEYPAD_NAVIGATION
-    QApplication::setNavigationMode(Qt::NavigationModeCursorAuto);
-#endif
-    return app.exec();
-}
+QTEST_MAIN( autoTest )

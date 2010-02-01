@@ -10,5 +10,4 @@ sources.files = $$SOURCES $$HEADERS $$RESOURCES *.pro
 sources.path = $$[QT_INSTALL_EXAMPLES]/webkit/fancybrowser
 INSTALLS += target sources
 
-symbian:INCLUDEPATH +=tmp $$QMAKE_INCDIR_QT/QtXmlPatterns
 symbian:TARGET.UID3 = 0xA000CF6C

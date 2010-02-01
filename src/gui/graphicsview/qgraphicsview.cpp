@@ -281,6 +281,7 @@ static const int QGRAPHICSVIEW_PREALLOC_STYLE_OPTIONS = 503; // largest prime < 
 #include <QtGui/qstyleoption.h>
 #include <QtGui/qinputcontext.h>
 #ifdef Q_WS_X11
+#include <QtGui/qpaintengine.h>
 #include <private/qt_x11_p.h>
 #endif
 
@@ -540,6 +541,32 @@ qint64 QGraphicsViewPrivate::verticalScroll() const
     if (dirtyScroll)
         const_cast<QGraphicsViewPrivate *>(this)->updateScroll();
     return scrollY;
+}
+
+/*!
+    \internal
+
+    Maps the given rectangle to the scene using QTransform::mapRect()
+*/
+QRectF QGraphicsViewPrivate::mapRectToScene(const QRect &rect) const
+{
+    if (dirtyScroll)
+        const_cast<QGraphicsViewPrivate *>(this)->updateScroll();
+    QRectF scrolled = QRectF(rect.translated(scrollX, scrollY));
+    return identityMatrix ? scrolled : matrix.inverted().mapRect(scrolled);
+}
+
+
+/*!
+    \internal
+
+    Maps the given rectangle from the scene using QTransform::mapRect()
+*/
+QRectF QGraphicsViewPrivate::mapRectFromScene(const QRectF &rect) const
+{
+    if (dirtyScroll)
+        const_cast<QGraphicsViewPrivate *>(this)->updateScroll();
+    return (identityMatrix ? rect : matrix.mapRect(rect)).translated(-scrollX, -scrollY);
 }
 
 /*!
@@ -977,7 +1004,7 @@ QList<QGraphicsItem *> QGraphicsViewPrivate::findItems(const QRegion &exposedReg
     // Step 2) If the expose region is a simple rect and the view is only
     // translated or scaled, search for items using
     // QGraphicsScene::items(QRectF).
-    bool simpleRectLookup =  exposedRegion.numRects() == 1 && matrix.type() <= QTransform::TxScale;
+    bool simpleRectLookup =  exposedRegion.rectCount() == 1 && matrix.type() <= QTransform::TxScale;
     if (simpleRectLookup) {
         return scene->items(exposedRegionSceneBounds,
                             Qt::IntersectsItemBoundingRect,
@@ -1181,6 +1208,11 @@ void QGraphicsView::setTransformationAnchor(ViewportAnchor anchor)
 {
     Q_D(QGraphicsView);
     d->transformationAnchor = anchor;
+
+    // Ensure mouse tracking is enabled in the case we are using AnchorUnderMouse
+    // in order to have up-to-date information for centering the view.
+    if (d->transformationAnchor == AnchorUnderMouse)
+        d->viewport->setMouseTracking(true);
 }
 
 /*!
@@ -1208,6 +1240,11 @@ void QGraphicsView::setResizeAnchor(ViewportAnchor anchor)
 {
     Q_D(QGraphicsView);
     d->resizeAnchor = anchor;
+
+    // Ensure mouse tracking is enabled in the case we are using AnchorUnderMouse
+    // in order to have up-to-date information for centering the view.
+    if (d->resizeAnchor == AnchorUnderMouse)
+        d->viewport->setMouseTracking(true);
 }
 
 /*!
@@ -1511,6 +1548,13 @@ void QGraphicsView::setScene(QGraphicsScene *scene)
                    this, SLOT(updateSceneRect(QRectF)));
         d->scene->d_func()->removeView(this);
         d->connectedToScene = false;
+
+        if (isActiveWindow() && isVisible()) {
+            QEvent windowDeactivate(QEvent::WindowDeactivate);
+            QApplication::sendEvent(d->scene, &windowDeactivate);
+        }
+        if(hasFocus())
+            d->scene->clearFocus();
     }
 
     // Assign the new scene and update the contents (scrollbars, etc.)).
@@ -1532,6 +1576,11 @@ void QGraphicsView::setScene(QGraphicsScene *scene)
         // enable touch events if any items is interested in them
         if (!d->scene->d_func()->allItemsIgnoreTouchEvents)
             d->viewport->setAttribute(Qt::WA_AcceptTouchEvents);
+
+        if (isActiveWindow() && isVisible()) {
+            QEvent windowActivate(QEvent::WindowActivate);
+            QApplication::sendEvent(d->scene, &windowActivate);
+        }
     } else {
         d->recalculateContentSize();
     }
@@ -2558,9 +2607,12 @@ void QGraphicsView::setupViewport(QWidget *widget)
     }
 
     // We are only interested in mouse tracking if items
-    // accept hover events or use non-default cursors.
-    if (d->scene && (!d->scene->d_func()->allItemsIgnoreHoverEvents
-                     || !d->scene->d_func()->allItemsUseDefaultCursor)) {
+    // accept hover events or use non-default cursors or if
+    // AnchorUnderMouse is used as transformation or resize anchor.
+    if ((d->scene && (!d->scene->d_func()->allItemsIgnoreHoverEvents
+                     || !d->scene->d_func()->allItemsUseDefaultCursor))
+        || d->transformationAnchor == AnchorUnderMouse
+        || d->resizeAnchor == AnchorUnderMouse) {
         widget->setMouseTracking(true);
     }
 
@@ -2636,6 +2688,19 @@ bool QGraphicsView::viewportEvent(QEvent *event)
         if (!d->scene->d_func()->popupWidgets.isEmpty())
             d->scene->d_func()->removePopup(d->scene->d_func()->popupWidgets.first());
         QApplication::sendEvent(d->scene, event);
+        break;
+    case QEvent::Show:
+        if (d->scene && isActiveWindow()) {
+            QEvent windowActivate(QEvent::WindowActivate);
+            QApplication::sendEvent(d->scene, &windowActivate);
+        }
+        break;
+    case QEvent::Hide:
+        // spontaneous event will generate a WindowDeactivate.
+        if (!event->spontaneous() && d->scene && isActiveWindow()) {
+            QEvent windowDeactivate(QEvent::WindowDeactivate);
+            QApplication::sendEvent(d->scene, &windowDeactivate);
+        }
         break;
     case QEvent::Leave:
         // ### This is a temporary fix for until we get proper mouse grab
@@ -3294,7 +3359,12 @@ void QGraphicsView::paintEvent(QPaintEvent *event)
             backgroundPainter.setClipRegion(d->backgroundPixmapExposed, Qt::ReplaceClip);
             if (viewTransformed)
                 backgroundPainter.setTransform(viewTransform);
-            backgroundPainter.setCompositionMode(QPainter::CompositionMode_Source);
+#ifdef Q_WS_X11
+#undef X11
+            if (backgroundPainter.paintEngine()->type() != QPaintEngine::X11)
+#define X11 qt_x11Data
+#endif
+                backgroundPainter.setCompositionMode(QPainter::CompositionMode_Source);
             drawBackground(&backgroundPainter, exposedSceneRect);
             d->backgroundPixmapExposed = QRegion();
         }
@@ -3319,6 +3389,14 @@ void QGraphicsView::paintEvent(QPaintEvent *event)
     if (!(d->optimizationFlags & IndirectPainting)) {
         d->scene->d_func()->drawItems(&painter, viewTransformed ? &viewTransform : 0,
                                       &d->exposedRegion, viewport());
+        // Make sure the painter's world transform is restored correctly when
+        // drawing without painter state protection (DontSavePainterState).
+        // We only change the worldTransform() so there's no need to do a full-blown
+        // save() and restore(). Also note that we don't have to do this in case of
+        // IndirectPainting (the else branch), because in that case we always save()
+        // and restore() in QGraphicsScene::drawItems().
+        if (!d->scene->d_func()->painterStateProtection)
+            painter.setWorldTransform(viewTransform);
     } else {
         // Find all exposed items
         bool allItems = false;

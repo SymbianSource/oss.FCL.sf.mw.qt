@@ -39,10 +39,9 @@
 **
 ****************************************************************************/
 
-#include <QtCore>
-#include <QtGui>
-
 #include <math.h>
+
+#include "raycasting.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -63,10 +62,7 @@ int world_map[WORLD_SIZE][WORLD_SIZE] = {
 #define TEXTURE_SIZE 64
 #define TEXTURE_BLOCK (TEXTURE_SIZE * TEXTURE_SIZE)
 
-class Raycasting: public QWidget
-{
-public:
-    Raycasting(QWidget *parent = 0)
+Raycasting::Raycasting(QWidget *parent)
             : QWidget(parent)
             , angle(0.5)
             , playerPos(1.5, 1.5)
@@ -87,7 +83,7 @@ public:
         setMouseTracking(false);
     }
 
-    void updatePlayer() {
+    void Raycasting::updatePlayer() {
         int interval = qBound(20, watch.elapsed(), 250);
         watch.start();
         angle += angleDelta * interval / 1000;
@@ -101,7 +97,7 @@ public:
             playerPos = playerPos + QPointF(dx, dy);
     }
 
-    void showFps() {
+    void Raycasting::showFps() {
         static QTime frameTick;
         static int totalFrame = 0;
         if (!(totalFrame & 31)) {
@@ -113,7 +109,7 @@ public:
         totalFrame++;
     }
 
-    void render() {
+    void Raycasting::render() {
 
         // setup the screen surface
         if (buffer.size() != bufferSize)
@@ -248,9 +244,7 @@ public:
         update(QRect(QPoint(0, 0), bufferSize));
     }
 
-protected:
-
-    void resizeEvent(QResizeEvent*) {
+    void Raycasting::resizeEvent(QResizeEvent*) {
 #if defined(Q_OS_WINCE_WM)
         touchDevice = true;
 #elif defined(Q_OS_SYMBIAN)
@@ -277,13 +271,13 @@ protected:
         update();
    }
 
-    void timerEvent(QTimerEvent*) {
+    void Raycasting::timerEvent(QTimerEvent*) {
         updatePlayer();
         render();
         showFps();
     }
 
-    void paintEvent(QPaintEvent *event) {
+    void Raycasting::paintEvent(QPaintEvent *event) {
         QPainter p(this);
         p.setCompositionMode(QPainter::CompositionMode_Source);
 
@@ -315,7 +309,7 @@ protected:
         p.end();
     }
 
-    void keyPressEvent(QKeyEvent *event) {
+    void Raycasting::keyPressEvent(QKeyEvent *event) {
         event->accept();
         if (event->key() == Qt::Key_Left)
             angleDelta = 1.3 * M_PI;
@@ -327,7 +321,7 @@ protected:
             moveDelta = -2.5;
     }
 
-    void keyReleaseEvent(QKeyEvent *event) {
+    void Raycasting::keyReleaseEvent(QKeyEvent *event) {
         event->accept();
         if (event->key() == Qt::Key_Left)
             angleDelta = (angleDelta > 0) ? 0 : angleDelta;
@@ -339,53 +333,22 @@ protected:
             moveDelta = (moveDelta < 0) ? 0 : moveDelta;
     }
 
-    void mousePressEvent(QMouseEvent *event) {
+    void Raycasting::mousePressEvent(QMouseEvent *event) {
         qreal dx = centerPad.x() - event->pos().x();
         qreal dy = centerPad.y() - event->pos().y();
         angleDelta = dx * 2 * M_PI / width();
         moveDelta = dy * 10 / height();
     }
 
-    void mouseMoveEvent(QMouseEvent *event) {
+    void Raycasting::mouseMoveEvent(QMouseEvent *event) {
         qreal dx = centerPad.x() - event->pos().x();
         qreal dy = centerPad.y() - event->pos().y();
         angleDelta = dx * 2 * M_PI / width();
         moveDelta = dy * 10 / height();
     }
 
-    void mouseReleaseEvent(QMouseEvent*) {
+    void Raycasting::mouseReleaseEvent(QMouseEvent*) {
         angleDelta = 0;
         moveDelta = 0;
     }
-
-private:
-    QTime watch;
-    QBasicTimer ticker;
-    QImage buffer;
-    qreal angle;
-    QPointF playerPos;
-    qreal angleDelta;
-    qreal moveDelta;
-    QImage textureImg;
-    int textureCount;
-    bool touchDevice;
-    QRect trackPad;
-    QPoint centerPad;
-    QSize bufferSize;
-};
-
-int main(int argc, char **argv)
-{
-    QApplication app(argc, argv);
-
-    Raycasting w;
-    w.setWindowTitle("Raycasting");
-#if defined(Q_OS_SYMBIAN) || defined(Q_OS_WINCE_WM)
-    w.showMaximized();
-#else
-    w.resize(640, 480);
-    w.show();
-#endif
-
-    return app.exec();
-}
+	

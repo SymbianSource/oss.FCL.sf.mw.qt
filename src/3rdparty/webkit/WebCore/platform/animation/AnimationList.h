@@ -25,8 +25,7 @@
 #ifndef AnimationList_h
 #define AnimationList_h
 
-/* :QTP:workaround to pick correct animation.h */
-#include "animation/Animation.h"
+#include "Animation.h"
 #include <wtf/RefPtr.h>
 #include <wtf/Vector.h>
 

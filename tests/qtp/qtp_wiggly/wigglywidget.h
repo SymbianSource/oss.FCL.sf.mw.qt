@@ -53,6 +53,9 @@ class WigglyWidget : public QWidget
 public:
     WigglyWidget(QWidget *parent = 0);
 
+    //  for automated testing
+    QString getText() { return text; };
+
 public slots:
     void setText(const QString &newText) { text = newText; }
 

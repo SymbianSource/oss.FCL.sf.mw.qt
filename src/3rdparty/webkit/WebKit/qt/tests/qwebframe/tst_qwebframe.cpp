@@ -38,6 +38,10 @@
 #endif
 #include "../util.h"
 
+#if defined(Q_OS_SYMBIAN)
+# define SRCDIR ""
+#endif
+
 //TESTED_CLASS=
 //TESTED_FILES=
 
@@ -587,6 +591,7 @@ private slots:
     void setHtml();
     void setHtmlWithResource();
     void setHtmlWithBaseURL();
+    void setHtmlWithJSAlert();
     void ipv6HostEncoding();
     void metaData();
     void popupFocus();
@@ -600,6 +605,7 @@ private slots:
     void render();
     void scrollPosition();
     void evaluateWillCauseRepaint();
+    void qObjectWrapperWithSameIdentity();
 
 private:
     QString  evalJS(const QString&s) {
@@ -2286,7 +2292,7 @@ void tst_QWebFrame::requestedUrl()
     qRegisterMetaType<QList<QSslError> >("QList<QSslError>");
     qRegisterMetaType<QNetworkReply* >("QNetworkReply*");
 
-    QSignalSpy spy2(page.networkAccessManager(), SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)));
+    QSignalSpy spy2(page.networkAccessManager(), SIGNAL(sslErrors(QNetworkReply*,QList<QSslError>)));
     frame->setUrl(QUrl("qrc:/fake-ssl-error.html"));
     QTest::qWait(200);
     QCOMPARE(spy2.count(), 1);
@@ -2392,6 +2398,33 @@ void tst_QWebFrame::setHtmlWithBaseURL()
 
     // no history item has to be added.
     QCOMPARE(m_view->page()->history()->count(), 0);
+}
+
+class MyPage : public QWebPage
+{
+public:
+    MyPage() :  QWebPage(), alerts(0) {}
+    int alerts;
+
+protected:
+    virtual void javaScriptAlert(QWebFrame*, const QString& msg)
+    {
+        alerts++;
+        QCOMPARE(msg, QString("foo"));
+        // Should not be enough to trigger deferred loading, since we've upped the HTML
+        // tokenizer delay in the Qt frameloader. See HTMLTokenizer::continueProcessing()
+        QTest::qWait(1000);
+    }
+};
+
+void tst_QWebFrame::setHtmlWithJSAlert()
+{
+    QString html("<html><head></head><body><script>alert('foo');</script><p>hello world</p></body></html>");
+    MyPage page;
+    m_view->setPage(&page);
+    page.mainFrame()->setHtml(html);
+    QCOMPARE(page.alerts, 1);
+    QCOMPARE(m_view->page()->mainFrame()->toHtml(), html);
 }
 
 class TestNetworkManager : public QNetworkAccessManager
@@ -2691,26 +2724,24 @@ void tst_QWebFrame::render()
 
     QPicture picture;
 
-    // render clipping to Viewport
-    frame->setClipRenderToViewport(true);
-    QPainter painter1(&picture);
-    frame->render(&painter1);
-    painter1.end();
-
     QSize size = page.mainFrame()->contentsSize();
     page.setViewportSize(size);
-    QCOMPARE(size.width(), picture.boundingRect().width());   // 100px
-    QCOMPARE(size.height(), picture.boundingRect().height()); // 100px
 
-    // render without clipping to Viewport
-    frame->setClipRenderToViewport(false);
+    // render contents layer only (the iframe is smaller than the image, so it will have scrollbars)
+    QPainter painter1(&picture);
+    frame->render(&painter1, QWebFrame::ContentsLayer);
+    painter1.end();
+
+    QCOMPARE(size.width(), picture.boundingRect().width() + frame->scrollBarGeometry(Qt::Vertical).width());
+    QCOMPARE(size.height(), picture.boundingRect().height() + frame->scrollBarGeometry(Qt::Horizontal).height());
+
+    // render everything, should be the size of the iframe
     QPainter painter2(&picture);
-    frame->render(&painter2);
+    frame->render(&painter2, QWebFrame::AllLayers);
     painter2.end();
 
-    QImage resource(":/image.png");
-    QCOMPARE(resource.width(), picture.boundingRect().width());   // resource width: 128px
-    QCOMPARE(resource.height(), picture.boundingRect().height()); // resource height: 128px
+    QCOMPARE(size.width(), picture.boundingRect().width());   // width: 100px
+    QCOMPARE(size.height(), picture.boundingRect().height()); // height: 100px
 }
 
 void tst_QWebFrame::scrollPosition()
@@ -2750,11 +2781,48 @@ void tst_QWebFrame::evaluateWillCauseRepaint()
     view.page()->mainFrame()->evaluateJavaScript(
         "document.getElementById('junk').style.display = 'none';");
 
-    ::waitForSignal(view.page(), SIGNAL(repaintRequested( const QRect &)));
+    ::waitForSignal(view.page(), SIGNAL(repaintRequested(QRect)));
 
     QTest::qWait(2000);
 }
 
+class TestFactory : public QObject
+{
+    Q_OBJECT
+public:
+    TestFactory()
+        : obj(0), counter(0)
+    {}
+
+    Q_INVOKABLE QObject* getNewObject()
+    {
+        delete obj;
+        obj = new QObject(this);
+        obj->setObjectName(QLatin1String("test") + QString::number(++counter));
+        return obj;
+
+    }
+
+    QObject* obj;
+    int counter;
+};
+
+void tst_QWebFrame::qObjectWrapperWithSameIdentity()
+{
+    m_view->setHtml("<script>function triggerBug() { document.getElementById('span1').innerText = test.getNewObject().objectName; }</script>"
+                    "<body><span id='span1'>test</span></body>");
+
+    QWebFrame* mainFrame = m_view->page()->mainFrame();
+    QCOMPARE(mainFrame->toPlainText(), QString("test"));
+
+    mainFrame->addToJavaScriptWindowObject("test", new TestFactory, QScriptEngine::ScriptOwnership);
+
+    mainFrame->evaluateJavaScript("triggerBug();");
+    QCOMPARE(mainFrame->toPlainText(), QString("test1"));
+
+    mainFrame->evaluateJavaScript("triggerBug();");
+    QCOMPARE(mainFrame->toPlainText(), QString("test2"));
+}
 
 QTEST_MAIN(tst_QWebFrame)
 #include "tst_qwebframe.moc"

@@ -41,14 +41,5 @@ for(QTLIB, $$list($$lower($$unique(QT)))) {
     INCLUDEPATH += $$MW_LAYER_PUBLIC_EXPORT_PATH($$qlib)
 }
 
-contains(CONFIG, hb): {
-    INCLUDEPATH += \
-        $$MW_LAYER_PUBLIC_EXPORT_PATH(hb/hbcnf) \
-        $$MW_LAYER_PUBLIC_EXPORT_PATH(hb/hbcore) \
-        $$MW_LAYER_PUBLIC_EXPORT_PATH(hb/hbinput) \
-        $$MW_LAYER_PUBLIC_EXPORT_PATH(hb/hbservices) \
-        $$MW_LAYER_PUBLIC_EXPORT_PATH(hb/hbwidgets)
-}
-
-#add log of the warning message directly to the file instead of RDebug
-DEFINES += QT_WARNING_FILE_OUTPUT
+#QTP: add userinclude 
+MMP_RULES+="USERINCLUDE  ."

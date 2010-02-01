@@ -64,6 +64,12 @@ public:
     MainWindow(const QString &artistTable, const QString &albumTable,
                QFile *albumDetails, QWidget *parent = 0);
 
+    // for autotest set
+    QTableView *getAlbumView() { return albumView; };
+    QComboBox *getArtistView() { return artistView; };
+    QListWidget *getTrackList() { return trackList; };
+    QSqlRelationalTableModel *getModel() { return model; } ;
+    
 private slots:
     void about();
     void addAlbum();

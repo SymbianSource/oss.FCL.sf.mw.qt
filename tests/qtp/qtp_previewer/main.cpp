@@ -39,15 +39,10 @@
 **
 ****************************************************************************/
 
+#include <QApplication>
 #include <QtGui>
+#include <QtTest>
 #include "mainwindow.h"
+#include "autotest.h"
 
-//! [0]
-int main(int argc, char * argv[])
-{
-    QApplication app(argc, argv);
-    MainWindow *mainWindow = new MainWindow;
-    mainWindow->show();
-    return app.exec();
-}
-//! [0]
+QTEST_MAIN(autoTest)

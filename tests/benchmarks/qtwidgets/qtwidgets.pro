@@ -5,5 +5,4 @@ HEADERS += mainwindow.h
 QT += network
 RESOURCES = qtstyles.qrc
 FORMS += advanced.ui system.ui standard.ui
-
-
+TARGET = tst_bench_qtwidgets

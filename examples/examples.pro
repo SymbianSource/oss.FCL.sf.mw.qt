@@ -5,14 +5,12 @@ SUBDIRS       = \
                 dialogs \
                 draganddrop \
                 effects \
-                gestures \
                 graphicsview \
                 ipc \
                 itemviews \
                 layouts \
                 linguist \
                 mainwindows \
-                multitouch \
                 network \
                 painting \
                 qtconcurrent \
@@ -24,26 +22,22 @@ SUBDIRS       = \
                 tutorials \
                 widgets \
                 uitools \
-                xml
+                xml \
+                multitouch \
+                gestures
 
 symbian: SUBDIRS = \
-                animation \
-                dialogs \
-                draganddrop \
-                effects \
-                gestures \
                 graphicsview \
                 itemviews \
-                mainwindows \
-                multitouch \
                 network \
                 painting \
-                qtconcurrent \
-                sql \
-                statemachine \
-                threads \
-                uitools \
                 widgets \
+                draganddrop \
+                mainwindows \
+                sql \
+                uitools \
+                animation \
+                gestures \
                 xml
 
 contains(QT_CONFIG, multimedia) {

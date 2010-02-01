@@ -59,6 +59,9 @@ AnalogClock::AnalogClock(QWidget *parent)
 
     setWindowTitle(tr("Analog Clock"));
     resize(200, 200);
+    
+    // simple counter for testing purposes
+    counter = 0;
 //! [7]
 }
 //! [1] //! [7]
@@ -141,6 +144,7 @@ void AnalogClock::paintEvent(QPaintEvent *)
             painter.drawLine(92, 0, 96, 0);
         painter.rotate(6.0);
     }
+    counter++;
 //! [27]
 }
 //! [26]

@@ -3,10 +3,9 @@ TEMPLATE         = \
 SUBDIRS          += \
                  animatedtiles \
                  appchooser \
-                 easing \
                  moveblocks \
                  states \
-                 stickman
+                 stickman \
 
 # install
 target.path = $$[QT_INSTALL_EXAMPLES]/animation

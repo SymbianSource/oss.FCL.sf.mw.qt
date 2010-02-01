@@ -186,15 +186,22 @@ void SymbianSbsv2MakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, boo
         }
         t << endl;
 
+        QString winscw("winscw");
         // For more specific builds, targets are in this form: build-platform, e.g. release-armv5
         foreach(QString item, debugPlatforms) {
             t << "debug-" << item << ": " << BLD_INF_FILENAME << endl;
-            t << "\t$(SBS) -c " << item << "_udeb" << testClause << endl;
+            if(QString::compare(item, winscw) == 0)
+                t << "\t$(SBS) -c " << item << "_udeb.mwccinc" << testClause << endl;
+            else
+                t << "\t$(SBS) -c " << item << "_udeb" << testClause << endl;
         }
 
         foreach(QString item, releasePlatforms) {
             t << "release-" << item << ": " << BLD_INF_FILENAME << endl;
-            t << "\t$(SBS) -c " << item << "_urel" << testClause << endl;
+            if(QString::compare(item, winscw) == 0)
+                t << "\t$(SBS) -c " << item << "_urel.mwccinc" << testClause << endl;
+            else
+                t << "\t$(SBS) -c " << item << "_urel" << testClause << endl;
         }
 
         t << endl;
@@ -231,11 +238,11 @@ void SymbianSbsv2MakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, boo
     // create execution target
     if (debugPlatforms.contains("winscw") && targetType == TypeExe) {
         t << "run:" << endl;
-        t << "\t-call " << epocRoot() << "epoc32/release/winscw/udeb/" << removePathSeparators(escapeFilePath(fileFixify(project->first("TARGET"))).append(".exe")) << endl << endl;
+        t << "\t-call " << epocRoot() << "epoc32/release/winscw/udeb/" << fixedTarget << ".exe" << endl << endl;
     }
 }
 
-void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t)
+void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t, const QString &iconTargetFile)
 {
     // Makes sure we have needed FLMs in place.
     exportFlm();
@@ -331,6 +338,27 @@ void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t
 
     t << endl;
 
+    QString translationFilename = project->first("TRANSLATIONS");
+    if (!project->values("SYMBIANTRANSLATIONS").isEmpty() && !translationFilename.isEmpty()) {
+        QStringList symbianTranslations = project->values("SYMBIANTRANSLATIONS");
+        QString symbianTrPath = project->first("SYMBIANTRANSLATIONDIR");
+        foreach (const QString &symbianTrans, symbianTranslations) {
+            QString translationTsFilename(translationFilename);
+            translationTsFilename.chop(3);
+            translationTsFilename.insert(0,symbianTrPath);
+            translationTsFilename.append(QString::fromLatin1("_"));
+            translationTsFilename.append(symbianTrans);
+            QString translationQmFilename(translationTsFilename);
+            translationTsFilename.append(QString::fromLatin1(".ts"));
+            translationQmFilename.append(QString::fromLatin1(".qm"));
+            t << "START EXTENSION qt/ts2qm" << endl;
+            t << "OPTION TSFILE " << translationTsFilename << endl;
+            t << "OPTION QMFILE " << translationQmFilename << endl;
+            t << "END" << endl;
+            t << endl;
+        }
+    }
+
     // Write winscw deployment rules
     QString remoteTestPath = epocRoot() + QLatin1String("epoc32/winscw/c/private/") + privateDirUid;
     DeploymentList depList;
@@ -370,37 +398,21 @@ void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t
         t << "START EXTENSION s60/mifconv" << endl;
 
         QFileInfo iconInfo = fileInfo(icon);
-        QString iconPath = iconInfo.path();
+
+        QFileInfo bldinf(project->values("MAKEFILE").first());
+        QString iconPath = bldinf.dir().relativeFilePath(iconInfo.path());
+
         QString iconFile = iconInfo.baseName();
+
+        QFileInfo iconTargetInfo = fileInfo(iconTargetFile);
+        QString iconTarget = iconTargetInfo.fileName();
 
         t << "OPTION SOURCES -c32 " << iconFile << endl;
         t << "OPTION SOURCEDIR " << iconPath << endl;
-        t << "OPTION TARGETFILE " << uid3 << ".mif" << endl;
+        t << "OPTION TARGETFILE " << iconTarget << endl;
         t << "OPTION SVGENCODINGVERSION 3" << endl; // Compatibility with S60 3.1 devices and up
         t << "END" << endl;
     }
-
-    // Generate temp dirs
-    QString tempDirs;
-    for (QMap<QString, QStringList>::iterator it = systeminclude.begin(); it != systeminclude.end(); ++it) {
-        QStringList values = it.value();
-        for (int i = 0; i < values.size(); ++i) {
-            QString value = values.at(i);
-            if (value.endsWith("/" QT_EXTRA_INCLUDE_DIR)) {
-                value = fileInfo(value).absoluteFilePath();
-                tempDirs.append(value);
-                tempDirs.append(" ");
-            }
-        }
-    }
-
-    if (tempDirs.size())
-        tempDirs.chop(1); // Remove final space
-
-    t << "START EXTENSION qt/qmake_generate_temp_dirs" << endl;
-    t << "OPTION DIRS " << tempDirs << endl;
-    t << "END" << endl;
-    t << endl;
 
     /* :QTP:QTPROD-155: Don't write .make.cache during the compilation, it causes dependency problems in
      * the parallel build clusters
@@ -417,4 +429,11 @@ void SymbianSbsv2MakefileGenerator::writeBldInfMkFilePart(QTextStream& t, bool a
     // We don't generate extension makefile in sbsb2
     Q_UNUSED(t);
     Q_UNUSED(addDeploymentExtension);
+}
+
+void SymbianSbsv2MakefileGenerator::appendAbldTempDirs(QStringList& sysincspaths, QString includepath)
+{
+    //Do nothing
+    Q_UNUSED(sysincspaths);
+    Q_UNUSED(includepath);
 }

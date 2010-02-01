@@ -6,35 +6,17 @@
 **
 ** This file is part of the QtScript module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL$
-** No Commercial Usage
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
-**
+** $QT_BEGIN_LICENSE:LGPL-ONLY$
 ** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
+** This file may be used under the terms of the GNU Lesser
 ** General Public License version 2.1 as published by the Free Software
 ** Foundation and appearing in the file LICENSE.LGPL included in the
 ** packaging of this file.  Please review the following information to
 ** ensure the GNU Lesser General Public License version 2.1 requirements
 ** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights.  These rights are described in the Nokia Qt LGPL Exception
-** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
-**
 ** If you have questions regarding the use of this file, please contact
 ** Nokia at qt-info@nokia.com.
-**
-**
-**
-**
-**
-**
-**
-**
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
@@ -51,6 +33,9 @@
 #include "qscriptvalue_p.h"
 #include "qscriptvalueiterator.h"
 #include "qscriptclass.h"
+#include "qscriptcontextinfo.h"
+#include "qscriptprogram.h"
+#include "qscriptprogram_p.h"
 #include "qdebug.h"
 
 #include <QtCore/qstringlist.h>
@@ -714,9 +699,9 @@ JSC::JSValue JSC_HOST_CALL functionQsTr(JSC::ExecState *exec, JSC::JSObject*, JS
         return JSC::throwError(exec, JSC::GeneralError, "qsTranslate(): third argument (n) must be a number");
 #ifndef QT_NO_QOBJECT
     QString context;
-// ### implement context resolution
-//    if (ctx->parentContext())
-//        context = QFileInfo(ctx->parentContext()->fileName()).baseName();
+    QScriptContext *ctx = QScriptEnginePrivate::contextForFrame(exec);
+    if (ctx && ctx->parentContext())
+        context = QFileInfo(QScriptContextInfo(ctx->parentContext()).fileName()).baseName();
 #endif
     QString text(args.at(0).toString(exec));
 #ifndef QT_NO_QOBJECT
@@ -792,7 +777,11 @@ QScriptEnginePrivate::QScriptEnginePrivate()
     qMetaTypeId<QObjectList>();
 #endif
 
-    JSC::initializeThreading(); // ### hmmm
+    if (!QCoreApplication::instance()) {
+        qFatal("QScriptEngine: Must construct a Q(Core)Application before a QScriptEngine");
+        return;
+    }
+    JSC::initializeThreading();
 
     globalData = JSC::JSGlobalData::create().releaseRef();
     globalData->clientData = new QScript::GlobalClientData(this);
@@ -1091,6 +1080,8 @@ void QScriptEnginePrivate::setContextFlags(JSC::ExecState *exec, uint flags)
 
 void QScriptEnginePrivate::mark(JSC::MarkStack& markStack)
 {
+    Q_Q(QScriptEngine);
+
     markStack.append(originalGlobalObject());
     markStack.append(globalObject());
     if (originalGlobalObjectProxy)
@@ -1111,7 +1102,32 @@ void QScriptEnginePrivate::mark(JSC::MarkStack& markStack)
         }
     }
 
+    {
+        QHash<int, QScriptTypeInfo*>::const_iterator it;
+        for (it = m_typeInfos.constBegin(); it != m_typeInfos.constEnd(); ++it) {
+            if ((*it)->prototype)
+                markStack.append((*it)->prototype);
+        }
+    }
+
+    {
+        QScriptContext *context = q->currentContext();
+
+        while (context) {
+            JSC::ScopeChainNode *node = frameForContext(context)->scopeChain();
+            JSC::ScopeChainIterator it(node);
+            for (it = node->begin(); it != node->end(); ++it) {
+                JSC::JSObject *object = *it;
+                if (object)
+                    markStack.append(object);
+            }
+
+            context = context->parentContext();
+        }
+    }
+
 #ifndef QT_NO_QOBJECT
+    markStack.drain(); // make sure everything is marked before marking qobject data
     {
         QHash<QObject*, QScript::QObjectData*>::const_iterator it;
         for (it = m_qobjectData.constBegin(); it != m_qobjectData.constEnd(); ++it) {
@@ -1120,14 +1136,6 @@ void QScriptEnginePrivate::mark(JSC::MarkStack& markStack)
         }
     }
 #endif
-
-    {
-        QHash<int, QScriptTypeInfo*>::const_iterator it;
-        for (it = m_typeInfos.constBegin(); it != m_typeInfos.constEnd(); ++it) {
-            if ((*it)->prototype)
-                markStack.append((*it)->prototype);
-        }
-    }
 }
 
 bool QScriptEnginePrivate::isCollecting() const
@@ -1153,6 +1161,73 @@ void QScriptEnginePrivate::agentDeleted(QScriptEngineAgent *agent)
         QScriptEngineAgentPrivate::get(agent)->detach();
         activeAgent = 0;
     }
+}
+
+JSC::JSValue QScriptEnginePrivate::evaluateHelper(JSC::ExecState *exec, intptr_t sourceId,
+                                                  JSC::EvalExecutable *executable,
+                                                  bool &compile)
+{
+    Q_Q(QScriptEngine);
+    JSC::JSLock lock(false); // ### hmmm
+    QBoolBlocker inEvalBlocker(inEval, true);
+    q->currentContext()->activationObject(); //force the creation of a context for native function;
+
+    JSC::Debugger* debugger = originalGlobalObject()->debugger();
+    if (debugger)
+        debugger->evaluateStart(sourceId);
+
+    q->clearExceptions();
+    JSC::DynamicGlobalObjectScope dynamicGlobalObjectScope(exec, exec->scopeChain()->globalObject());
+
+    if (compile) {
+        JSC::JSObject* error = executable->compile(exec, exec->scopeChain());
+        if (error) {
+            compile = false;
+            exec->setException(error);
+
+            if (debugger) {
+                debugger->exceptionThrow(JSC::DebuggerCallFrame(exec, error), sourceId, false);
+                debugger->evaluateStop(error, sourceId);
+            }
+
+            return error;
+        }
+    }
+
+    JSC::JSValue thisValue = thisForContext(exec);
+    JSC::JSObject* thisObject = (!thisValue || thisValue.isUndefinedOrNull())
+                                ? exec->dynamicGlobalObject() : thisValue.toObject(exec);
+    JSC::JSValue exceptionValue;
+    timeoutChecker()->setShouldAbort(false);
+    if (processEventsInterval > 0)
+        timeoutChecker()->reset();
+
+    JSC::JSValue result = exec->interpreter()->execute(executable, exec, thisObject, exec->scopeChain(), &exceptionValue);
+
+    if (timeoutChecker()->shouldAbort()) {
+        if (abortResult.isError())
+            exec->setException(scriptValueToJSCValue(abortResult));
+
+        if (debugger)
+            debugger->evaluateStop(scriptValueToJSCValue(abortResult), sourceId);
+
+        return scriptValueToJSCValue(abortResult);
+    }
+
+    if (exceptionValue) {
+        exec->setException(exceptionValue);
+
+        if (debugger)
+            debugger->evaluateStop(exceptionValue, sourceId);
+
+        return exceptionValue;
+    }
+
+    if (debugger)
+        debugger->evaluateStop(result, sourceId);
+
+    Q_ASSERT(!exec->hadException());
+    return result;
 }
 
 #ifndef QT_NO_QOBJECT
@@ -1233,7 +1308,7 @@ QScript::QObjectData *QScriptEnginePrivate::qobjectData(QObject *object)
     QScript::QObjectData *data = new QScript::QObjectData(this);
     m_qobjectData.insert(object, data);
     QObject::connect(object, SIGNAL(destroyed(QObject*)),
-                     q_func(), SLOT(_q_objectDestroyed(QObject *)));
+                     q_func(), SLOT(_q_objectDestroyed(QObject*)));
     return data;
 }
 
@@ -2115,74 +2190,40 @@ QScriptSyntaxCheckResult QScriptEnginePrivate::checkSyntax(const QString &progra
 QScriptValue QScriptEngine::evaluate(const QString &program, const QString &fileName, int lineNumber)
 {
     Q_D(QScriptEngine);
-
-    JSC::JSLock lock(false); // ### hmmm
-    QBoolBlocker inEval(d->inEval, true);
-    currentContext()->activationObject(); //force the creation of a context for native function;
-
-    JSC::Debugger* debugger = d->originalGlobalObject()->debugger();
-
-    JSC::UString jscProgram = program;
-    JSC::UString jscFileName = fileName;
-    JSC::ExecState* exec = d->currentFrame;
     WTF::PassRefPtr<QScript::UStringSourceProviderWithFeedback> provider
-            = QScript::UStringSourceProviderWithFeedback::create(jscProgram, jscFileName, lineNumber, d);
+            = QScript::UStringSourceProviderWithFeedback::create(program, fileName, lineNumber, d);
     intptr_t sourceId = provider->asID();
     JSC::SourceCode source(provider, lineNumber); //after construction of SourceCode provider variable will be null.
 
-    if (debugger)
-        debugger->evaluateStart(sourceId);
-
-    clearExceptions();
-    JSC::DynamicGlobalObjectScope dynamicGlobalObjectScope(exec, exec->scopeChain()->globalObject());
-
+    JSC::ExecState* exec = d->currentFrame;
     JSC::EvalExecutable executable(exec, source);
-    JSC::JSObject* error = executable.compile(exec, exec->scopeChain());
-    if (error) {
-        exec->setException(error);
-
-        if (debugger) {
-            debugger->exceptionThrow(JSC::DebuggerCallFrame(exec, error), sourceId, false);
-            debugger->evaluateStop(error, sourceId);
-        }
-
-        return d->scriptValueFromJSCValue(error);
-    }
-
-    JSC::JSValue thisValue = d->thisForContext(exec);
-    JSC::JSObject* thisObject = (!thisValue || thisValue.isUndefinedOrNull()) ? exec->dynamicGlobalObject() : thisValue.toObject(exec);
-    JSC::JSValue exceptionValue;
-    d->timeoutChecker()->setShouldAbort(false);
-    if (d->processEventsInterval > 0)
-        d->timeoutChecker()->reset();
-    JSC::JSValue result = exec->interpreter()->execute(&executable, exec, thisObject, exec->scopeChain(), &exceptionValue);
-
-    if (d->timeoutChecker()->shouldAbort()) {
-        if (d->abortResult.isError())
-            exec->setException(d->scriptValueToJSCValue(d->abortResult));
-
-        if (debugger)
-            debugger->evaluateStop(d->scriptValueToJSCValue(d->abortResult), sourceId);
-
-        return d->abortResult;
-    }
-
-    if (exceptionValue) {
-        exec->setException(exceptionValue);
-
-        if (debugger)
-            debugger->evaluateStop(exceptionValue, sourceId);
-
-        return d->scriptValueFromJSCValue(exceptionValue);
-    }
-
-    if (debugger)
-        debugger->evaluateStop(result, sourceId);
-
-    Q_ASSERT(!exec->hadException());
-    return d->scriptValueFromJSCValue(result);
+    bool compile = true;
+    return d->scriptValueFromJSCValue(d->evaluateHelper(exec, sourceId, &executable, compile));
 }
 
+/*!
+  \internal
+  \since 4.6
+
+  Evaluates the given \a program and returns the result of the
+  evaluation.
+*/
+QScriptValue QScriptEngine::evaluate(const QScriptProgram &program)
+{
+    Q_D(QScriptEngine);
+    QScriptProgramPrivate *program_d = QScriptProgramPrivate::get(program);
+    if (!program_d)
+        return QScriptValue();
+
+    JSC::ExecState* exec = d->currentFrame;
+    JSC::EvalExecutable *executable = program_d->executable(exec, d);
+    bool compile = !program_d->isCompiled;
+    JSC::JSValue result = d->evaluateHelper(exec, program_d->sourceId,
+                                            executable, compile);
+    if (compile)
+        program_d->isCompiled = true;
+    return d->scriptValueFromJSCValue(result);
+}
 
 /*!
   Returns the current context.
@@ -2246,7 +2287,8 @@ QScriptContext *QScriptEngine::pushContext()
    return the new top frame. (might be the same as exec if a new stackframe was not needed) or 0 if stack overflow
 */
 JSC::CallFrame *QScriptEnginePrivate::pushContext(JSC::CallFrame *exec, JSC::JSValue _thisObject,
-                                                  const JSC::ArgList& args, JSC::JSObject *callee, bool calledAsConstructor)
+                                                  const JSC::ArgList& args, JSC::JSObject *callee, bool calledAsConstructor,
+                                                  bool clearScopeChain)
 {
     JSC::JSValue thisObject = _thisObject;
     if (calledAsConstructor) {
@@ -2280,7 +2322,14 @@ JSC::CallFrame *QScriptEnginePrivate::pushContext(JSC::CallFrame *exec, JSC::JSV
         for (it = args.begin(); it != args.end(); ++it)
             newCallFrame[++dst] = *it;
         newCallFrame += argc + JSC::RegisterFile::CallFrameHeaderSize;
-        newCallFrame->init(0, /*vPC=*/0, exec->scopeChain(), exec, flags | ShouldRestoreCallFrame, argc, callee);
+
+        if (!clearScopeChain) {
+            newCallFrame->init(0, /*vPC=*/0, exec->scopeChain(), exec, flags | ShouldRestoreCallFrame, argc, callee);
+        } else {
+            JSC::JSObject *jscObject = originalGlobalObject();
+            JSC::ScopeChainNode *scn = new JSC::ScopeChainNode(0, jscObject, &exec->globalData(), jscObject);
+            newCallFrame->init(0, /*vPC=*/0, scn, exec, flags | ShouldRestoreCallFrame, argc, callee);
+        }
     } else {
         setContextFlags(newCallFrame, flags);
 #if ENABLE(JIT)

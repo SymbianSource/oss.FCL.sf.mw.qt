@@ -53,8 +53,7 @@
 #include "ObjectPrototype.h"
 #include "Operations.h"
 #include "Parser.h"
-// :QTP: Workaround for picking up correct Profiler.h file
-#include "profiler/Profiler.h"
+#include "Profiler.h"
 #include "RegExpObject.h"
 #include "RegExpPrototype.h"
 #include "Register.h"

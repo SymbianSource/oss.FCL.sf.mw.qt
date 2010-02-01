@@ -1,6 +1,9 @@
 QT += network \
     webkit
-HEADERS += src/BrowserWindow.h \
+HEADERS += \
+    src/autotest.h \
+    src/httpserver.h \
+    src/BrowserWindow.h \
     src/BrowserView.h \
     src/TitleBar.h \
     src/HomeView.h \
@@ -9,7 +12,10 @@ HEADERS += src/BrowserWindow.h \
     src/flickcharm.h \
     src/ZoomStrip.h \
     src/ControlStrip.h
-SOURCES += src/Main.cpp \
+SOURCES += \
+    src/autotest.cpp \
+    src/httpserver.cpp \
+    src/Main.cpp \
     src/BrowserWindow.cpp \
     src/BrowserView.cpp \
     src/TitleBar.cpp \
@@ -20,6 +26,10 @@ SOURCES += src/Main.cpp \
     src/ZoomStrip.cpp \
     src/ControlStrip.cpp
 RESOURCES += src/anomaly.qrc
+
+CONFIG += qt warn_on console depend_includepath
+
+qtAddLibrary(QtTest)
 
 symbian {
     TARGET.UID3 = 0xED83EC04

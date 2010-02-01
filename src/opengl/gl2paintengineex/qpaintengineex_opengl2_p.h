@@ -171,7 +171,6 @@ public:
             q(q_ptr),
             width(0), height(0),
             ctx(0),
-            currentBrush(0),
             inverseScale(1),
             shaderManager(0),
             inRenderText(false)
@@ -185,7 +184,7 @@ public:
     void updateCompositionMode();
     void updateTextureFilter(GLenum target, GLenum wrapMode, bool smoothPixmapTransform, GLuint id = -1);
 
-    void setBrush(const QBrush* brush);
+    void setBrush(const QBrush& brush);
 
     void transferMode(EngineMode newMode);
     void resetGLState();
@@ -195,18 +194,18 @@ public:
     void drawTexture(const QGLRect& dest, const QGLRect& src, const QSize &textureSize, bool opaque, bool pattern = false);
     void drawCachedGlyphs(const QPointF &p, QFontEngineGlyphCache::Type glyphType, const QTextItemInt &ti);
 
-    void drawVertexArrays(const float *data, const QVector<int> *stops, GLenum primitive);
+    void drawVertexArrays(const float *data, int *stops, int stopCount, GLenum primitive);
     void drawVertexArrays(QGL2PEXVertexArray &vertexArray, GLenum primitive) {
-        drawVertexArrays((const float *) vertexArray.data(), &vertexArray.stops(), primitive);
+        drawVertexArrays((const float *) vertexArray.data(), vertexArray.stops(), vertexArray.stopCount(), primitive);
     }
 
         // ^ draws whatever is in the vertex array
     void composite(const QGLRect& boundingRect);
         // ^ Composites the bounding rect onto dest buffer
 
-    void fillStencilWithVertexArray(const float *data, int count, const QVector<int> *stops, const QGLRect &bounds, StencilFillMode mode);
+    void fillStencilWithVertexArray(const float *data, int count, int *stops, int stopCount, const QGLRect &bounds, StencilFillMode mode);
     void fillStencilWithVertexArray(QGL2PEXVertexArray& vertexArray, bool useWindingFill) {
-        fillStencilWithVertexArray((const float *) vertexArray.data(), 0, &vertexArray.stops(),
+        fillStencilWithVertexArray((const float *) vertexArray.data(), 0, vertexArray.stops(), vertexArray.stopCount(),
                                    vertexArray.boundingRect(),
                                    useWindingFill ? WindingFillMode : OddEvenFillMode);
     }
@@ -221,6 +220,7 @@ public:
     void restoreDepthRangeForRenderText();
 
     static QGLEngineShaderManager* shaderManagerForEngine(QGL2PaintEngineEx *engine) { return engine->d_func()->shaderManager; }
+    static QGL2PaintEngineExPrivate *getData(QGL2PaintEngineEx *engine) { return engine->d_func(); }
 
     QGL2PaintEngineEx* q;
     QGLPaintDevice* device;
@@ -243,7 +243,7 @@ public:
     QRect currentScissorBounds;
     uint maxClip;
 
-    const QBrush*    currentBrush; // May not be the state's brush!
+    QBrush currentBrush; // May not be the state's brush!
 
     GLfloat     inverseScale;
 
@@ -277,6 +277,7 @@ public:
 
     bool needsSync;
     bool inRenderText;
+    bool multisamplingAlwaysEnabled;
 
     GLfloat depthRange[2];
 
@@ -289,9 +290,10 @@ public:
     QScopedPointer<QPixmapFilter> convolutionFilter;
     QScopedPointer<QPixmapFilter> colorizeFilter;
     QScopedPointer<QPixmapFilter> blurFilter;
-    QScopedPointer<QPixmapFilter> fastBlurFilter;
     QScopedPointer<QPixmapFilter> dropShadowFilter;
-    QScopedPointer<QPixmapFilter> fastDropShadowFilter;
+
+    QSet<QVectorPath::CacheEntry *> pathCaches;
+    QVector<GLuint> unusedVBOSToClean;
 };
 
 QT_END_NAMESPACE

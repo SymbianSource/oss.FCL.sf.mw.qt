@@ -51,12 +51,12 @@ SUBDIRS += \
            qclipboard \
            qcolor \
            qcolordialog \
-           qcombobox \
+#           qcombobox \
            qcompleter \
            qcomplextext \
            qcoreapplication \
            qcryptographichash \
-           qcssparser \
+#           qcssparser \
            qdatastream \
            qdatawidgetmapper \
            qdate \
@@ -79,11 +79,11 @@ SUBDIRS += \
            qeventloop \
            qexplicitlyshareddatapointer \
            qfile \
-           qfiledialog \
-           qfiledialog2 \
+#           qfiledialog \
+#           qfiledialog2 \
            qfileinfo \
            qfilesystemwatcher \
-           qfilesystemmodel \
+#           qfilesystemmodel \
            qflags \
            qfocusevent \
            qfocusframe \
@@ -100,8 +100,8 @@ SUBDIRS += \
            qgraphicsgridlayout \
            qgraphicsitem \
            qgraphicsitemanimation \
-           qgraphicsanchorlayout \
-           qgraphicsanchorlayout1 \
+#           qgraphicsanchorlayout \
+#           qgraphicsanchorlayout1 \
            qgraphicslayout \
            qgraphicslayoutitem \
            qgraphicslinearlayout \
@@ -109,10 +109,10 @@ SUBDIRS += \
            qgraphicspixmapitem \
            qgraphicspolygonitem \
            qgraphicsproxywidget \
-           qgraphicsscene \
+#           qgraphicsscene \
 #           qgraphicssceneindex \
            qgraphicstransform \
-           qgraphicsview \
+#           qgraphicsview \
            qgraphicswidget \
            qgridlayout \
            qgroupbox \
@@ -127,8 +127,8 @@ SUBDIRS += \
            qhostaddress \
            qhostinfo \
            qhttp \
-           qhttpnetworkreply \
-           qhttpnetworkconnection \
+#           qhttpnetworkreply \
+#           qhttpnetworkconnection \
            qicon \
            qicoimageformat \
            qimage \
@@ -143,7 +143,7 @@ SUBDIRS += \
            qitemmodel \
            qitemselectionmodel \
            qitemview \
-           qkeysequence \
+#           qkeysequence \
            qlabel \
            qlayout \
            qlcdnumber \
@@ -152,9 +152,9 @@ SUBDIRS += \
            qlineedit \
            qlist \
            qlistview \
-           qlistwidget \
+#           qlistwidget \
            qlocale \
-           qmainwindow \
+#           qmainwindow \
            qmake \
            qmap \
            qmath \
@@ -171,13 +171,13 @@ SUBDIRS += \
            qmovie \
            qmutex \
            qmutexlocker \
-           qnativesocketengine \
+#           qnativesocketengine \
            qnetworkcookie \
            qnetworkcookiejar \
            qnetworkinterface \
            qnetworkproxy \
            qnetworkrequest \
-           qnetworkreply \
+#           qnetworkreply \
            qnetworkaccessmanager_and_qprogressdialog \
            qnumeric \
            qobject \
@@ -189,7 +189,7 @@ SUBDIRS += \
            qpalette \
            qparallelanimationgroup \
            qpauseanimation \
-           qpathclipper \
+#           qpathclipper \
            qpen \
            qpicture \
            qpixmap \
@@ -214,25 +214,25 @@ SUBDIRS += \
            qrect \
            qregexp \
            qregexpvalidator \
-           qregion \
+#           qregion \
            qresourceengine \
            qringbuffer \
            qscopedpointer \
            qscrollarea \
            qsemaphore \
-           qsharedpointer \
-           qsharedpointer_and_qwidget \
+#           qsharedpointer \
+#           qsharedpointer_and_qwidget \
            qsequentialanimationgroup \
            qset \
-           qsettings \
+#           qsettings \
            qshortcut \
            qsignalmapper \
            qsignalspy \
            qsize \
            qsizef \
            qslider \
-           qsocketnotifier \
-           qsocks5socketengine \
+#           qsocketnotifier \
+#           qsocks5socketengine \
            qsortfilterproxymodel \
            qsound \
            qaudiodeviceinfo \
@@ -259,9 +259,9 @@ SUBDIRS += \
            qstackedlayout \
            qstackedwidget \
            qstandarditem \
-           qstandarditemmodel \
+#           qstandarditemmodel \
            qstate \
-           qstatemachine \
+#           qstatemachine \
            qstatusbar \
            qstl \
            qstring \
@@ -274,14 +274,14 @@ SUBDIRS += \
            qstringlistmodel \
 #           qstyle \
            qstyleoption \
-           qstylesheetstyle \
+#           qstylesheetstyle \
            qsvgdevice \
            qsvggenerator \
-           qsvgrenderer \
+#           qsvgrenderer \
            qsyntaxhighlighter \
 #           qsystemtrayicon \
            qtabbar \
-           qtableview \
+#           qtableview \
            qtablewidget \
            qtabwidget \
            qtcpserver \
@@ -296,9 +296,9 @@ SUBDIRS += \
            qtextdocument \
            qtextdocumentfragment \
            qtextdocumentlayout \
-           qtextedit \
+#           qtextedit \
            qtextformat \
-           qtextlayout \
+#           qtextlayout \
            qtextlist \
            qtextobject \
            qtextscriptengine \
@@ -311,7 +311,7 @@ SUBDIRS += \
            qtimeline \
            qtimer \
            qtmd5 \
-           qtoolbar \
+#           qtoolbar \
            qtoolbox \
            qtoolbutton \
            qtooltip \
@@ -325,7 +325,7 @@ SUBDIRS += \
            qudpsocket \
            qundogroup \
            qundostack \
-           qurl \
+#           qurl \
            quuid \
            qvariant \
            qvarlengtharray \
@@ -334,7 +334,7 @@ SUBDIRS += \
            qvideosurfaceformat \
            qvectornd \
            qwaitcondition \
-           qwidget \
+#           qwidget \
            qwidgetaction \
            qwindowsurface \
            qwineventnotifier \
@@ -371,51 +371,52 @@ embedded:!wince* {
                qmultiscreen
 }
 !win32: {
-    SUBDIRS += qtextpiecetable
+#    SUBDIRS += qtextpiecetable
 }
 
 # Enable the tests specific to QtXmlPatterns. If you add a test, remember to
 # update runQtXmlPatternsTests.sh too. Remember that this file, auto.pro, is
 # not respected by some test system, they just have a script which loop over
 # the folders.
-contains(QT_CONFIG, xmlpatterns) {
-SUBDIRS += checkxmlfiles                \
-           patternistexamplefiletree    \
-           patternistexamples           \
-           patternistheaders            \
-           qabstractmessagehandler      \
-           qabstracturiresolver         \
-           qabstractxmlforwarditerator  \
-           qabstractxmlnodemodel        \
-           qabstractxmlreceiver         \
-           qapplicationargumentparser   \
-           qautoptr                     \
-           qsimplexmlnodemodel          \
-           qsourcelocation              \
-           qxmlformatter                \
-           qxmlitem                     \
-           qxmlname                     \
-           qxmlnamepool                 \
-           qxmlnodemodelindex           \
-           qxmlquery                    \
-           qxmlresultitems              \
-           qxmlschema                   \
-           qxmlschemavalidator          \
-           qxmlserializer               \
-           xmlpatterns                  \
-           xmlpatternsdiagnosticsts     \
-           xmlpatternsschema            \
-           xmlpatternsschemats          \
-           xmlpatternsvalidator         \
-           xmlpatternsview              \
-           xmlpatternsxqts              \
-           xmlpatternsxslts
 
-xmlpatternsdiagnosticsts.depends = xmlpatternsxqts
-xmlpatternsview.depends = xmlpatternsxqts
-xmlpatternsxslts.depends = xmlpatternsxqts
-xmlpatternsschemats.depends = xmlpatternsxqts
-}
+#contains(QT_CONFIG, xmlpatterns) {
+#SUBDIRS += checkxmlfiles                \
+#           patternistexamplefiletree    \
+#           patternistexamples           \
+#           patternistheaders            \
+#           qabstractmessagehandler      \
+#           qabstracturiresolver         \
+#           qabstractxmlforwarditerator  \
+#           qabstractxmlnodemodel        \
+#           qabstractxmlreceiver         \
+#           qapplicationargumentparser   \
+#           qautoptr                     \
+#           qsimplexmlnodemodel          \
+#           qsourcelocation              \
+#           qxmlformatter                \
+#           qxmlitem                     \
+#           qxmlname                     \
+#           qxmlnamepool                 \
+#           qxmlnodemodelindex           \
+#           qxmlquery                    \
+#           qxmlresultitems              \
+#           qxmlschema                   \
+#           qxmlschemavalidator          \
+#           qxmlserializer               \
+#           xmlpatterns                  \
+#           xmlpatternsdiagnosticsts     \
+#           xmlpatternsschema            \
+#           xmlpatternsschemats          \
+#           xmlpatternsvalidator         \
+#           xmlpatternsview              \
+#           xmlpatternsxqts              \
+#           xmlpatternsxslts
+
+#xmlpatternsdiagnosticsts.depends = xmlpatternsxqts
+#xmlpatternsview.depends = xmlpatternsxqts
+#xmlpatternsxslts.depends = xmlpatternsxqts
+#xmlpatternsschemats.depends = xmlpatternsxqts
+#}
 
 unix:!embedded:contains(QT_CONFIG, dbus):SUBDIRS += \
            qdbusabstractadaptor \
@@ -436,10 +437,10 @@ unix:!embedded:contains(QT_CONFIG, dbus):SUBDIRS += \
 contains(QT_CONFIG, script): SUBDIRS += \
            qscriptable \
            qscriptclass \
-           qscriptcontext \
+#           qscriptcontext \
            qscriptcontextinfo \
            qscriptengine \
-           qscriptengineagent \
+#           qscriptengineagent \
            qscriptextqobject \
            qscriptjstestsuite \
            qscriptv8testsuite \

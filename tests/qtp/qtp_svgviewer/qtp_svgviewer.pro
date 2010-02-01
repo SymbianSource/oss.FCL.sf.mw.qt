@@ -1,14 +1,19 @@
-HEADERS       = mainwindow.h \
+
+HEADERS       = autotest.h \
+                mainwindow.h \
                 svgview.h
 RESOURCES     = qtp_svgviewer.qrc
-SOURCES       = main.cpp \
+SOURCES       = autotest.cpp \
+                main.cpp \
                 mainwindow.cpp \
                 svgview.cpp
 QT           += svg xml
 
 contains(QT_CONFIG, opengl): QT += opengl
 
-CONFIG += console
+CONFIG += qt warn_on console depend_includepath
+
+qtAddLibrary(QtTest)
 
 # install
 target.path = $$[QT_INSTALL_PREFIX]/tests/qtp/qtp_svgviewer
@@ -17,15 +22,17 @@ sources.path = $$[QT_INSTALL_PREFIX]/tests/qtp/qtp_svgviewer
 INSTALLS += target sources
 
 wince*: {
-     addFiles.sources = files\*.svg
-     addFiles.path = \My Documents
-     DEPLOYMENT += addFiles
+    addFiles.sources = files\*.svg
+    addFiles.path = \My Documents
+    DEPLOYMENT += addFiles
 }
 
 symbian: {
     TARGET.UID3 = 0xED83EC0C
-     include($$QT_SOURCE_TREE/examples/symbianpkgrules.pri)
-     addFiles.sources = files\*.svg
-     addFiles.path = .
-     DEPLOYMENT += addFiles
+    TARGET.CAPABILITY="ALL -TCB"
+    include($$QT_SOURCE_TREE/examples/symbianpkgrules.pri)
+    addFiles.sources = files\*.svg
+    addFiles.path = .
+    DEPLOYMENT += addFiles
+    RSS_RULES ="group_name=\"QtTests\";" 
 }

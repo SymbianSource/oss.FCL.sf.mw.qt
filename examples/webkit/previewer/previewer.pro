@@ -15,5 +15,4 @@ INSTALLS += target sources
 symbian {
     TARGET.UID3 = 0xA000CF6F
     include($$QT_SOURCE_TREE/examples/symbianpkgrules.pri)
-	INCLUDEPATH +=tmp $$QMAKE_INCDIR_QT/QtXmlPatterns
 }

@@ -3,50 +3,13 @@
 
 #include <bldvariant.hrh>
 
-// Dependancies for more than one module
-#include <base.iby>
-#include <openenv.iby> // QtCore, QtGui, QtNetwork, QtOpenGL, QSvgIconEngine,
-#include <cone.iby> // QtGui, QtOpenGL
-#include <stdcpp.iby> // for std C++ support
-
-// QtGui dependancies
-#include <bafl.iby>
-#include <store.iby>
-#include <fntstore.iby>
-#include <ecom.iby>
-#include <fontutils.iby>
-#include <fepbase.iby>
-#include <fbserv.iby>
-#include <bitgdi.iby>
-#include <gdi.iby>
-#include <wserv.iby>
-#include <apparc.iby>
-#include <uikon.iby>
-#include <etext.iby>
-#include <emime.iby>
-#include <eikstd.iby>
-#include <mmf.iby>
-#include <avkon.iby>
-#include <commonui.iby>
-#include <platformenv.iby>
-#include <senduiservices.iby>
-#include <aknicon.iby>
-#include <aknskins.iby>
-
-// QtNetwork dependancies
-#include <esock_core.iby>
-#include <insock.iby>
-
-// QtOpenGL dependancies
-///@todo Problem here as we need libegl.dll and libglesv2.dll but they may come from a variety of places
-/// depending on the platform we're on
+/* :QTP:QTPROD-65,EPSN-7XXGGZ:Removed dependencies */
 
 #warning("qt.iby: hack - BINARY_SELECTION_ORDER really needs to be at the baseport/device level as it depends on the device type");
 BINARY_SELECTION_ORDER ARMV6,ARMV5 // hack - this really needs to be at the baseport/device level as it depends on the device type
 
-file=ABI_DIR\BUILD_DIR\QtCore.dll            SHARED_LIB_DIR\QtCore.dll       PAGED
+file=ABI_DIR\BUILD_DIR\QtCore.dll            SHARED_LIB_DIR\QtCore.dll       
 file=ABI_DIR\BUILD_DIR\QtGui.dll             SHARED_LIB_DIR\QtGui.dll        PAGED
-file=ABI_DIR\BUILD_DIR\QtOpenGL.dll          SHARED_LIB_DIR\QtOpenGL.dll     PAGED
 file=ABI_DIR\BUILD_DIR\QtOpenVG.dll          SHARED_LIB_DIR\QtOpenVG.dll     PAGED
 file=ABI_DIR\BUILD_DIR\QtSvg.dll             SHARED_LIB_DIR\QtSvg.dll        PAGED
 file=ABI_DIR\BUILD_DIR\QtSql.dll             SHARED_LIB_DIR\QtSql.dll        PAGED
@@ -58,6 +21,8 @@ file=ABI_DIR\BUILD_DIR\QtTest.dll            SHARED_LIB_DIR\QtTest.dll       PAG
 file=ABI_DIR\BUILD_DIR\QtWebKit.dll          SHARED_LIB_DIR\QtWebKit.dll     PAGED
 file=ABI_DIR\BUILD_DIR\phonon.dll            SHARED_LIB_DIR\phonon.dll       PAGED
 file=ABI_DIR\BUILD_DIR\QtMultimedia.dll      SHARED_LIB_DIR\QtMultimedia.dll PAGED
+file=ABI_DIR\BUILD_DIR\QtXmlPatterns.dll     SHARED_LIB_DIR\QtXmlPatterns.dll       PAGED
+file=ABI_DIR\BUILD_DIR\QtDeclarative.dll     SHARED_LIB_DIR\QtDeclarative.dll       PAGED
 
 // imageformats
 file=ABI_DIR\BUILD_DIR\qgif.dll              SHARED_LIB_DIR\qgif.dll         PAGED
@@ -115,3 +80,4 @@ data=\epoc32\data\z\resource\qt\plugins\graphicssystems\qvggraphicssystem.qtplug
 data=ZSYSTEM\install\qt.sis    System\Install\qt.sis
 
 #endif // __QT_IBY__
+

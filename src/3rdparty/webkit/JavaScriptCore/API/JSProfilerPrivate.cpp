@@ -28,8 +28,7 @@
 
 #include "APICast.h"
 #include "OpaqueJSString.h"
-// QTPROD-235: pick up proper Profiler.h file
-#include "profiler/Profiler.h"
+#include "Profiler.h"
 
 using namespace JSC;
 

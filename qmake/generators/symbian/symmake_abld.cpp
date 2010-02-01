@@ -97,15 +97,15 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
         t << "# ==============================================================================" << "\n" << endl;
 
         t << endl << endl;
-        
+
         t << "MAKE = make" << endl;
         t << endl;
-        
+
         t << "VISUAL_CFG = RELEASE" << endl;
-        t << "ifeq \"$(CFG)\" \"UDEB\"" << endl;        
-        t << "VISUAL_CFG = DEBUG" << endl;        
-        t << "endif" << endl;           
-        t << endl;        
+        t << "ifeq \"$(CFG)\" \"UDEB\"" << endl;
+        t << "VISUAL_CFG = DEBUG" << endl;
+        t << "endif" << endl;
+        t << endl;
 
         t << DO_NOTHING_TARGET " :" << endl;
         t << "\t" << "@rem " DO_NOTHING_TARGET << endl << endl;
@@ -154,10 +154,44 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
         t << "CLEAN: " << cleanDeps << endl;
         t << "endif" << endl << endl;
         t << "CLEANLIB: " DO_NOTHING_TARGET << endl << endl;
-        t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
+
+        QStringList qmFileNames;
+        QString translationFilename = project->first("TRANSLATIONS");
+        if (!project->values("SYMBIANTRANSLATIONS").isEmpty() && !translationFilename.isEmpty()) {
+            QStringList symbianTranslations = project->values("SYMBIANTRANSLATIONS");
+            QString symbianTrPath = project->first("SYMBIANTRANSLATIONDIR");
+            t << "RESOURCE: create_qm" << endl << endl;
+            t << "create_qm : " << endl;
+            foreach (const QString &symbianTrans, symbianTranslations) {
+                QString translationTsFilename(translationFilename);
+                translationTsFilename.chop(3);
+                translationTsFilename.insert(0,symbianTrPath);
+                translationTsFilename.append(QString::fromLatin1("_"));
+                translationTsFilename.append(symbianTrans);
+                QString translationQmFilename(translationTsFilename);
+                translationTsFilename.append(QString::fromLatin1(".ts"));
+                translationQmFilename.append(QString::fromLatin1(".qm"));
+                t << "\t$(EPOCROOT)epoc32\\tools\\qt\\lrelease -silent -idbased " << translationTsFilename << " -qm " << translationQmFilename << endl;
+                // qmFileNames are needed in RELEASABLES: part
+                qmFileNames.append(translationQmFilename);
+            }
+            t << endl;
+        } else {
+            t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
+        }
         t << "FREEZE: " DO_NOTHING_TARGET << endl << endl;
         t << "SAVESPACE: " DO_NOTHING_TARGET << endl << endl;
-        t << "RELEASABLES: " DO_NOTHING_TARGET << endl << endl;
+
+        if (!project->values("SYMBIANTRANSLATIONS").isEmpty() && !qmFileNames.isEmpty()) {
+            t << "RELEASABLES: list_qm" << endl << endl;
+            t << "list_qm : " << endl;
+            foreach (const QString &qmFilename, qmFileNames) {
+                t << "\t@echo " << qmFilename << endl;
+            }
+            t << endl;
+        } else {
+            t << "RELEASABLES: " DO_NOTHING_TARGET << endl << endl;
+        }
         t << "ifeq \"$(PLATFORM)\" \"WINSCW\"" << endl;
         t << "FINAL: " << finalDepsWinscw << endl;
         t << "else" << endl;
@@ -167,9 +201,9 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
         QString makefile(Option::fixPathToTargetOS(fileInfo(wrapperFileName).canonicalFilePath()));
         foreach(QString target, wrapperTargets) {
             t << target << " : " << makefile << endl;
-            t << "\t-$(MAKE) -f \"" << makefile << "\" " << target << " QT_SIS_TARGET=$(VISUAL_CFG)-$(PLATFORM)" << endl << endl;                    
-        }     
-        
+            t << "\t-$(MAKE) -f \"" << makefile << "\" " << target << " QT_SIS_TARGET=$(VISUAL_CFG)-$(PLATFORM)" << endl << endl;
+        }
+
         t << endl;
     } // if(ft.open(QIODevice::WriteOnly))
 }
@@ -394,14 +428,15 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
     // Create execution target
     if (debugPlatforms.contains("winscw") && targetType == TypeExe) {
         t << "run:" << endl;
-        t << "\t-call " << epocRoot() << "epoc32\\release\\winscw\\udeb\\" << removePathSeparators(escapeFilePath(fileFixify(project->first("TARGET"))).append(".exe")) << endl << endl;
+        t << "\t-call " << epocRoot() << "epoc32\\release\\winscw\\udeb\\" << fixedTarget << ".exe" << endl << endl;
     }
 }
 
-void SymbianAbldMakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t)
+void SymbianAbldMakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t, const QString &iconTargetFile)
 {
     // We don't use extensions for anything in abld
     Q_UNUSED(t);
+    Q_UNUSED(iconTargetFile);
 }
 
 //:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
@@ -478,4 +513,18 @@ void SymbianAbldMakefileGenerator::writeBldInfMkFilePart(QTextStream& t, bool ad
         gnuMakefileName.append(".mk");
         t << "gnumakefile " << gnuMakefileName << endl;
     }
+}
+
+void SymbianAbldMakefileGenerator::appendAbldTempDirs(QStringList& sysincspaths, QString includepath)
+{
+    // As a workaround for Symbian toolchain insistence to treat include
+    // statements as relative to source file rather than the file they appear in,
+    // we generate extra temporary include directories to make
+    // relative include paths used in various headers to work properly.
+    // Note that this is not a fix-all solution; it's just a stop-gap measure
+    // to make Qt itself build until toolchain can support relative includes in
+    // a way that Qt expects.
+    QString epocPath("epoc32");
+    if (!includepath.contains(epocPath)) // No temp dirs for epoc includes
+        appendIfnotExist(sysincspaths, includepath + QString("/" QT_EXTRA_INCLUDE_DIR));
 }

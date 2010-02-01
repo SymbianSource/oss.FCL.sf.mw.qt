@@ -243,9 +243,15 @@ exists($${EPOCROOT}epoc32/include/platform_paths.prf) {
         defineReplace(CORE_OS_LAYER_IBY_EXPORT_PATH) {
             return(/epoc32/rom/include/core/os/$$1)
         }
+        defineReplace(CORE_TOOLS_LAYER_IBY_EXPORT_PATH) {
+            return(/epoc32/rom/include/core/tools/$$1)
+        }
         defineReplace(CORE_ADAPT_LAYER_IBY_EXPORT_PATH) {
             return(/epoc32/rom/include/$$1)
         }
+        defineReplace(CUSTOMER_VARIANT_APP_LAYER_IBY_EXPORT_PATH) {
+            return(/epoc32/rom/include/customervariant/app/$$1)
+        } 
         
         # You need to define the following in pro-file, if you are using the stllib:
         # QMAKE_CXXFLAGS.CW *= $$STLLIB_USAGE_CW_FLAGS
@@ -458,6 +464,12 @@ exists($${EPOCROOT}epoc32/include/platform_paths.prf) {
         defineReplace(CORE_ADAPT_LAYER_IBY_EXPORT_PATH) {
             return(/epoc32/rom/include/$$1)
         }
+        defineReplace(CORE_TOOLS_LAYER_IBY_EXPORT_PATH) {
+            return(/epoc32/rom/include/core/tools/$$1)
+        }
+        defineReplace(CUSTOMER_VARIANT_APP_LAYER_IBY_EXPORT_PATH) {
+            return(/epoc32/rom/include/customervariant/app/$$1)
+        } 
         
         # You need to define the following in pro-file, if you are using the stllib:
         # QMAKE_CXXFLAGS.CW *= $$STLLIB_USAGE_CW_FLAGS

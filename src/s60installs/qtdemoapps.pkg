@@ -1,0 +1,59 @@
+; Language
+&EN
+
+; SIS header: name, uid, version
+#{"Qtdemo"},(0xE001E61C),4,6,0,TYPE=SA
+ 
+; Localised Vendor name
+%{"Nokia, Qt"}
+ 
+; Unique Vendor name
+:"Nokia, Qt"
+
+"/epoc32/release/armv5/urel/star.exe"    - "!:\sys\bin\star.exe"
+"/epoc32/data/z/resource/apps/star.rsc"    - "!:\resource\apps\star.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/star_reg.rsc"   - "!:\private\10003a3f\import\apps\star_reg.rsc"
+
+"/epoc32/release/armv5/urel/wiggly.exe"    - "!:\sys\bin\wiggly.exe"
+"/epoc32/data/z/resource/apps/wiggly.rsc"    - "!:\resource\apps\wiggly.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/wiggly_reg.rsc"   - "!:\private\10003a3f\import\apps\wiggly_reg.rsc"
+
+"/epoc32/release/armv5/urel/animatedtiles.exe"    - "!:\sys\bin\animatedtiles.exe"
+"/epoc32/data/z/resource/apps/animatedtiles.rsc"    - "!:\resource\apps\animatedtiles.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/animatedtiles_reg.rsc"   - "!:\private\10003a3f\import\apps\animatedtiles_reg.rsc"
+
+"/epoc32/release/armv5/urel/collidingmice.exe"    - "!:\sys\bin\collidingmice.exe"
+"/epoc32/data/z/resource/apps/collidingmice.rsc"    - "!:\resource\apps\collidingmice.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/collidingmice_reg.rsc"   - "!:\private\10003a3f\import\apps\collidingmice_reg.rsc"
+
+"/epoc32/release/armv5/urel/addressbook.exe"    - "!:\sys\bin\addressbook.exe"
+"/epoc32/data/z/resource/apps/addressbook.rsc"    - "!:\resource\apps\addressbook.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/addressbook_reg.rsc"   - "!:\private\10003a3f\import\apps\addressbook_reg.rsc"
+
+"/epoc32/release/armv5/urel/svgviewer.exe"    - "!:\sys\bin\svgviewer.exe"
+"/epoc32/data/z/resource/apps/svgviewer.rsc"    - "!:\resource\apps\svgviewer.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/svgviewer_reg.rsc"   - "!:\private\10003a3f\import\apps\svgviewer_reg.rsc"
+
+"/epoc32/release/armv5/urel/analogclock.exe"    - "!:\sys\bin\analogclock.exe"
+"/epoc32/data/z/resource/apps/analogclock.rsc"    - "!:\resource\apps\analogclock.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/analogclock_reg.rsc"   - "!:\private\10003a3f\import\apps\analogclock_reg.rsc"
+
+"/epoc32/release/armv5/urel/imagegestures.exe"    - "!:\sys\bin\imagegestures.exe"
+"/epoc32/data/z/resource/apps/imagegestures.rsc"    - "!:\resource\apps\imagegestures.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/imagegestures_reg.rsc"   - "!:\private\10003a3f\import\apps\imagegestures_reg.rsc"
+
+"/epoc32/release/armv5/urel/qftp.exe"    - "!:\sys\bin\qftp.exe"
+"/epoc32/data/z/resource/apps/qftp.rsc"    - "!:\resource\apps\qftp.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/qftp_reg.rsc"   - "!:\private\10003a3f\import\apps\qftp_reg.rsc"
+
+"/epoc32/release/armv5/urel/masterdetail.exe"    - "!:\sys\bin\masterdetail.exe"
+"/epoc32/data/z/resource/apps/masterdetail.rsc"    - "!:\resource\apps\masterdetail.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/masterdetail_reg.rsc"   - "!:\private\10003a3f\import\apps\masterdetail_reg.rsc"
+
+"/epoc32/release/armv5/urel/previewer.exe"    - "!:\sys\bin\previewer.exe"
+"/epoc32/data/z/resource/apps/previewer.rsc"    - "!:\resource\apps\previewer.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/previewer_reg.rsc"   - "!:\private\10003a3f\import\apps\previewer_reg.rsc"
+
+"/epoc32/release/armv5/urel/anomaly.exe"    - "!:\sys\bin\anomaly.exe"
+"/epoc32/data/z/resource/apps/anomaly.rsc"    - "!:\resource\apps\anomaly.rsc"
+"/epoc32/data/Z/private/10003a3f/import/Apps/anomaly_reg.rsc"   - "!:\private\10003a3f\import\apps\anomaly_reg.rsc"

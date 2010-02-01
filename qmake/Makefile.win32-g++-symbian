@@ -15,7 +15,7 @@ LOCAL_EPOC_ROOT:=$(subst //,/,$(subst \,/,$(EPOCROOT))/)
 #
 LD		= $(LOCAL_EPOC_ROOT)epoc32/gcc_mingw/bin/g++
 CXX		= $(LOCAL_EPOC_ROOT)epoc32/gcc_mingw/bin/g++
-CFLAGS		=	-c -o$@	 \
+CFLAGS		=	-c -o$@	-O2 \
 		-I. -Igenerators -Igenerators/unix \
 		-Igenerators/win32 -Igenerators/mac \
 		-Igenerators/symbian \

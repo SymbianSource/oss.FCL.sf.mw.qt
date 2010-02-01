@@ -2,8 +2,6 @@ TEMPLATE      = subdirs
 SUBDIRS       = mandelbrot \
                 semaphores \
                 waitconditions
-                
-symbian: SUBDIRS += queuedcustomtype
 
 # install
 target.path = $$[QT_INSTALL_EXAMPLES]/threads

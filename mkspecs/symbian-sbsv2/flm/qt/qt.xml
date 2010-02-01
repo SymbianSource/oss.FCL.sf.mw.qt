@@ -22,7 +22,13 @@
         <param name='DEPS' default = '' />
         <param name='COMMAND' default = '' />
 	</interface>
-    
+
+    <interface name="qt.ts2qm" extends="Symbian.UserFLM"
+                flm="ts2qm.flm">
+        <param name='TSFILE' />
+        <param name='QMFILE' />
+    </interface>
+
     <interface name="qt.qmake_emulator_deployment" extends="Symbian.UserFLM"
                 flm="qmake_emulator_deployment.flm">
         <param name='DEPLOY_SOURCE' />
@@ -35,11 +41,6 @@
         <param name='LINK_TARGET' />
     </interface>
 
-    <interface name="qt.qmake_generate_temp_dirs" extends="Symbian.UserFLM"
-                flm="qmake_generate_temp_dirs.flm">
-        <param name='DIRS' />
-    </interface>
-    
     <interface name="qt.qmake_store_build" extends="Symbian.UserFLM"
                 flm="qmake_store_build.flm">
     </interface>    

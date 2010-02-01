@@ -33,8 +33,7 @@
 #include "JSFunction.h"
 #include "Interpreter.h"
 #include "Profile.h"
-// QTPROD-235: pick up proper Profiler.h file
-#include "profiler/Profiler.h"
+#include "Profiler.h"
 #include "Tracing.h"
 
 namespace JSC {

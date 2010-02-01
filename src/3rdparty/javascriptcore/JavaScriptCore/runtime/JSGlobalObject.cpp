@@ -59,8 +59,7 @@
 #include "NumberPrototype.h"
 #include "ObjectConstructor.h"
 #include "ObjectPrototype.h"
-// :QTP: Workaround for picking up correct Profiler.h file
-#include "profiler/Profiler.h"
+#include "Profiler.h"
 #include "PrototypeFunction.h"
 #include "RegExpConstructor.h"
 #include "RegExpMatchesArray.h"

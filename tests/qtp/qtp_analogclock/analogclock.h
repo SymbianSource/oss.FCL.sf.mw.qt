@@ -54,6 +54,9 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *event);
+    
+public:
+    int counter;	
 };
 //! [0]
 

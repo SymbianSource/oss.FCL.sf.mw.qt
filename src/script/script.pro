@@ -1,7 +1,7 @@
 TARGET     = QtScript
 QPRO_PWD   = $$PWD
 QT         = core
-DEFINES   += JSC=QTJSC jscyyparse=qtjscyyparse jscyylex=qtjscyylex jscyyerror=qtjscyyerror
+DEFINES   += JSC=QTJSC jscyyparse=qtjscyyparse jscyylex=qtjscyylex jscyyerror=qtjscyyerror WTF=QTWTF
 DEFINES   += QT_BUILD_SCRIPT_LIB
 DEFINES   += QT_NO_USING_NAMESPACE
 DEFINES   += QLALR_NO_QSCRIPTGRAMMAR_DEBUG_INFO
@@ -75,3 +75,10 @@ INCLUDEPATH += $$PWD
 include(script.pri)
 
 symbian:TARGET.UID3=0x2001B2E1
+
+# :QTP:Fix header file clashes
+symbian: {
+    MMP_RULES += "USERINCLUDE ../3rdparty/javascriptcore/JavaScriptCore/profiler"
+}
+
+

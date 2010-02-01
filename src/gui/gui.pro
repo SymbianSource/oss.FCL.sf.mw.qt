@@ -40,7 +40,12 @@ include(statemachine/statemachine.pri)
 include(math3d/math3d.pri)
 include(effects/effects.pri)
 
-contains(QT_CONFIG, egl): include(egl/egl.pri)
+# :QTP:We can always include against egl on symbian, it works even when EGL/OpenVG is not supported
+symbian {
+    include(egl/egl.pri)
+} else {
+    contains(QT_CONFIG, egl): include(egl/egl.pri)
+}
 
 embedded: QT += network
 
@@ -54,4 +59,4 @@ DEFINES += Q_INTERNAL_QAPP_SRC
 symbian:TARGET.UID3=0x2001B2DD
 
 # ro-section in gui can exceed default allocated space, so more rw-section little further
-symbian-sbsv2: MMP_RULES += "LINKEROPTION  armcc --rw-base 0x800000"
+symbian-sbsv2: QMAKE_LFLAGS.ARMCC += --rw-base 0x800000"

@@ -36,4 +36,7 @@ symbian: {
     MMP_RULES -= PAGED
     MMP_RULES *= UNPAGED
     LIBS += -lflogger
+
+    #QTP:add log of the warning message directly to the file. It is disabled by default
+    #DEFINES += QT_WARNING_FILE_OUTPUT
 }

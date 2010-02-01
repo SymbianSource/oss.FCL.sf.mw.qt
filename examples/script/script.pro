@@ -4,7 +4,7 @@ SUBDIRS = helloscript context2d defaultprototypes customclass
 !wince*:SUBDIRS += qscript marshal
 !wince*:!cross_compile:SUBDIRS += calculator qstetrix
 
-symbian: SUBDIRS = context2d defaultprototypes
+symbian: SUBDIRS = context2d
 
 # install
 target.path = $$[QT_INSTALL_EXAMPLES]/script

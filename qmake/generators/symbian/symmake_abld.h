@@ -51,13 +51,15 @@ class SymbianAbldMakefileGenerator : public SymbianMakefileGenerator
 protected:
 
     // Inherited from parent
-    virtual void writeBldInfExtensionRulesPart(QTextStream& t);
+    virtual void writeBldInfExtensionRulesPart(QTextStream& t, const QString &iconTargetFile);
     virtual void writeBldInfMkFilePart(QTextStream& t, bool addDeploymentExtension);
     virtual void writeMkFile(const QString& wrapperFileName, bool deploymentOnly);
     virtual void writeWrapperMakefile(QFile& wrapperFile, bool isPrimaryMakefile);
+    virtual void appendAbldTempDirs(QStringList& sysincspaths, QString includepath);
 
     void writeStoreBuildTarget(QTextStream &t);
-//:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
+
+    //:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
     bool writeDeploymentTargets(QTextStream &t, bool isRelease = false);
 
 public:

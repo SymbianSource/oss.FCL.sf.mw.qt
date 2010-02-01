@@ -40,22 +40,10 @@
 ****************************************************************************/
 
 #include <QApplication>
-
+#include <QtGui>
+#include <QtTest>
 #include "dialog.h"
+#include "autotest.h"
 
-int main(int argc, char *argv[])
-{
-    QApplication app(argc, argv);
-    bool smallScreen = false;
-    for (int i=0; i<argc; i++)
-        if (QString(argv[i]) == "-small-screen")
-            smallScreen = true;
-    Dialog dialog(0,smallScreen);
-    if (!smallScreen){
-        dialog.show();
-    }
-    else{
-        dialog.showFullScreen();
-    }
-    return app.exec();
-}
+
+QTEST_MAIN(autoTest)

@@ -1,6 +1,9 @@
 TEMPLATE      = subdirs
 
 SUBDIRS             =   drilldown
+
+symbian: SUBDIRS   +=  masterdetail
+
 !symbian: SUBDIRS   +=  cachedtable \
                         relationaltablemodel \
                         sqlwidgetmapper
@@ -9,8 +12,6 @@ SUBDIRS             =   drilldown
                         querymodel \
                         tablemodel \
                         masterdetail
-
-symbian: SUBDIRS   +=  masterdetail
 
 # install
 sources.files = connection.h sql.pro README

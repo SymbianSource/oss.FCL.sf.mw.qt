@@ -1,241 +1,142 @@
 EXPORTS
 	?size@QVGPixmapData@@QBE?AVQSize@@XZ @ 1 NONAME ; class QSize QVGPixmapData::size(void) const
-	??0QVGEGLWindowSurfaceQImage@@QAE@PAVQWindowSurface@@@Z @ 2 NONAME ; QVGEGLWindowSurfaceQImage::QVGEGLWindowSurfaceQImage(class QWindowSurface *)
-	?beginEditBlock@QTextDocumentPrivate@@QAEXXZ @ 3 NONAME ; void QTextDocumentPrivate::beginEditBlock(void)
-	?redo@QTextDocumentPrivate@@QAEXXZ @ 4 NONAME ; void QTextDocumentPrivate::redo(void)
-	?addCursor@QTextDocumentPrivate@@QAEXPAVQTextCursorPrivate@@@Z @ 5 NONAME ; void QTextDocumentPrivate::addCursor(class QTextCursorPrivate *)
-	?isUndoRedoEnabled@QTextDocumentPrivate@@QBE_NXZ @ 6 NONAME ; bool QTextDocumentPrivate::isUndoRedoEnabled(void) const
-	?qt_metacall@QVGPixmapConvolutionFilter@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 7 NONAME ; int QVGPixmapConvolutionFilter::qt_metacall(enum QMetaObject::Call, int, void * *)
-	??_EQVGPixmapColorizeFilter@@UAE@I@Z @ 8 NONAME ; QVGPixmapColorizeFilter::~QVGPixmapColorizeFilter(unsigned int)
-	?staticMetaObject@QVGPixmapDropShadowFilter@@2UQMetaObject@@B @ 9 NONAME ; struct QMetaObject const QVGPixmapDropShadowFilter::staticMetaObject
-	?setDefaultFont@QTextDocumentPrivate@@QAEXABVQFont@@@Z @ 10 NONAME ; void QTextDocumentPrivate::setDefaultFont(class QFont const &)
-	??1QVGPixmapDropShadowFilter@@UAE@XZ @ 11 NONAME ; QVGPixmapDropShadowFilter::~QVGPixmapDropShadowFilter(void)
-	?trUtf8@QVGPixmapDropShadowFilter@@SA?AVQString@@PBD0@Z @ 12 NONAME ; class QString QVGPixmapDropShadowFilter::trUtf8(char const *, char const *)
-	?trUtf8@QVGPixmapConvolutionFilter@@SA?AVQString@@PBD0@Z @ 13 NONAME ; class QString QVGPixmapConvolutionFilter::trUtf8(char const *, char const *)
-	?drawEllipse@QVGPaintEngine@@UAEXABVQRect@@@Z @ 14 NONAME ; void QVGPaintEngine::drawEllipse(class QRect const &)
-	?getStaticMetaObject@QVGPixmapColorizeFilter@@SAABUQMetaObject@@XZ @ 15 NONAME ; struct QMetaObject const & QVGPixmapColorizeFilter::getStaticMetaObject(void)
-	?staticMetaObject@QVGPixmapConvolutionFilter@@2UQMetaObject@@B @ 16 NONAME ; struct QMetaObject const QVGPixmapConvolutionFilter::staticMetaObject
-	?trUtf8@QVGPixmapBlurFilter@@SA?AVQString@@PBD0@Z @ 17 NONAME ; class QString QVGPixmapBlurFilter::trUtf8(char const *, char const *)
-	?setState@QVGPaintEngine@@UAEXPAVQPainterState@@@Z @ 18 NONAME ; void QVGPaintEngine::setState(class QPainterState *)
-	?penChanged@QVGPaintEngine@@UAEXXZ @ 19 NONAME ; void QVGPaintEngine::penChanged(void)
-	??1QVGPixmapColorizeFilter@@UAE@XZ @ 20 NONAME ; QVGPixmapColorizeFilter::~QVGPixmapColorizeFilter(void)
-	?defaultClipRegion@QVGPaintEngine@@AAE?AVQRegion@@XZ @ 21 NONAME ; class QRegion QVGPaintEngine::defaultClipRegion(void)
-	?removeCursor@QTextDocumentPrivate@@QAEXPAVQTextCursorPrivate@@@Z @ 22 NONAME ; void QTextDocumentPrivate::removeCursor(class QTextCursorPrivate *)
-	??_EQVGPixmapDropShadowFilter@@UAE@I@Z @ 23 NONAME ; QVGPixmapDropShadowFilter::~QVGPixmapDropShadowFilter(unsigned int)
-	??0QVGEGLWindowSurfaceVGImage@@QAE@PAVQWindowSurface@@@Z @ 24 NONAME ; QVGEGLWindowSurfaceVGImage::QVGEGLWindowSurfaceVGImage(class QWindowSurface *)
-	?paintEngine@QVGPixmapData@@UBEPAVQPaintEngine@@XZ @ 25 NONAME ; class QPaintEngine * QVGPixmapData::paintEngine(void) const
-	?isRedoAvailable@QTextDocumentPrivate@@QBE_NXZ @ 26 NONAME ; bool QTextDocumentPrivate::isRedoAvailable(void) const
-	??1QVGEGLWindowSurfaceQImage@@UAE@XZ @ 27 NONAME ; QVGEGLWindowSurfaceQImage::~QVGEGLWindowSurfaceQImage(void)
-	?drawRoundedRect@QVGPaintEngine@@UAEXABVQRectF@@MMW4SizeMode@Qt@@@Z @ 28 NONAME ; void QVGPaintEngine::drawRoundedRect(class QRectF const &, float, float, enum Qt::SizeMode)
-	?qt_vg_image_to_vg_format@@YA?AW4VGImageFormat@@W4Format@QImage@@@Z @ 29 NONAME ; enum VGImageFormat qt_vg_image_to_vg_format(enum QImage::Format)
-	?surfaceImage@QVGEGLWindowSurfacePrivate@@UBEKXZ @ 30 NONAME ; unsigned long QVGEGLWindowSurfacePrivate::surfaceImage(void) const
-	?staticMetaObject@QVGPixmapColorizeFilter@@2UQMetaObject@@B @ 31 NONAME ; struct QMetaObject const QVGPixmapColorizeFilter::staticMetaObject
-	?state@QVGPaintEngine@@QBEPBVQVGPainterState@@XZ @ 32 NONAME ; class QVGPainterState const * QVGPaintEngine::state(void) const
-	?begin@QTextDocumentPrivate@@QBE?AVConstIterator@?$QFragmentMap@VQTextFragmentData@@@@XZ @ 33 NONAME ; class QFragmentMap<class QTextFragmentData>::ConstIterator QTextDocumentPrivate::begin(void) const
-	??_EQVGEGLWindowSurfaceDirect@@UAE@I@Z @ 34 NONAME ; QVGEGLWindowSurfaceDirect::~QVGEGLWindowSurfaceDirect(unsigned int)
-	?updateScissor@QVGPaintEngine@@AAEXXZ @ 35 NONAME ; void QVGPaintEngine::updateScissor(void)
-	?trUtf8@QVGPixmapColorizeFilter@@SA?AVQString@@PBD0@Z @ 36 NONAME ; class QString QVGPixmapColorizeFilter::trUtf8(char const *, char const *)
-	??_EQVGCompositionHelper@@UAE@I@Z @ 37 NONAME ; QVGCompositionHelper::~QVGCompositionHelper(unsigned int)
-	?metaObject@QVGPixmapColorizeFilter@@UBEPBUQMetaObject@@XZ @ 38 NONAME ; struct QMetaObject const * QVGPixmapColorizeFilter::metaObject(void) const
-	?fill@QVGPixmapData@@UAEXABVQColor@@@Z @ 39 NONAME ; void QVGPixmapData::fill(class QColor const &)
-	?tr@QVGPixmapDropShadowFilter@@SA?AVQString@@PBD0@Z @ 40 NONAME ; class QString QVGPixmapDropShadowFilter::tr(char const *, char const *)
-	?document@QTextDocumentPrivate@@QAEPAVQTextDocument@@XZ @ 41 NONAME ; class QTextDocument * QTextDocumentPrivate::document(void)
-	?toImage@QVGPixmapData@@UBE?AVQImage@@XZ @ 42 NONAME ; class QImage QVGPixmapData::toImage(void) const
-	??0QVGPixmapBlurFilter@@QAE@PAVQObject@@@Z @ 43 NONAME ; QVGPixmapBlurFilter::QVGPixmapBlurFilter(class QObject *)
-	?renderHintsChanged@QVGPaintEngine@@UAEXXZ @ 44 NONAME ; void QVGPaintEngine::renderHintsChanged(void)
-	?clearRect@QVGPaintEngine@@AAE_NABVQRectF@@ABVQColor@@@Z @ 45 NONAME ; bool QVGPaintEngine::clearRect(class QRectF const &, class QColor const &)
-	??0QVGPixmapDropShadowFilter@@QAE@XZ @ 46 NONAME ; QVGPixmapDropShadowFilter::QVGPixmapDropShadowFilter(void)
-	?height@QScriptItem@@QBE?AUQFixed@@XZ @ 47 NONAME ; struct QFixed QScriptItem::height(void) const
-	?staticMetaObject@QVGPixmapBlurFilter@@2UQMetaObject@@B @ 48 NONAME ; struct QMetaObject const QVGPixmapBlurFilter::staticMetaObject
-	??1QVGEGLWindowSurfaceVGImage@@UAE@XZ @ 49 NONAME ; QVGEGLWindowSurfaceVGImage::~QVGEGLWindowSurfaceVGImage(void)
-	?state@QVGPaintEngine@@QAEPAVQVGPainterState@@XZ @ 50 NONAME ; class QVGPainterState * QVGPaintEngine::state(void)
-	?qt_metacall@QVGPixmapBlurFilter@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 51 NONAME ; int QVGPixmapBlurFilter::qt_metacall(enum QMetaObject::Call, int, void * *)
-	?draw@QVGPixmapBlurFilter@@UBEXPAVQPainter@@ABVQPointF@@ABVQPixmap@@ABVQRectF@@@Z @ 52 NONAME ; void QVGPixmapBlurFilter::draw(class QPainter *, class QPointF const &, class QPixmap const &, class QRectF const &) const
-	?tr@QVGPixmapBlurFilter@@SA?AVQString@@PBD0@Z @ 53 NONAME ; class QString QVGPixmapBlurFilter::tr(char const *, char const *)
-	?qt_metacast@QVGPixmapDropShadowFilter@@UAEPAXPBD@Z @ 54 NONAME ; void * QVGPixmapDropShadowFilter::qt_metacast(char const *)
-	??0QVGPaintEngine@@IAE@AAVQVGPaintEnginePrivate@@@Z @ 55 NONAME ; QVGPaintEngine::QVGPaintEngine(class QVGPaintEnginePrivate &)
-	?tr@QVGPixmapConvolutionFilter@@SA?AVQString@@PBD0H@Z @ 56 NONAME ; class QString QVGPixmapConvolutionFilter::tr(char const *, char const *, int)
-	?ensureContext@QVGEGLWindowSurfaceVGImage@@UAEPAVQEglContext@@PAVQWidget@@@Z @ 57 NONAME ; class QEglContext * QVGEGLWindowSurfaceVGImage::ensureContext(class QWidget *)
-	??0QScriptItem@@QAE@XZ @ 58 NONAME ; QScriptItem::QScriptItem(void)
-	??0QVGCompositionHelper@@QAE@XZ @ 59 NONAME ; QVGCompositionHelper::QVGCompositionHelper(void)
-	?create@QVGEGLWindowSurfacePrivate@@SAPAV1@W4SurfaceType@1@PAVQWindowSurface@@@Z @ 60 NONAME ; class QVGEGLWindowSurfacePrivate * QVGEGLWindowSurfacePrivate::create(enum QVGEGLWindowSurfacePrivate::SurfaceType, class QWindowSurface *)
-	?clipEnabledChanged@QVGPaintEngine@@UAEXXZ @ 61 NONAME ; void QVGPaintEngine::clipEnabledChanged(void)
-	?beginNativePainting@QVGPaintEngine@@UAEXXZ @ 62 NONAME ; void QVGPaintEngine::beginNativePainting(void)
-	?metric@QVGPixmapData@@MBEHW4PaintDeviceMetric@QPaintDevice@@@Z @ 63 NONAME ; int QVGPixmapData::metric(enum QPaintDevice::PaintDeviceMetric) const
-	?drawRects@QVGPaintEngine@@UAEXPBVQRect@@H@Z @ 64 NONAME ; void QVGPaintEngine::drawRects(class QRect const *, int)
-	?draw@QVGPaintEngine@@UAEXABVQVectorPath@@@Z @ 65 NONAME ; void QVGPaintEngine::draw(class QVectorPath const &)
-	?formatCollection@QTextDocumentPrivate@@QBEPBVQTextFormatCollection@@XZ @ 66 NONAME ; class QTextFormatCollection const * QTextDocumentPrivate::formatCollection(void) const
-	??0QVGPixmapData@@QAE@W4PixelType@QPixmapData@@@Z @ 67 NONAME ; QVGPixmapData::QVGPixmapData(enum QPixmapData::PixelType)
-	??0QVGWindowSurface@@QAE@PAVQWidget@@PAVQVGEGLWindowSurfacePrivate@@@Z @ 68 NONAME ; QVGWindowSurface::QVGWindowSurface(class QWidget *, class QVGEGLWindowSurfacePrivate *)
-	?fillBackground@QVGCompositionHelper@@QAEXABVQRegion@@ABVQBrush@@@Z @ 69 NONAME ; void QVGCompositionHelper::fillBackground(class QRegion const &, class QBrush const &)
-	?drawLines@QVGPaintEngine@@UAEXPBVQLine@@H@Z @ 70 NONAME ; void QVGPaintEngine::drawLines(class QLine const *, int)
-	??_EQVGEGLWindowSurfaceQImage@@UAE@I@Z @ 71 NONAME ; QVGEGLWindowSurfaceQImage::~QVGEGLWindowSurfaceQImage(unsigned int)
-	?height@QScriptLine@@QBE?AUQFixed@@XZ @ 72 NONAME ; struct QFixed QScriptLine::height(void) const
-	?ensureContext@QVGEGLWindowSurfaceDirect@@UAEPAVQEglContext@@PAVQWidget@@@Z @ 73 NONAME ; class QEglContext * QVGEGLWindowSurfaceDirect::ensureContext(class QWidget *)
-	?blockMap@QTextDocumentPrivate@@QAEAAV?$QFragmentMap@VQTextBlockData@@@@XZ @ 74 NONAME ; class QFragmentMap<class QTextBlockData> & QTextDocumentPrivate::blockMap(void)
-	??0QVGPaintEngine@@QAE@XZ @ 75 NONAME ; QVGPaintEngine::QVGPaintEngine(void)
-	?cleanup@QVGPixmapData@@IAEXXZ @ 76 NONAME ; void QVGPixmapData::cleanup(void)
-	?drawPixmap@QVGPaintEngine@@UAEXABVQPointF@@ABVQPixmap@@@Z @ 77 NONAME ; void QVGPaintEngine::drawPixmap(class QPointF const &, class QPixmap const &)
-	?drawImage@QVGPaintEngine@@UAEXABVQRectF@@ABVQImage@@0V?$QFlags@W4ImageConversionFlag@Qt@@@@@Z @ 78 NONAME ; void QVGPaintEngine::drawImage(class QRectF const &, class QImage const &, class QRectF const &, class QFlags<enum Qt::ImageConversionFlag>)
-	??8QScriptAnalysis@@QBE_NABU0@@Z @ 79 NONAME ; bool QScriptAnalysis::operator==(struct QScriptAnalysis const &) const
-	??_EQVGPixmapConvolutionFilter@@UAE@I@Z @ 80 NONAME ; QVGPixmapConvolutionFilter::~QVGPixmapConvolutionFilter(unsigned int)
-	?isModified@QTextDocumentPrivate@@QBE_NXZ @ 81 NONAME ; bool QTextDocumentPrivate::isModified(void) const
-	?toVGImage@QVGPixmapData@@QAEKXZ @ 82 NONAME ; unsigned long QVGPixmapData::toVGImage(void)
-	?drawTiledPixmap@QVGPaintEngine@@UAEXABVQRectF@@ABVQPixmap@@ABVQPointF@@@Z @ 83 NONAME ; void QVGPaintEngine::drawTiledPixmap(class QRectF const &, class QPixmap const &, class QPointF const &)
-	?drawEllipse@QVGPaintEngine@@UAEXABVQRectF@@@Z @ 84 NONAME ; void QVGPaintEngine::drawEllipse(class QRectF const &)
-	?isUndoAvailable@QTextDocumentPrivate@@QBE_NXZ @ 85 NONAME ; bool QTextDocumentPrivate::isUndoAvailable(void) const
-	?endCompositing@QVGCompositionHelper@@QAEXXZ @ 86 NONAME ; void QVGCompositionHelper::endCompositing(void)
-	?getStaticMetaObject@QVGPixmapBlurFilter@@SAABUQMetaObject@@XZ @ 87 NONAME ; struct QMetaObject const & QVGPixmapBlurFilter::getStaticMetaObject(void)
-	??0QScriptItem@@QAE@HABUQScriptAnalysis@@@Z @ 88 NONAME ; QScriptItem::QScriptItem(int, struct QScriptAnalysis const &)
-	??0QVGPixmapColorizeFilter@@QAE@XZ @ 89 NONAME ; QVGPixmapColorizeFilter::QVGPixmapColorizeFilter(void)
-	??_EQVGEGLWindowSurfaceVGImage@@UAE@I@Z @ 90 NONAME ; QVGEGLWindowSurfaceVGImage::~QVGEGLWindowSurfaceVGImage(unsigned int)
-	?begin@QVGPaintEngine@@UAE_NPAVQPaintDevice@@@Z @ 91 NONAME ; bool QVGPaintEngine::begin(class QPaintDevice *)
-	?fillRect@QVGPaintEngine@@UAEXABVQRectF@@ABVQBrush@@@Z @ 92 NONAME ; void QVGPaintEngine::fillRect(class QRectF const &, class QBrush const &)
-	?paintEngine@QVGWindowSurface@@UBEPAVQPaintEngine@@XZ @ 93 NONAME ; class QPaintEngine * QVGWindowSurface::paintEngine(void) const
-	?metaObject@QVGPixmapBlurFilter@@UBEPBUQMetaObject@@XZ @ 94 NONAME ; struct QMetaObject const * QVGPixmapBlurFilter::metaObject(void) const
-	?drawCursorImage@QVGCompositionHelper@@QAEXABVQImage@@ABVQPoint@@@Z @ 95 NONAME ; void QVGCompositionHelper::drawCursorImage(class QImage const &, class QPoint const &)
-	?numBlocks@QTextDocumentPrivate@@QBEHXZ @ 96 NONAME ; int QTextDocumentPrivate::numBlocks(void) const
-	?fragmentMap@QTextDocumentPrivate@@QAEAAV?$QFragmentMap@VQTextFragmentData@@@@XZ @ 97 NONAME ; class QFragmentMap<class QTextFragmentData> & QTextDocumentPrivate::fragmentMap(void)
-	?toVGImage@QVGPixmapData@@QAEKM@Z @ 98 NONAME ; unsigned long QVGPixmapData::toVGImage(float)
-	?d_func@QVGPaintEngine@@ABEPBVQVGPaintEnginePrivate@@XZ @ 99 NONAME ; class QVGPaintEnginePrivate const * QVGPaintEngine::d_func(void) const
-	??0QVGPainterState@@QAE@XZ @ 100 NONAME ; QVGPainterState::QVGPainterState(void)
-	??_EQVGPixmapBlurFilter@@UAE@I@Z @ 101 NONAME ; QVGPixmapBlurFilter::~QVGPixmapBlurFilter(unsigned int)
-	?qt_vg_create_context@@YAPAVQEglContext@@PAVQPaintDevice@@@Z @ 102 NONAME ; class QEglContext * qt_vg_create_context(class QPaintDevice *)
-	??0QVGPixmapConvolutionFilter@@QAE@XZ @ 103 NONAME ; QVGPixmapConvolutionFilter::QVGPixmapConvolutionFilter(void)
-	?clip@QVGPaintEngine@@UAEXABVQRegion@@W4ClipOperation@Qt@@@Z @ 104 NONAME ; void QVGPaintEngine::clip(class QRegion const &, enum Qt::ClipOperation)
-	?tr@QVGPixmapColorizeFilter@@SA?AVQString@@PBD0@Z @ 105 NONAME ; class QString QVGPixmapColorizeFilter::tr(char const *, char const *)
-	?endNativePainting@QVGPaintEngine@@UAEXXZ @ 106 NONAME ; void QVGPaintEngine::endNativePainting(void)
-	?brushChanged@QVGPaintEngine@@UAEXXZ @ 107 NONAME ; void QVGPaintEngine::brushChanged(void)
-	?setGeometry@QVGWindowSurface@@UAEXABVQRect@@@Z @ 108 NONAME ; void QVGWindowSurface::setGeometry(class QRect const &)
-	?createCompatiblePixmapData@QVGPixmapData@@UBEPAVQPixmapData@@XZ @ 109 NONAME ; class QPixmapData * QVGPixmapData::createCompatiblePixmapData(void) const
-	?qt_metacast@QVGPixmapConvolutionFilter@@UAEPAXPBD@Z @ 110 NONAME ; void * QVGPixmapConvolutionFilter::qt_metacast(char const *)
-	?endPaint@QVGWindowSurface@@UAEXABVQRegion@@@Z @ 111 NONAME ; void QVGWindowSurface::endPaint(class QRegion const &)
-	?resize@QVGPixmapData@@UAEXHH@Z @ 112 NONAME ; void QVGPixmapData::resize(int, int)
-	?mainSurface@QVGEGLWindowSurfaceVGImage@@IBEHXZ @ 113 NONAME ; int QVGEGLWindowSurfaceVGImage::mainSurface(void) const
-	??0QVGEGLWindowSurfaceDirect@@QAE@PAVQWindowSurface@@@Z @ 114 NONAME ; QVGEGLWindowSurfaceDirect::QVGEGLWindowSurfaceDirect(class QWindowSurface *)
-	?fragmentMap@QTextDocumentPrivate@@QBEABV?$QFragmentMap@VQTextFragmentData@@@@XZ @ 115 NONAME ; class QFragmentMap<class QTextFragmentData> const & QTextDocumentPrivate::fragmentMap(void) const
-	?clip@QVGPaintEngine@@UAEXABVQRect@@W4ClipOperation@Qt@@@Z @ 116 NONAME ; void QVGPaintEngine::clip(class QRect const &, enum Qt::ClipOperation)
-	?metaObject@QVGPixmapConvolutionFilter@@UBEPBUQMetaObject@@XZ @ 117 NONAME ; struct QMetaObject const * QVGPixmapConvolutionFilter::metaObject(void) const
-	?surfaceSize@QVGEGLWindowSurfaceDirect@@UBE?AVQSize@@XZ @ 118 NONAME ; class QSize QVGEGLWindowSurfaceDirect::surfaceSize(void) const
-	?stroke@QVGPaintEngine@@UAEXABVQVectorPath@@ABVQPen@@@Z @ 119 NONAME ; void QVGPaintEngine::stroke(class QVectorPath const &, class QPen const &)
-	?sourceFormat@QVGPixmapData@@ABE?AW4Format@QImage@@XZ @ 120 NONAME ; enum QImage::Format QVGPixmapData::sourceFormat(void) const
-	?paintEngine@QVGEGLWindowSurfacePrivate@@QAEPAVQVGPaintEngine@@XZ @ 121 NONAME ; class QVGPaintEngine * QVGEGLWindowSurfacePrivate::paintEngine(void)
-	?drawPoints@QVGPaintEngine@@UAEXPBVQPointF@@H@Z @ 122 NONAME ; void QVGPaintEngine::drawPoints(class QPointF const *, int)
-	??0QVGPainterState@@QAE@AAV0@@Z @ 123 NONAME ; QVGPainterState::QVGPainterState(class QVGPainterState &)
-	?startCompositing@QVGCompositionHelper@@QAEXABVQSize@@@Z @ 124 NONAME ; void QVGCompositionHelper::startCompositing(class QSize const &)
-	?getStaticMetaObject@QVGPixmapConvolutionFilter@@SAABUQMetaObject@@XZ @ 125 NONAME ; struct QMetaObject const & QVGPixmapConvolutionFilter::getStaticMetaObject(void)
-	??1QVGEGLWindowSurfacePrivate@@UAE@XZ @ 126 NONAME ; QVGEGLWindowSurfacePrivate::~QVGEGLWindowSurfacePrivate(void)
-	?qt_vg_destroy_paint_engine@@YAXPAVQVGPaintEngine@@@Z @ 127 NONAME ; void qt_vg_destroy_paint_engine(class QVGPaintEngine *)
-	?length@QTextDocumentPrivate@@QBEHXZ @ 128 NONAME ; int QTextDocumentPrivate::length(void) const
-	?buffer@QTextDocumentPrivate@@QBE?AVQString@@XZ @ 129 NONAME ; class QString QTextDocumentPrivate::buffer(void) const
-	?compositionModeChanged@QVGPaintEngine@@UAEXXZ @ 130 NONAME ; void QVGPaintEngine::compositionModeChanged(void)
-	??1QVGPixmapConvolutionFilter@@UAE@XZ @ 131 NONAME ; QVGPixmapConvolutionFilter::~QVGPixmapConvolutionFilter(void)
-	?undo@QTextDocumentPrivate@@QAEXXZ @ 132 NONAME ; void QTextDocumentPrivate::undo(void)
-	?type@QVGPaintEngine@@UBE?AW4Type@QPaintEngine@@XZ @ 133 NONAME ; enum QPaintEngine::Type QVGPaintEngine::type(void) const
-	?qt_metacall@QVGPixmapColorizeFilter@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 134 NONAME ; int QVGPixmapColorizeFilter::qt_metacall(enum QMetaObject::Call, int, void * *)
-	?q_func@QTextDocumentPrivate@@AAEPAVQTextDocument@@XZ @ 135 NONAME ; class QTextDocument * QTextDocumentPrivate::q_func(void)
-	?getStaticMetaObject@QVGPixmapDropShadowFilter@@SAABUQMetaObject@@XZ @ 136 NONAME ; struct QMetaObject const & QVGPixmapDropShadowFilter::getStaticMetaObject(void)
-	?fillRect@QVGPaintEngine@@UAEXABVQRectF@@ABVQColor@@@Z @ 137 NONAME ; void QVGPaintEngine::fillRect(class QRectF const &, class QColor const &)
-	??0QVGEGLWindowSurfacePrivate@@QAE@PAVQWindowSurface@@@Z @ 138 NONAME ; QVGEGLWindowSurfacePrivate::QVGEGLWindowSurfacePrivate(class QWindowSurface *)
-	?blocksFind@QTextDocumentPrivate@@QBE?AVQTextBlock@@H@Z @ 139 NONAME ; class QTextBlock QTextDocumentPrivate::blocksFind(int) const
-	?drawImage@QVGPaintEngine@@UAEXABVQPointF@@ABVQImage@@@Z @ 140 NONAME ; void QVGPaintEngine::drawImage(class QPointF const &, class QImage const &)
-	?isInEditBlock@QTextDocumentPrivate@@QBE_NXZ @ 141 NONAME ; bool QTextDocumentPrivate::isInEditBlock(void) const
-	?flush@QVGWindowSurface@@UAEXPAVQWidget@@ABVQRegion@@ABVQPoint@@@Z @ 142 NONAME ; void QVGWindowSurface::flush(class QWidget *, class QRegion const &, class QPoint const &)
-	?blitWindow@QVGCompositionHelper@@QAEXPAVQVGEGLWindowSurfacePrivate@@ABVQRect@@ABVQPoint@@H@Z @ 143 NONAME ; void QVGCompositionHelper::blitWindow(class QVGEGLWindowSurfacePrivate *, class QRect const &, class QPoint const &, int)
-	?tr@QVGPixmapColorizeFilter@@SA?AVQString@@PBD0H@Z @ 144 NONAME ; class QString QVGPixmapColorizeFilter::tr(char const *, char const *, int)
-	?isValid@QVGPixmapData@@QBE_NXZ @ 145 NONAME ; bool QVGPixmapData::isValid(void) const
-	?qt_metacast@QVGPixmapColorizeFilter@@UAEPAXPBD@Z @ 146 NONAME ; void * QVGPixmapColorizeFilter::qt_metacast(char const *)
-	?beginPaint@QVGEGLWindowSurfaceVGImage@@UAEXPAVQWidget@@@Z @ 147 NONAME ; void QVGEGLWindowSurfaceVGImage::beginPaint(class QWidget *)
-	?document@QTextDocumentPrivate@@QBEPBVQTextDocument@@XZ @ 148 NONAME ; class QTextDocument const * QTextDocumentPrivate::document(void) const
-	?createState@QVGPaintEngine@@UBEPAVQPainterState@@PAV2@@Z @ 149 NONAME ; class QPainterState * QVGPaintEngine::createState(class QPainterState *) const
-	?qt_metacall@QVGPixmapDropShadowFilter@@UAEHW4Call@QMetaObject@@HPAPAX@Z @ 150 NONAME ; int QVGPixmapDropShadowFilter::qt_metacall(enum QMetaObject::Call, int, void * *)
-	?qt_vg_destroy_context@@YAXPAVQEglContext@@@Z @ 151 NONAME ; void qt_vg_destroy_context(class QEglContext *)
-	?buffer@QVGPixmapData@@UAEPAVQImage@@XZ @ 152 NONAME ; class QImage * QVGPixmapData::buffer(void)
-	?block@QTextDocumentPrivate@@SAPBVQTextBlockData@@ABVQTextBlock@@@Z @ 153 NONAME ; class QTextBlockData const * QTextDocumentPrivate::block(class QTextBlock const &)
-	?blocksEnd@QTextDocumentPrivate@@QBE?AVQTextBlock@@XZ @ 154 NONAME ; class QTextBlock QTextDocumentPrivate::blocksEnd(void) const
-	?fromImage@QVGPixmapData@@UAEXABVQImage@@V?$QFlags@W4ImageConversionFlag@Qt@@@@@Z @ 155 NONAME ; void QVGPixmapData::fromImage(class QImage const &, class QFlags<enum Qt::ImageConversionFlag>)
-	?clip@QVGPaintEngine@@UAEXABVQVectorPath@@W4ClipOperation@Qt@@@Z @ 156 NONAME ; void QVGPaintEngine::clip(class QVectorPath const &, enum Qt::ClipOperation)
-	?drawPolygon@QVGPaintEngine@@UAEXPBVQPoint@@HW4PolygonDrawMode@QPaintEngine@@@Z @ 157 NONAME ; void QVGPaintEngine::drawPolygon(class QPoint const *, int, enum QPaintEngine::PolygonDrawMode)
-	??1QVGPainterState@@UAE@XZ @ 158 NONAME ; QVGPainterState::~QVGPainterState(void)
-	?hasAlphaChannel@QVGPixmapData@@UBE_NXZ @ 159 NONAME ; bool QVGPixmapData::hasAlphaChannel(void) const
-	??1QVGPaintEngine@@UAE@XZ @ 160 NONAME ; QVGPaintEngine::~QVGPaintEngine(void)
-	?end@QTextDocumentPrivate@@QBE?AVConstIterator@?$QFragmentMap@VQTextFragmentData@@@@XZ @ 161 NONAME ; class QFragmentMap<class QTextFragmentData>::ConstIterator QTextDocumentPrivate::end(void) const
-	?tr@QVGPixmapDropShadowFilter@@SA?AVQString@@PBD0H@Z @ 162 NONAME ; class QString QVGPixmapDropShadowFilter::tr(char const *, char const *, int)
-	?qt_metacast@QVGPixmapBlurFilter@@UAEPAXPBD@Z @ 163 NONAME ; void * QVGPixmapBlurFilter::qt_metacast(char const *)
-	?endPaint@QVGEGLWindowSurfaceVGImage@@UAEXPAVQWidget@@ABVQRegion@@PAVQImage@@@Z @ 164 NONAME ; void QVGEGLWindowSurfaceVGImage::endPaint(class QWidget *, class QRegion const &, class QImage *)
-	?qt_vg_config_to_vg_format@@YA?AW4VGImageFormat@@PAVQEglContext@@@Z @ 165 NONAME ; enum VGImageFormat qt_vg_config_to_vg_format(class QEglContext *)
-	?qt_vg_config_to_image_format@@YA?AW4Format@QImage@@PAVQEglContext@@@Z @ 166 NONAME ; enum QImage::Format qt_vg_config_to_image_format(class QEglContext *)
-	?beginPaint@QVGEGLWindowSurfaceDirect@@UAEXPAVQWidget@@@Z @ 167 NONAME ; void QVGEGLWindowSurfaceDirect::beginPaint(class QWidget *)
-	?setScissor@QVGCompositionHelper@@QAEXABVQRegion@@@Z @ 168 NONAME ; void QVGCompositionHelper::setScissor(class QRegion const &)
-	?draw@QVGPixmapDropShadowFilter@@UBEXPAVQPainter@@ABVQPointF@@ABVQPixmap@@ABVQRectF@@@Z @ 169 NONAME ; void QVGPixmapDropShadowFilter::draw(class QPainter *, class QPointF const &, class QPixmap const &, class QRectF const &) const
-	?metaObject@QVGPixmapDropShadowFilter@@UBEPBUQMetaObject@@XZ @ 170 NONAME ; struct QMetaObject const * QVGPixmapDropShadowFilter::metaObject(void) const
-	?drawPath@QVGPaintEngine@@UAEXABVQPainterPath@@@Z @ 171 NONAME ; void QVGPaintEngine::drawPath(class QPainterPath const &)
-	?trUtf8@QVGPixmapBlurFilter@@SA?AVQString@@PBD0H@Z @ 172 NONAME ; class QString QVGPixmapBlurFilter::trUtf8(char const *, char const *, int)
-	?tr@QVGPixmapBlurFilter@@SA?AVQString@@PBD0H@Z @ 173 NONAME ; class QString QVGPixmapBlurFilter::tr(char const *, char const *, int)
-	?drawLines@QVGPaintEngine@@UAEXPBVQLineF@@H@Z @ 174 NONAME ; void QVGPaintEngine::drawLines(class QLineF const *, int)
-	?toNativeType@QVGPixmapData@@UAEPAXW4NativeType@QPixmapData@@@Z @ 175 NONAME ; void * QVGPixmapData::toNativeType(enum QPixmapData::NativeType)
-	?metric@QVGWindowSurface@@MBEHW4PaintDeviceMetric@QPaintDevice@@@Z @ 176 NONAME ; int QVGWindowSurface::metric(enum QPaintDevice::PaintDeviceMetric) const
-	?layout@QTextDocumentPrivate@@QBEPAVQAbstractTextDocumentLayout@@XZ @ 177 NONAME ; class QAbstractTextDocumentLayout * QTextDocumentPrivate::layout(void) const
-	??1QVGWindowSurface@@UAE@XZ @ 178 NONAME ; QVGWindowSurface::~QVGWindowSurface(void)
-	??1QVGPixmapData@@UAE@XZ @ 179 NONAME ; QVGPixmapData::~QVGPixmapData(void)
-	??1QVGEGLWindowSurfaceDirect@@UAE@XZ @ 180 NONAME ; QVGEGLWindowSurfaceDirect::~QVGEGLWindowSurfaceDirect(void)
-	?draw@QVGPixmapConvolutionFilter@@UBEXPAVQPainter@@ABVQPointF@@ABVQPixmap@@ABVQRectF@@@Z @ 181 NONAME ; void QVGPixmapConvolutionFilter::draw(class QPainter *, class QPointF const &, class QPixmap const &, class QRectF const &) const
-	??_EQVGPixmapData@@UAE@I@Z @ 182 NONAME ; QVGPixmapData::~QVGPixmapData(unsigned int)
-	?restoreState@QVGPaintEngine@@AAEXV?$QFlags@W4DirtyFlag@QPaintEngine@@@@@Z @ 183 NONAME ; void QVGPaintEngine::restoreState(class QFlags<enum QPaintEngine::DirtyFlag>)
-	??1QVGCompositionHelper@@UAE@XZ @ 184 NONAME ; QVGCompositionHelper::~QVGCompositionHelper(void)
-	??1QVGPixmapBlurFilter@@UAE@XZ @ 185 NONAME ; QVGPixmapBlurFilter::~QVGPixmapBlurFilter(void)
-	??0QVGWindowSurface@@QAE@PAVQWidget@@@Z @ 186 NONAME ; QVGWindowSurface::QVGWindowSurface(class QWidget *)
-	?isDefaultClipRegion@QVGPaintEngine@@AAE_NABVQRegion@@@Z @ 187 NONAME ; bool QVGPaintEngine::isDefaultClipRegion(class QRegion const &)
-	??0QScriptLine@@QAE@XZ @ 188 NONAME ; QScriptLine::QScriptLine(void)
-	?transformChanged@QVGPaintEngine@@UAEXXZ @ 189 NONAME ; void QVGPaintEngine::transformChanged(void)
-	?setAlphaChannel@QVGPixmapData@@UAEXABVQPixmap@@@Z @ 190 NONAME ; void QVGPixmapData::setAlphaChannel(class QPixmap const &)
-	?fromNativeType@QVGPixmapData@@UAEXPAXW4NativeType@QPixmapData@@@Z @ 191 NONAME ; void QVGPixmapData::fromNativeType(void *, enum QPixmapData::NativeType)
-	?qPixmapToVGImage@@YAKABVQPixmap@@@Z @ 192 NONAME ; unsigned long qPixmapToVGImage(class QPixmap const &)
-	??_EQVGWindowSurface@@UAE@I@Z @ 193 NONAME ; QVGWindowSurface::~QVGWindowSurface(unsigned int)
-	?tr@QVGPixmapConvolutionFilter@@SA?AVQString@@PBD0@Z @ 194 NONAME ; class QString QVGPixmapConvolutionFilter::tr(char const *, char const *)
-	?opacityChanged@QVGPaintEngine@@UAEXXZ @ 195 NONAME ; void QVGPaintEngine::opacityChanged(void)
-	?surfaceSize@QVGEGLWindowSurfaceVGImage@@UBE?AVQSize@@XZ @ 196 NONAME ; class QSize QVGEGLWindowSurfaceVGImage::surfaceSize(void) const
-	?qt_vg_create_paint_engine@@YAPAVQVGPaintEngine@@XZ @ 197 NONAME ; class QVGPaintEngine * qt_vg_create_paint_engine(void)
-	?paintDevice@QVGWindowSurface@@UAEPAVQPaintDevice@@XZ @ 198 NONAME ; class QPaintDevice * QVGWindowSurface::paintDevice(void)
-	?forceToImage@QVGPixmapData@@AAEXXZ @ 199 NONAME ; void QVGPixmapData::forceToImage(void)
-	?drawPixmap@QVGPaintEngine@@UAEXABVQRectF@@ABVQPixmap@@0@Z @ 200 NONAME ; void QVGPaintEngine::drawPixmap(class QRectF const &, class QPixmap const &, class QRectF const &)
-	?formatCollection@QTextDocumentPrivate@@QAEPAVQTextFormatCollection@@XZ @ 201 NONAME ; class QTextFormatCollection * QTextDocumentPrivate::formatCollection(void)
-	?beginPaint@QVGWindowSurface@@UAEXABVQRegion@@@Z @ 202 NONAME ; void QVGWindowSurface::beginPaint(class QRegion const &)
-	??_EQVGEGLWindowSurfacePrivate@@UAE@I@Z @ 203 NONAME ; QVGEGLWindowSurfacePrivate::~QVGEGLWindowSurfacePrivate(unsigned int)
-	?endPaint@QVGEGLWindowSurfaceDirect@@UAEXPAVQWidget@@ABVQRegion@@PAVQImage@@@Z @ 204 NONAME ; void QVGEGLWindowSurfaceDirect::endPaint(class QWidget *, class QRegion const &, class QImage *)
-	?trUtf8@QVGPixmapConvolutionFilter@@SA?AVQString@@PBD0H@Z @ 205 NONAME ; class QString QVGPixmapConvolutionFilter::trUtf8(char const *, char const *, int)
-	?scroll@QVGWindowSurface@@UAE_NABVQRegion@@HH@Z @ 206 NONAME ; bool QVGWindowSurface::scroll(class QRegion const &, int, int)
-	?surfaceImage@QVGEGLWindowSurfaceVGImage@@UBEKXZ @ 207 NONAME ; unsigned long QVGEGLWindowSurfaceVGImage::surfaceImage(void) const
-	?find@QTextDocumentPrivate@@QBE?AVConstIterator@?$QFragmentMap@VQTextFragmentData@@@@H@Z @ 208 NONAME ; class QFragmentMap<class QTextFragmentData>::ConstIterator QTextDocumentPrivate::find(int) const
-	?isDefaultClipRect@QVGPaintEngine@@AAE_NABVQRect@@@Z @ 209 NONAME ; bool QVGPaintEngine::isDefaultClipRect(class QRect const &)
-	?windowSurfaceSize@QVGEGLWindowSurfacePrivate@@IBE?AVQSize@@PAVQWidget@@@Z @ 210 NONAME ; class QSize QVGEGLWindowSurfacePrivate::windowSurfaceSize(class QWidget *) const
-	?pixmapFilter@QVGPaintEngine@@UAEPAVQPixmapFilter@@HPBV2@@Z @ 211 NONAME ; class QPixmapFilter * QVGPaintEngine::pixmapFilter(int, class QPixmapFilter const *)
-	??0Declaration@QCss@@QAE@XZ @ 212 NONAME ; QCss::Declaration::Declaration(void)
-	?destroyPaintEngine@QVGEGLWindowSurfacePrivate@@IAEXXZ @ 213 NONAME ; void QVGEGLWindowSurfacePrivate::destroyPaintEngine(void)
-	?qt_vg_shared_surface@@YAHXZ @ 214 NONAME ; int qt_vg_shared_surface(void)
-	?drawCursorPixmap@QVGCompositionHelper@@QAEXABVQPixmap@@ABVQPoint@@@Z @ 215 NONAME ; void QVGCompositionHelper::drawCursorPixmap(class QPixmap const &, class QPoint const &)
-	?drawPixmaps@QVGPaintEngine@@UAEXPBUData@QDrawPixmaps@@HABVQPixmap@@V?$QFlags@W4DrawingHint@QDrawPixmaps@@@@@Z @ 216 NONAME ; void QVGPaintEngine::drawPixmaps(struct QDrawPixmaps::Data const *, int, class QPixmap const &, class QFlags<enum QDrawPixmaps::DrawingHint>)
-	?endPaint@QVGEGLWindowSurfaceQImage@@UAEXPAVQWidget@@ABVQRegion@@PAVQImage@@@Z @ 217 NONAME ; void QVGEGLWindowSurfaceQImage::endPaint(class QWidget *, class QRegion const &, class QImage *)
-	?isEmpty@Declaration@QCss@@QBE_NXZ @ 218 NONAME ; bool QCss::Declaration::isEmpty(void) const
-	?drawPolygon@QVGPaintEngine@@UAEXPBVQPointF@@HW4PolygonDrawMode@QPaintEngine@@@Z @ 219 NONAME ; void QVGPaintEngine::drawPolygon(class QPointF const *, int, enum QPaintEngine::PolygonDrawMode)
-	?trUtf8@QVGPixmapDropShadowFilter@@SA?AVQString@@PBD0H@Z @ 220 NONAME ; class QString QVGPixmapDropShadowFilter::trUtf8(char const *, char const *, int)
-	?end@QVGPaintEngine@@UAE_NXZ @ 221 NONAME ; bool QVGPaintEngine::end(void)
-	?trUtf8@QVGPixmapColorizeFilter@@SA?AVQString@@PBD0H@Z @ 222 NONAME ; class QString QVGPixmapColorizeFilter::trUtf8(char const *, char const *, int)
-	??_EQVGPainterState@@UAE@I@Z @ 223 NONAME ; QVGPainterState::~QVGPainterState(unsigned int)
-	?d_func@QVGPaintEngine@@AAEPAVQVGPaintEnginePrivate@@XZ @ 224 NONAME ; class QVGPaintEnginePrivate * QVGPaintEngine::d_func(void)
-	?drawRects@QVGPaintEngine@@UAEXPBVQRectF@@H@Z @ 225 NONAME ; void QVGPaintEngine::drawRects(class QRectF const *, int)
-	??YQScriptLine@@QAEXABU0@@Z @ 226 NONAME ; void QScriptLine::operator+=(struct QScriptLine const &)
-	?brushOriginChanged@QVGPaintEngine@@UAEXXZ @ 227 NONAME ; void QVGPaintEngine::brushOriginChanged(void)
-	?draw@QVGPixmapColorizeFilter@@UBEXPAVQPainter@@ABVQPointF@@ABVQPixmap@@ABVQRectF@@@Z @ 228 NONAME ; void QVGPixmapColorizeFilter::draw(class QPainter *, class QPointF const &, class QPixmap const &, class QRectF const &) const
-	?drawTextItem@QVGPaintEngine@@UAEXABVQPointF@@ABVQTextItem@@@Z @ 229 NONAME ; void QVGPaintEngine::drawTextItem(class QPointF const &, class QTextItem const &)
-	?q_func@QTextDocumentPrivate@@ABEPBVQTextDocument@@XZ @ 230 NONAME ; class QTextDocument const * QTextDocumentPrivate::q_func(void) const
-	?clearScissor@QVGCompositionHelper@@QAEXXZ @ 231 NONAME ; void QVGCompositionHelper::clearScissor(void)
-	?blocksBegin@QTextDocumentPrivate@@QBE?AVQTextBlock@@XZ @ 232 NONAME ; class QTextBlock QTextDocumentPrivate::blocksBegin(void) const
-	?defaultFont@QTextDocumentPrivate@@QBE?AVQFont@@XZ @ 233 NONAME ; class QFont QTextDocumentPrivate::defaultFont(void) const
-	?fill@QVGPaintEngine@@UAEXABVQVectorPath@@ABVQBrush@@@Z @ 234 NONAME ; void QVGPaintEngine::fill(class QVectorPath const &, class QBrush const &)
-	?blockMap@QTextDocumentPrivate@@QBEABV?$QFragmentMap@VQTextBlockData@@@@XZ @ 235 NONAME ; class QFragmentMap<class QTextBlockData> const & QTextDocumentPrivate::blockMap(void) const
-	?drawPoints@QVGPaintEngine@@UAEXPBVQPoint@@H@Z @ 236 NONAME ; void QVGPaintEngine::drawPoints(class QPoint const *, int)
-	??_EQVGPaintEngine@@UAE@I@Z @ 237 NONAME ; QVGPaintEngine::~QVGPaintEngine(unsigned int)
-	?clip@QVGPaintEngine@@UAEXABVQPainterPath@@W4ClipOperation@Qt@@@Z @ 238 NONAME ; void QVGPaintEngine::clip(class QPainterPath const &, enum Qt::ClipOperation)
-	?vgPrivate@QVGPaintEngine@@QAEPAVQVGPaintEnginePrivate@@XZ @ 239 NONAME ; class QVGPaintEnginePrivate * QVGPaintEngine::vgPrivate(void)
+	?toVGImage@QVGPixmapData@@UAEKM@Z @ 2 NONAME ; unsigned long QVGPixmapData::toVGImage(float)
+	?drawEllipse@QVGPaintEngine@@UAEXABVQRect@@@Z @ 3 NONAME ; void QVGPaintEngine::drawEllipse(class QRect const &)
+	?setState@QVGPaintEngine@@UAEXPAVQPainterState@@@Z @ 4 NONAME ; void QVGPaintEngine::setState(class QPainterState *)
+	?penChanged@QVGPaintEngine@@UAEXXZ @ 5 NONAME ; void QVGPaintEngine::penChanged(void)
+	?defaultClipRegion@QVGPaintEngine@@AAE?AVQRegion@@XZ @ 6 NONAME ; class QRegion QVGPaintEngine::defaultClipRegion(void)
+	??0QVGEGLWindowSurfaceVGImage@@QAE@PAVQWindowSurface@@@Z @ 7 NONAME ; QVGEGLWindowSurfaceVGImage::QVGEGLWindowSurfaceVGImage(class QWindowSurface *)
+	?paintEngine@QVGPixmapData@@UBEPAVQPaintEngine@@XZ @ 8 NONAME ; class QPaintEngine * QVGPixmapData::paintEngine(void) const
+	?drawRoundedRect@QVGPaintEngine@@UAEXABVQRectF@@MMW4SizeMode@Qt@@@Z @ 9 NONAME ; void QVGPaintEngine::drawRoundedRect(class QRectF const &, float, float, enum Qt::SizeMode)
+	?qt_vg_image_to_vg_format@@YA?AW4VGImageFormat@@W4Format@QImage@@@Z @ 10 NONAME ; enum VGImageFormat qt_vg_image_to_vg_format(enum QImage::Format)
+	?surfaceImage@QVGEGLWindowSurfacePrivate@@UBEKXZ @ 11 NONAME ; unsigned long QVGEGLWindowSurfacePrivate::surfaceImage(void) const
+	?state@QVGPaintEngine@@QBEPBVQVGPainterState@@XZ @ 12 NONAME ; class QVGPainterState const * QVGPaintEngine::state(void) const
+	??_EQVGEGLWindowSurfaceDirect@@UAE@I@Z @ 13 NONAME ; QVGEGLWindowSurfaceDirect::~QVGEGLWindowSurfaceDirect(unsigned int)
+	?updateScissor@QVGPaintEngine@@AAEXXZ @ 14 NONAME ; void QVGPaintEngine::updateScissor(void)
+	??_EQVGCompositionHelper@@UAE@I@Z @ 15 NONAME ; QVGCompositionHelper::~QVGCompositionHelper(unsigned int)
+	?fill@QVGPixmapData@@UAEXABVQColor@@@Z @ 16 NONAME ; void QVGPixmapData::fill(class QColor const &)
+	?toImage@QVGPixmapData@@UBE?AVQImage@@XZ @ 17 NONAME ; class QImage QVGPixmapData::toImage(void) const
+	?renderHintsChanged@QVGPaintEngine@@UAEXXZ @ 18 NONAME ; void QVGPaintEngine::renderHintsChanged(void)
+	?clearRect@QVGPaintEngine@@AAE_NABVQRectF@@ABVQColor@@@Z @ 19 NONAME ; bool QVGPaintEngine::clearRect(class QRectF const &, class QColor const &)
+	??1QVGEGLWindowSurfaceVGImage@@UAE@XZ @ 20 NONAME ; QVGEGLWindowSurfaceVGImage::~QVGEGLWindowSurfaceVGImage(void)
+	?state@QVGPaintEngine@@QAEPAVQVGPainterState@@XZ @ 21 NONAME ; class QVGPainterState * QVGPaintEngine::state(void)
+	??0QVGPaintEngine@@IAE@AAVQVGPaintEnginePrivate@@@Z @ 22 NONAME ; QVGPaintEngine::QVGPaintEngine(class QVGPaintEnginePrivate &)
+	?blitWindow@QVGCompositionHelper@@QAEXKABVQSize@@ABVQRect@@ABVQPoint@@H@Z @ 23 NONAME ; void QVGCompositionHelper::blitWindow(unsigned long, class QSize const &, class QRect const &, class QPoint const &, int)
+	?ensureContext@QVGEGLWindowSurfaceVGImage@@UAEPAVQEglContext@@PAVQWidget@@@Z @ 24 NONAME ; class QEglContext * QVGEGLWindowSurfaceVGImage::ensureContext(class QWidget *)
+	??0QVGCompositionHelper@@QAE@XZ @ 25 NONAME ; QVGCompositionHelper::QVGCompositionHelper(void)
+	?sourceFormat@QVGPixmapData@@IBE?AW4Format@QImage@@XZ @ 26 NONAME ; enum QImage::Format QVGPixmapData::sourceFormat(void) const
+	?beginNativePainting@QVGPaintEngine@@UAEXXZ @ 27 NONAME ; void QVGPaintEngine::beginNativePainting(void)
+	?clipEnabledChanged@QVGPaintEngine@@UAEXXZ @ 28 NONAME ; void QVGPaintEngine::clipEnabledChanged(void)
+	?metric@QVGPixmapData@@MBEHW4PaintDeviceMetric@QPaintDevice@@@Z @ 29 NONAME ; int QVGPixmapData::metric(enum QPaintDevice::PaintDeviceMetric) const
+	?draw@QVGPaintEngine@@UAEXABVQVectorPath@@@Z @ 30 NONAME ; void QVGPaintEngine::draw(class QVectorPath const &)
+	?drawRects@QVGPaintEngine@@UAEXPBVQRect@@H@Z @ 31 NONAME ; void QVGPaintEngine::drawRects(class QRect const *, int)
+	??0QVGPixmapData@@QAE@W4PixelType@QPixmapData@@@Z @ 32 NONAME ; QVGPixmapData::QVGPixmapData(enum QPixmapData::PixelType)
+	??0QVGWindowSurface@@QAE@PAVQWidget@@PAVQVGEGLWindowSurfacePrivate@@@Z @ 33 NONAME ; QVGWindowSurface::QVGWindowSurface(class QWidget *, class QVGEGLWindowSurfacePrivate *)
+	?fillBackground@QVGCompositionHelper@@QAEXABVQRegion@@ABVQBrush@@@Z @ 34 NONAME ; void QVGCompositionHelper::fillBackground(class QRegion const &, class QBrush const &)
+	?drawLines@QVGPaintEngine@@UAEXPBVQLine@@H@Z @ 35 NONAME ; void QVGPaintEngine::drawLines(class QLine const *, int)
+	?ensureContext@QVGEGLWindowSurfaceDirect@@UAEPAVQEglContext@@PAVQWidget@@@Z @ 36 NONAME ; class QEglContext * QVGEGLWindowSurfaceDirect::ensureContext(class QWidget *)
+	??0QVGPaintEngine@@QAE@XZ @ 37 NONAME ; QVGPaintEngine::QVGPaintEngine(void)
+	?cleanup@QVGPixmapData@@IAEXXZ @ 38 NONAME ; void QVGPixmapData::cleanup(void)
+	?drawPixmap@QVGPaintEngine@@UAEXABVQPointF@@ABVQPixmap@@@Z @ 39 NONAME ; void QVGPaintEngine::drawPixmap(class QPointF const &, class QPixmap const &)
+	?drawImage@QVGPaintEngine@@UAEXABVQRectF@@ABVQImage@@0V?$QFlags@W4ImageConversionFlag@Qt@@@@@Z @ 40 NONAME ; void QVGPaintEngine::drawImage(class QRectF const &, class QImage const &, class QRectF const &, class QFlags<enum Qt::ImageConversionFlag>)
+	?drawTiledPixmap@QVGPaintEngine@@UAEXABVQRectF@@ABVQPixmap@@ABVQPointF@@@Z @ 41 NONAME ; void QVGPaintEngine::drawTiledPixmap(class QRectF const &, class QPixmap const &, class QPointF const &)
+	?drawEllipse@QVGPaintEngine@@UAEXABVQRectF@@@Z @ 42 NONAME ; void QVGPaintEngine::drawEllipse(class QRectF const &)
+	?endCompositing@QVGCompositionHelper@@QAEXXZ @ 43 NONAME ; void QVGCompositionHelper::endCompositing(void)
+	??_EQVGEGLWindowSurfaceVGImage@@UAE@I@Z @ 44 NONAME ; QVGEGLWindowSurfaceVGImage::~QVGEGLWindowSurfaceVGImage(unsigned int)
+	?begin@QVGPaintEngine@@UAE_NPAVQPaintDevice@@@Z @ 45 NONAME ; bool QVGPaintEngine::begin(class QPaintDevice *)
+	?fillRect@QVGPaintEngine@@UAEXABVQRectF@@ABVQBrush@@@Z @ 46 NONAME ; void QVGPaintEngine::fillRect(class QRectF const &, class QBrush const &)
+	?paintEngine@QVGWindowSurface@@UBEPAVQPaintEngine@@XZ @ 47 NONAME ; class QPaintEngine * QVGWindowSurface::paintEngine(void) const
+	??0QVGPainterState@@QAE@XZ @ 48 NONAME ; QVGPainterState::QVGPainterState(void)
+	?d_func@QVGPaintEngine@@ABEPBVQVGPaintEnginePrivate@@XZ @ 49 NONAME ; class QVGPaintEnginePrivate const * QVGPaintEngine::d_func(void) const
+	?qt_vg_create_context@@YAPAVQEglContext@@PAVQPaintDevice@@@Z @ 50 NONAME ABSENT ; class QEglContext * qt_vg_create_context(class QPaintDevice *)
+	?clip@QVGPaintEngine@@UAEXABVQRegion@@W4ClipOperation@Qt@@@Z @ 51 NONAME ; void QVGPaintEngine::clip(class QRegion const &, enum Qt::ClipOperation)
+	?endNativePainting@QVGPaintEngine@@UAEXXZ @ 52 NONAME ; void QVGPaintEngine::endNativePainting(void)
+	?brushChanged@QVGPaintEngine@@UAEXXZ @ 53 NONAME ; void QVGPaintEngine::brushChanged(void)
+	?setGeometry@QVGWindowSurface@@UAEXABVQRect@@@Z @ 54 NONAME ; void QVGWindowSurface::setGeometry(class QRect const &)
+	?createCompatiblePixmapData@QVGPixmapData@@UBEPAVQPixmapData@@XZ @ 55 NONAME ; class QPixmapData * QVGPixmapData::createCompatiblePixmapData(void) const
+	?endPaint@QVGWindowSurface@@UAEXABVQRegion@@@Z @ 56 NONAME ; void QVGWindowSurface::endPaint(class QRegion const &)
+	?resize@QVGPixmapData@@UAEXHH@Z @ 57 NONAME ; void QVGPixmapData::resize(int, int)
+	?mainSurface@QVGEGLWindowSurfaceVGImage@@IBEHXZ @ 58 NONAME ; int QVGEGLWindowSurfaceVGImage::mainSurface(void) const
+	??0QVGEGLWindowSurfaceDirect@@QAE@PAVQWindowSurface@@@Z @ 59 NONAME ; QVGEGLWindowSurfaceDirect::QVGEGLWindowSurfaceDirect(class QWindowSurface *)
+	?clip@QVGPaintEngine@@UAEXABVQRect@@W4ClipOperation@Qt@@@Z @ 60 NONAME ; void QVGPaintEngine::clip(class QRect const &, enum Qt::ClipOperation)
+	?fillRegion@QVGPaintEngine@@QAEXABVQRegion@@ABVQColor@@ABVQSize@@@Z @ 61 NONAME ; void QVGPaintEngine::fillRegion(class QRegion const &, class QColor const &, class QSize const &)
+	?surfaceSize@QVGEGLWindowSurfaceDirect@@UBE?AVQSize@@XZ @ 62 NONAME ; class QSize QVGEGLWindowSurfaceDirect::surfaceSize(void) const
+	?drawPoints@QVGPaintEngine@@UAEXPBVQPointF@@H@Z @ 63 NONAME ; void QVGPaintEngine::drawPoints(class QPointF const *, int)
+	?paintEngine@QVGEGLWindowSurfacePrivate@@QAEPAVQVGPaintEngine@@XZ @ 64 NONAME ; class QVGPaintEngine * QVGEGLWindowSurfacePrivate::paintEngine(void)
+	?stroke@QVGPaintEngine@@UAEXABVQVectorPath@@ABVQPen@@@Z @ 65 NONAME ; void QVGPaintEngine::stroke(class QVectorPath const &, class QPen const &)
+	??0QVGPainterState@@QAE@AAV0@@Z @ 66 NONAME ; QVGPainterState::QVGPainterState(class QVGPainterState &)
+	?startCompositing@QVGCompositionHelper@@QAEXABVQSize@@@Z @ 67 NONAME ; void QVGCompositionHelper::startCompositing(class QSize const &)
+	??1QVGEGLWindowSurfacePrivate@@UAE@XZ @ 68 NONAME ; QVGEGLWindowSurfacePrivate::~QVGEGLWindowSurfacePrivate(void)
+	?qt_vg_destroy_paint_engine@@YAXPAVQVGPaintEngine@@@Z @ 69 NONAME ; void qt_vg_destroy_paint_engine(class QVGPaintEngine *)
+	?compositionModeChanged@QVGPaintEngine@@UAEXXZ @ 70 NONAME ; void QVGPaintEngine::compositionModeChanged(void)
+	?type@QVGPaintEngine@@UBE?AW4Type@QPaintEngine@@XZ @ 71 NONAME ; enum QPaintEngine::Type QVGPaintEngine::type(void) const
+	?fillRect@QVGPaintEngine@@UAEXABVQRectF@@ABVQColor@@@Z @ 72 NONAME ; void QVGPaintEngine::fillRect(class QRectF const &, class QColor const &)
+	??0QVGEGLWindowSurfacePrivate@@QAE@PAVQWindowSurface@@@Z @ 73 NONAME ; QVGEGLWindowSurfacePrivate::QVGEGLWindowSurfacePrivate(class QWindowSurface *)
+	?drawImage@QVGPaintEngine@@UAEXABVQPointF@@ABVQImage@@@Z @ 74 NONAME ; void QVGPaintEngine::drawImage(class QPointF const &, class QImage const &)
+	?flush@QVGWindowSurface@@UAEXPAVQWidget@@ABVQRegion@@ABVQPoint@@@Z @ 75 NONAME ; void QVGWindowSurface::flush(class QWidget *, class QRegion const &, class QPoint const &)
+	?isValid@QVGPixmapData@@QBE_NXZ @ 76 NONAME ; bool QVGPixmapData::isValid(void) const
+	?beginPaint@QVGEGLWindowSurfaceVGImage@@UAEXPAVQWidget@@@Z @ 77 NONAME ; void QVGEGLWindowSurfaceVGImage::beginPaint(class QWidget *)
+	?createState@QVGPaintEngine@@UBEPAVQPainterState@@PAV2@@Z @ 78 NONAME ; class QPainterState * QVGPaintEngine::createState(class QPainterState *) const
+	?buffer@QVGPixmapData@@UAEPAVQImage@@XZ @ 79 NONAME ; class QImage * QVGPixmapData::buffer(void)
+	?qt_vg_destroy_context@@YAXPAVQEglContext@@@Z @ 80 NONAME ABSENT ; void qt_vg_destroy_context(class QEglContext *)
+	?clip@QVGPaintEngine@@UAEXABVQVectorPath@@W4ClipOperation@Qt@@@Z @ 81 NONAME ; void QVGPaintEngine::clip(class QVectorPath const &, enum Qt::ClipOperation)
+	?drawPolygon@QVGPaintEngine@@UAEXPBVQPoint@@HW4PolygonDrawMode@QPaintEngine@@@Z @ 82 NONAME ; void QVGPaintEngine::drawPolygon(class QPoint const *, int, enum QPaintEngine::PolygonDrawMode)
+	?fromImage@QVGPixmapData@@UAEXABVQImage@@V?$QFlags@W4ImageConversionFlag@Qt@@@@@Z @ 83 NONAME ; void QVGPixmapData::fromImage(class QImage const &, class QFlags<enum Qt::ImageConversionFlag>)
+	??1QVGPainterState@@UAE@XZ @ 84 NONAME ; QVGPainterState::~QVGPainterState(void)
+	??1QVGPaintEngine@@UAE@XZ @ 85 NONAME ; QVGPaintEngine::~QVGPaintEngine(void)
+	?hasAlphaChannel@QVGPixmapData@@UBE_NXZ @ 86 NONAME ; bool QVGPixmapData::hasAlphaChannel(void) const
+	?endPaint@QVGEGLWindowSurfaceVGImage@@UAEXPAVQWidget@@ABVQRegion@@PAVQImage@@@Z @ 87 NONAME ; void QVGEGLWindowSurfaceVGImage::endPaint(class QWidget *, class QRegion const &, class QImage *)
+	?beginPaint@QVGEGLWindowSurfaceDirect@@UAEXPAVQWidget@@@Z @ 88 NONAME ; void QVGEGLWindowSurfaceDirect::beginPaint(class QWidget *)
+	?qt_vg_config_to_image_format@@YA?AW4Format@QImage@@PAVQEglContext@@@Z @ 89 NONAME ; enum QImage::Format qt_vg_config_to_image_format(class QEglContext *)
+	?qt_vg_config_to_vg_format@@YA?AW4VGImageFormat@@PAVQEglContext@@@Z @ 90 NONAME ; enum VGImageFormat qt_vg_config_to_vg_format(class QEglContext *)
+	?setScissor@QVGCompositionHelper@@QAEXABVQRegion@@@Z @ 91 NONAME ; void QVGCompositionHelper::setScissor(class QRegion const &)
+	?drawPath@QVGPaintEngine@@UAEXABVQPainterPath@@@Z @ 92 NONAME ; void QVGPaintEngine::drawPath(class QPainterPath const &)
+	?drawLines@QVGPaintEngine@@UAEXPBVQLineF@@H@Z @ 93 NONAME ; void QVGPaintEngine::drawLines(class QLineF const *, int)
+	?toNativeType@QVGPixmapData@@UAEPAXW4NativeType@QPixmapData@@@Z @ 94 NONAME ; void * QVGPixmapData::toNativeType(enum QPixmapData::NativeType)
+	??1QVGWindowSurface@@UAE@XZ @ 95 NONAME ; QVGWindowSurface::~QVGWindowSurface(void)
+	?metric@QVGWindowSurface@@MBEHW4PaintDeviceMetric@QPaintDevice@@@Z @ 96 NONAME ; int QVGWindowSurface::metric(enum QPaintDevice::PaintDeviceMetric) const
+	??1QVGPixmapData@@UAE@XZ @ 97 NONAME ; QVGPixmapData::~QVGPixmapData(void)
+	??1QVGEGLWindowSurfaceDirect@@UAE@XZ @ 98 NONAME ; QVGEGLWindowSurfaceDirect::~QVGEGLWindowSurfaceDirect(void)
+	??_EQVGPixmapData@@UAE@I@Z @ 99 NONAME ; QVGPixmapData::~QVGPixmapData(unsigned int)
+	?restoreState@QVGPaintEngine@@AAEXV?$QFlags@W4DirtyFlag@QPaintEngine@@@@@Z @ 100 NONAME ; void QVGPaintEngine::restoreState(class QFlags<enum QPaintEngine::DirtyFlag>)
+	??1QVGCompositionHelper@@UAE@XZ @ 101 NONAME ; QVGCompositionHelper::~QVGCompositionHelper(void)
+	??0QVGWindowSurface@@QAE@PAVQWidget@@@Z @ 102 NONAME ; QVGWindowSurface::QVGWindowSurface(class QWidget *)
+	?isDefaultClipRegion@QVGPaintEngine@@AAE_NABVQRegion@@@Z @ 103 NONAME ; bool QVGPaintEngine::isDefaultClipRegion(class QRegion const &)
+	?transformChanged@QVGPaintEngine@@UAEXXZ @ 104 NONAME ; void QVGPaintEngine::transformChanged(void)
+	?fromNativeType@QVGPixmapData@@UAEXPAXW4NativeType@QPixmapData@@@Z @ 105 NONAME ; void QVGPixmapData::fromNativeType(void *, enum QPixmapData::NativeType)
+	?setAlphaChannel@QVGPixmapData@@UAEXABVQPixmap@@@Z @ 106 NONAME ; void QVGPixmapData::setAlphaChannel(class QPixmap const &)
+	??_EQVGWindowSurface@@UAE@I@Z @ 107 NONAME ; QVGWindowSurface::~QVGWindowSurface(unsigned int)
+	?qPixmapToVGImage@@YAKABVQPixmap@@@Z @ 108 NONAME ; unsigned long qPixmapToVGImage(class QPixmap const &)
+	?opacityChanged@QVGPaintEngine@@UAEXXZ @ 109 NONAME ; void QVGPaintEngine::opacityChanged(void)
+	?surfaceSize@QVGEGLWindowSurfaceVGImage@@UBE?AVQSize@@XZ @ 110 NONAME ; class QSize QVGEGLWindowSurfaceVGImage::surfaceSize(void) const
+	?paintDevice@QVGWindowSurface@@UAEPAVQPaintDevice@@XZ @ 111 NONAME ; class QPaintDevice * QVGWindowSurface::paintDevice(void)
+	?qt_vg_create_paint_engine@@YAPAVQVGPaintEngine@@XZ @ 112 NONAME ; class QVGPaintEngine * qt_vg_create_paint_engine(void)
+	?drawPixmap@QVGPaintEngine@@UAEXABVQRectF@@ABVQPixmap@@0@Z @ 113 NONAME ; void QVGPaintEngine::drawPixmap(class QRectF const &, class QPixmap const &, class QRectF const &)
+	?beginPaint@QVGWindowSurface@@UAEXABVQRegion@@@Z @ 114 NONAME ; void QVGWindowSurface::beginPaint(class QRegion const &)
+	??_EQVGEGLWindowSurfacePrivate@@UAE@I@Z @ 115 NONAME ; QVGEGLWindowSurfacePrivate::~QVGEGLWindowSurfacePrivate(unsigned int)
+	?endPaint@QVGEGLWindowSurfaceDirect@@UAEXPAVQWidget@@ABVQRegion@@PAVQImage@@@Z @ 116 NONAME ; void QVGEGLWindowSurfaceDirect::endPaint(class QWidget *, class QRegion const &, class QImage *)
+	?scroll@QVGWindowSurface@@UAE_NABVQRegion@@HH@Z @ 117 NONAME ; bool QVGWindowSurface::scroll(class QRegion const &, int, int)
+	?surfaceImage@QVGEGLWindowSurfaceVGImage@@UBEKXZ @ 118 NONAME ; unsigned long QVGEGLWindowSurfaceVGImage::surfaceImage(void) const
+	?isDefaultClipRect@QVGPaintEngine@@AAE_NABVQRect@@@Z @ 119 NONAME ; bool QVGPaintEngine::isDefaultClipRect(class QRect const &)
+	?windowSurfaceSize@QVGEGLWindowSurfacePrivate@@IBE?AVQSize@@PAVQWidget@@@Z @ 120 NONAME ; class QSize QVGEGLWindowSurfacePrivate::windowSurfaceSize(class QWidget *) const
+	?pixmapFilter@QVGPaintEngine@@UAEPAVQPixmapFilter@@HPBV2@@Z @ 121 NONAME ; class QPixmapFilter * QVGPaintEngine::pixmapFilter(int, class QPixmapFilter const *)
+	?destroyPaintEngine@QVGEGLWindowSurfacePrivate@@IAEXXZ @ 122 NONAME ; void QVGEGLWindowSurfacePrivate::destroyPaintEngine(void)
+	?qt_vg_shared_surface@@YAHXZ @ 123 NONAME ; int qt_vg_shared_surface(void)
+	?drawCursorPixmap@QVGCompositionHelper@@QAEXABVQPixmap@@ABVQPoint@@@Z @ 124 NONAME ; void QVGCompositionHelper::drawCursorPixmap(class QPixmap const &, class QPoint const &)
+	?drawPixmaps@QVGPaintEngine@@UAEXPBUData@QDrawPixmaps@@HABVQPixmap@@V?$QFlags@W4DrawingHint@QDrawPixmaps@@@@@Z @ 125 NONAME ; void QVGPaintEngine::drawPixmaps(struct QDrawPixmaps::Data const *, int, class QPixmap const &, class QFlags<enum QDrawPixmaps::DrawingHint>)
+	?drawPolygon@QVGPaintEngine@@UAEXPBVQPointF@@HW4PolygonDrawMode@QPaintEngine@@@Z @ 126 NONAME ; void QVGPaintEngine::drawPolygon(class QPointF const *, int, enum QPaintEngine::PolygonDrawMode)
+	?toVGImage@QVGPixmapData@@UAEKXZ @ 127 NONAME ; unsigned long QVGPixmapData::toVGImage(void)
+	?end@QVGPaintEngine@@UAE_NXZ @ 128 NONAME ; bool QVGPaintEngine::end(void)
+	??_EQVGPainterState@@UAE@I@Z @ 129 NONAME ; QVGPainterState::~QVGPainterState(unsigned int)
+	?drawRects@QVGPaintEngine@@UAEXPBVQRectF@@H@Z @ 130 NONAME ; void QVGPaintEngine::drawRects(class QRectF const *, int)
+	?d_func@QVGPaintEngine@@AAEPAVQVGPaintEnginePrivate@@XZ @ 131 NONAME ; class QVGPaintEnginePrivate * QVGPaintEngine::d_func(void)
+	?brushOriginChanged@QVGPaintEngine@@UAEXXZ @ 132 NONAME ; void QVGPaintEngine::brushOriginChanged(void)
+	?drawTextItem@QVGPaintEngine@@UAEXABVQPointF@@ABVQTextItem@@@Z @ 133 NONAME ; void QVGPaintEngine::drawTextItem(class QPointF const &, class QTextItem const &)
+	?clearScissor@QVGCompositionHelper@@QAEXXZ @ 134 NONAME ; void QVGCompositionHelper::clearScissor(void)
+	?fill@QVGPaintEngine@@UAEXABVQVectorPath@@ABVQBrush@@@Z @ 135 NONAME ; void QVGPaintEngine::fill(class QVectorPath const &, class QBrush const &)
+	?forceToImage@QVGPixmapData@@IAEXXZ @ 136 NONAME ; void QVGPixmapData::forceToImage(void)
+	?drawPoints@QVGPaintEngine@@UAEXPBVQPoint@@H@Z @ 137 NONAME ; void QVGPaintEngine::drawPoints(class QPoint const *, int)
+	??_EQVGPaintEngine@@UAE@I@Z @ 138 NONAME ; QVGPaintEngine::~QVGPaintEngine(unsigned int)
+	?clip@QVGPaintEngine@@UAEXABVQPainterPath@@W4ClipOperation@Qt@@@Z @ 139 NONAME ; void QVGPaintEngine::clip(class QPainterPath const &, enum Qt::ClipOperation)
+	?vgPrivate@QVGPaintEngine@@QAEPAVQVGPaintEnginePrivate@@XZ @ 140 NONAME ; class QVGPaintEnginePrivate * QVGPaintEngine::vgPrivate(void)
 

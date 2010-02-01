@@ -11,6 +11,5 @@ contains(sql-plugins, sqlite2)	: SUBDIRS += sqlite2
 contains(sql-plugins, ibase)	: SUBDIRS += ibase
 
 # :QTP: Version check not working on TB9.2 and later, don't export SQLLite. Fix needed for working version check
-#contains(S60_VERSION, 3.1)|contains(S60_VERSION, 3.2)|contains(S60_VERSION, 5.0) {
-#    symbian:contains(CONFIG, system-sqlite): SUBDIRS += sqlite_symbian
-#    }
+# symbian:contains(CONFIG, system-sqlite): SUBDIRS += sqlite_symbian
+

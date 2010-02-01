@@ -4,7 +4,7 @@
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** This file is part of the QtGui of the Qt Toolkit.
+** This file is part of the QtGui module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** No Commercial Usage
@@ -49,8 +49,8 @@
 
 #include <e32base.h>
 #include <e32std.h>
-#include <EIKENV.H>
-#include <GDI.H>
+#include <eikenv.h>
+#include <gdi.h>
 
 QT_BEGIN_NAMESPACE
 

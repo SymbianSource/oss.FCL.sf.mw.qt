@@ -1,6 +1,6 @@
 load(qttest_p4)
 TEMPLATE = app
-TARGET = tst_qtestlib-simple
+TARGET = tst_bench_qtestlib-simple
 DEPENDPATH += .
 INCLUDEPATH += .
 

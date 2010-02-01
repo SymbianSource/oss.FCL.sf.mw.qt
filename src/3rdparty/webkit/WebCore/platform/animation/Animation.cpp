@@ -20,8 +20,7 @@
  */
 
 #include "config.h"
-// QTPROD-235: pick up proper Animation.h file
-#include "animation/Animation.h"
+#include "Animation.h"
 
 namespace WebCore {
 

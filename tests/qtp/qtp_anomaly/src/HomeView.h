@@ -56,6 +56,9 @@ class HomeView : public QWidget
 public:
     HomeView(QWidget *parent);
 
+    AddressBar * getAddressBar() { return m_addressBar; };
+    BookmarksView *getBookmarks() { return m_bookmarks; };
+
 signals:
     void urlActivated(const QUrl &url);
     void addressEntered(const QString &address);

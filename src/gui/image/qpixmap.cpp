@@ -113,13 +113,10 @@ void QPixmap::init(int w, int h, Type type)
 
 void QPixmap::init(int w, int h, int type)
 {
-    QGraphicsSystem* gs = QApplicationPrivate::graphicsSystem();
-    if (gs)
-        data = gs->createPixmapData(static_cast<QPixmapData::PixelType>(type));
+    if ((w > 0 && h > 0) || type == QPixmapData::BitmapType)
+        data = QPixmapData::create(w, h, (QPixmapData::PixelType) type);
     else
-        data = QGraphicsSystem::createDefaultPixmapData(static_cast<QPixmapData::PixelType>(type));
-
-    data->resize(w, h);
+        data = 0;
 }
 
 /*!
@@ -307,7 +304,7 @@ QPixmap::QPixmap(const char * const xpm[])
 
     QImage image(xpm);
     if (!image.isNull()) {
-        if (data->pixelType() == QPixmapData::BitmapType)
+        if (data && data->pixelType() == QPixmapData::BitmapType)
             *this = QBitmap::fromImage(image);
         else
             *this = fromImage(image);
@@ -322,8 +319,8 @@ QPixmap::QPixmap(const char * const xpm[])
 
 QPixmap::~QPixmap()
 {
-    Q_ASSERT(data->ref >= 1); // Catch if ref-counting changes again
-    if (data->is_cached && data->ref == 1) // ref will be decrememnted after destructor returns
+    Q_ASSERT(!data || data->ref >= 1); // Catch if ref-counting changes again
+    if (data && data->is_cached && data->ref == 1) // ref will be decrememnted after destructor returns
         QImagePixmapCleanupHooks::executePixmapDestructionHooks(this);
 }
 
@@ -544,7 +541,7 @@ bool QPixmap::isQBitmap() const
 */
 bool QPixmap::isNull() const
 {
-    return data->isNull();
+    return !data || data->isNull();
 }
 
 /*!
@@ -556,7 +553,7 @@ bool QPixmap::isNull() const
 */
 int QPixmap::width() const
 {
-    return data->width();
+    return data ? data->width() : 0;
 }
 
 /*!
@@ -568,7 +565,7 @@ int QPixmap::width() const
 */
 int QPixmap::height() const
 {
-    return data->height();
+    return data ? data->height() : 0;
 }
 
 /*!
@@ -581,7 +578,7 @@ int QPixmap::height() const
 */
 QSize QPixmap::size() const
 {
-    return QSize(data->width(), data->height());
+    return data ? QSize(data->width(), data->height()) : QSize();
 }
 
 /*!
@@ -593,7 +590,7 @@ QSize QPixmap::size() const
 */
 QRect QPixmap::rect() const
 {
-    return QRect(0, 0, data->width(), data->height());
+    return data ? QRect(0, 0, data->width(), data->height()) : QRect();
 }
 
 /*!
@@ -609,7 +606,7 @@ QRect QPixmap::rect() const
 */
 int QPixmap::depth() const
 {
-    return data->depth();
+    return data ? data->depth() : 0;
 }
 
 /*!
@@ -639,16 +636,16 @@ void QPixmap::resize_helper(const QSize &s)
         return;
 
     // Create new pixmap
-    QPixmap pm(QSize(w, h), data->type);
+    QPixmap pm(QSize(w, h), data ? data->type : QPixmapData::PixmapType);
     bool uninit = false;
 #if defined(Q_WS_X11)
-    QX11PixmapData *x11Data = data->classId() == QPixmapData::X11Class ? static_cast<QX11PixmapData*>(data.data()) : 0;
+    QX11PixmapData *x11Data = data && data->classId() == QPixmapData::X11Class ? static_cast<QX11PixmapData*>(data.data()) : 0;
     if (x11Data) {
         pm.x11SetScreen(x11Data->xinfo.screen());
         uninit = x11Data->flags & QX11PixmapData::Uninitialized;
     }
 #elif defined(Q_WS_MAC)
-    QMacPixmapData *macData = data->classId() == QPixmapData::MacClass ? static_cast<QMacPixmapData*>(data.data()) : 0;
+    QMacPixmapData *macData = data && data->classId() == QPixmapData::MacClass ? static_cast<QMacPixmapData*>(data.data()) : 0;
     if (macData)
         uninit = macData->uninit;
 #endif
@@ -727,6 +724,9 @@ void QPixmap::setMask(const QBitmap &mask)
         qWarning("QPixmap::setMask() mask size differs from pixmap size");
         return;
     }
+
+    if (isNull())
+        return;
 
     if (static_cast<const QPixmap &>(mask).data == data) // trying to selfmask
        return;
@@ -826,16 +826,18 @@ bool QPixmap::load(const QString &fileName, const char *format, Qt::ImageConvers
 
     QFileInfo info(fileName);
     QString key = QLatin1String("qt_pixmap_") + info.absoluteFilePath() + QLatin1Char('_') + QString::number(info.lastModified().toTime_t()) + QLatin1Char('_') +
-                  QString::number(info.size()) + QLatin1Char('_') + QString::number(data->pixelType());
+        QString::number(info.size()) + QLatin1Char('_') + QString::number(data ? data->pixelType() : QPixmapData::PixmapType);
 
     if (QPixmapCache::find(key, *this))
         return true;
 
-    if (data->fromFile(fileName, format, flags)) {
+    QPixmapData *tmp = QPixmapData::create(0, 0, QPixmapData::PixmapType);
+    if (tmp->fromFile(fileName, format, flags)) {
+        data = tmp;
         QPixmapCache::insert(key, *this);
         return true;
     }
-
+    delete tmp;
     return false;
 }
 
@@ -860,6 +862,12 @@ bool QPixmap::load(const QString &fileName, const char *format, Qt::ImageConvers
 
 bool QPixmap::loadFromData(const uchar *buf, uint len, const char *format, Qt::ImageConversionFlags flags)
 {
+    if (len == 0 || buf == 0)
+        return false;
+
+    if (!data)
+        data = QPixmapData::create(0, 0, QPixmapData::PixmapType);
+
     return data->fromData(buf, len, format, flags);
 }
 
@@ -1005,6 +1013,9 @@ int QPixmap::serialNumber() const
 */
 qint64 QPixmap::cacheKey() const
 {
+    if (isNull())
+        return 0;
+
     int classKey = data->classId();
     if (classKey >= 1024)
         classKey = -(classKey >> 10);
@@ -1153,7 +1164,7 @@ QPixmap QPixmap::grabWidget(QWidget * widget, const QRect &rect)
 Qt::HANDLE QPixmap::handle() const
 {
 #if defined(Q_WS_X11)
-    if (data->classId() == QPixmapData::X11Class)
+    if (data && data->classId() == QPixmapData::X11Class)
         return static_cast<const QX11PixmapData*>(data.constData())->handle();
 #endif
     return 0;
@@ -1204,7 +1215,7 @@ QPixmap::QPixmap(const QImage& image)
     if (!qt_pixmap_thread_test())
         return;
 
-    if (data->pixelType() == QPixmapData::BitmapType)
+    if (data && data->pixelType() == QPixmapData::BitmapType)
         *this = QBitmap::fromImage(image);
     else
         *this = fromImage(image);
@@ -1221,7 +1232,7 @@ QPixmap::QPixmap(const QImage& image)
 
 QPixmap &QPixmap::operator=(const QImage &image)
 {
-    if (data->pixelType() == QPixmapData::BitmapType)
+    if (data && data->pixelType() == QPixmapData::BitmapType)
         *this = QBitmap::fromImage(image);
     else
         *this = fromImage(image);
@@ -1251,7 +1262,7 @@ bool QPixmap::loadFromData(const uchar *buf, uint len, const char *format, Color
 */
 bool QPixmap::convertFromImage(const QImage &image, ColorMode mode)
 {
-    if (data->pixelType() == QPixmapData::BitmapType)
+    if (data && data->pixelType() == QPixmapData::BitmapType)
         *this = QBitmap::fromImage(image, colorModeToFlags(mode));
     else
         *this = fromImage(image, colorModeToFlags(mode));
@@ -1338,7 +1349,7 @@ Q_GUI_EXPORT void copyBlt(QPixmap *dst, int dx, int dy,
 
 bool QPixmap::isDetached() const
 {
-    return data->ref == 1;
+    return data && data->ref == 1;
 }
 
 /*! \internal
@@ -1750,7 +1761,7 @@ QPixmap QPixmap::transformed(const QMatrix &matrix, Qt::TransformationMode mode)
 */
 bool QPixmap::hasAlpha() const
 {
-    return (data->hasAlphaChannel() || !data->mask().isNull());
+    return data && (data->hasAlphaChannel() || !data->mask().isNull());
 }
 
 /*!
@@ -1761,7 +1772,7 @@ bool QPixmap::hasAlpha() const
 */
 bool QPixmap::hasAlphaChannel() const
 {
-    return data->hasAlphaChannel();
+    return data && data->hasAlphaChannel();
 }
 
 /*!
@@ -1769,7 +1780,7 @@ bool QPixmap::hasAlphaChannel() const
 */
 int QPixmap::metric(PaintDeviceMetric metric) const
 {
-    return data->metric(metric);
+    return data ? data->metric(metric) : 0;
 }
 
 /*!
@@ -1841,7 +1852,7 @@ void QPixmap::setAlphaChannel(const QPixmap &alphaChannel)
 */
 QPixmap QPixmap::alphaChannel() const
 {
-    return data->alphaChannel();
+    return data ? data->alphaChannel() : QPixmap();
 }
 
 /*!
@@ -1849,7 +1860,7 @@ QPixmap QPixmap::alphaChannel() const
 */
 QPaintEngine *QPixmap::paintEngine() const
 {
-    return data->paintEngine();
+    return data ? data->paintEngine() : 0;
 }
 
 /*!
@@ -1864,7 +1875,7 @@ QPaintEngine *QPixmap::paintEngine() const
 */
 QBitmap QPixmap::mask() const
 {
-    return data->mask();
+    return data ? data->mask() : QBitmap();
 }
 
 /*!
@@ -1913,6 +1924,9 @@ int QPixmap::defaultDepth()
 */
 void QPixmap::detach()
 {
+    if (!data)
+        return;
+
     QPixmapData::ClassId id = data->classId();
     if (id == QPixmapData::RasterClass) {
         QRasterPixmapData *rasterData = static_cast<QRasterPixmapData*>(data.data());
@@ -2135,6 +2149,13 @@ QPixmapData* QPixmap::pixmapData() const
 */
 
 /*! \fn int QPixmap::numCols() const
+    \obsolete
+    \internal
+    \sa colorCount()
+*/
+
+/*! \fn int QPixmap::colorCount() const
+    \since 4.6
     \internal
 */
 

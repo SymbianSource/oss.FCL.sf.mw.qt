@@ -43,6 +43,7 @@
 #define ADDRESSBAR_H
 
 #include <QWidget>
+#include <QLineEdit>
 
 class QLineEdit;
 class QToolButton;
@@ -55,6 +56,9 @@ public:
     AddressBar(QWidget *parent = 0);
     QSize sizeHint() const;
 
+	QLineEdit *getLineEdit() { return m_lineEdit; };
+	QToolButton *getToolButton() { return m_toolButton; };
+		
 protected:
     void resizeEvent(QResizeEvent *event);
     void focusInEvent(QFocusEvent *event);

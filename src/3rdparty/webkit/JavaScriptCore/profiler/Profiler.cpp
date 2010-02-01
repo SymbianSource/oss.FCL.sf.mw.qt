@@ -27,8 +27,7 @@
  */
 
 #include "config.h"
-// QTPROD-235: pick up proper Profiler.h file
-#include "profiler/Profiler.h"
+#include "Profiler.h"
 
 #include "CommonIdentifiers.h"
 #include "CallFrame.h"

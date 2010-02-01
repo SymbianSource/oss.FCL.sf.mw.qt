@@ -1,3 +1,4 @@
+# WebCore - qmake build info
 CONFIG += building-libs
 CONFIG += depend_includepath
 
@@ -11,15 +12,10 @@ symbian: {
     DEPLOYMENT += webkitlibs
 
     TARGET.UID3 = 0x200267C2
-    
-    # :QTP:Disable empty declaration warnings, force debug build to be release build to avoid linker OOM
-    QMAKE_CXXFLAGS.CW += -w noempty
-    MMP_RULES += "OPTION_REPLACE ARMCC -g"
-    MMP_RULES += "OPTION_REPLACE ARMCC -O0"
+    # RO text (code) section in qtwebkit.dll exceeds allocated space for gcce udeb target.
+    # Move RW-section base address to start from 0xE00000 instead of the toolchain default 0x400000.
+    MMP_RULES += "LINKEROPTION  armcc --rw-base 0xE00000"
 }
-# RO-section in qtwebkit.dll exceeds allocated space in SBSv2. Move RW-section
-# base address to start from 0x800000 instead of the toolchain default 0x400000.
-symbian-sbsv2: MMP_RULES += "LINKEROPTION  armcc --rw-base 0x800000"
 
 include($$PWD/../WebKit.pri)
 
@@ -89,19 +85,6 @@ win32-g++ {
     QMAKE_INCDIR_POST += $$split(TMPPATH,";")
     TMPPATH            = $$quote($$(LIB))
     QMAKE_LIBDIR_POST += $$split(TMPPATH,";")
-}
-
-# Temporary workaround to pick up the DEF file from the same place as all the others
-symbian {
-    shared {
-        MMP_RULES -= defBlock
-
-        MMP_RULES += "$${LITERAL_HASH}ifdef WINSCW" \
-                    "DEFFILE ../../../s60installs/bwins/$${TARGET}.def" \
-                    "$${LITERAL_HASH}elif defined EABI" \
-                    "DEFFILE ../../../s60installs/eabi/$${TARGET}.def" \
-                    "$${LITERAL_HASH}endif"
-    }
 }
 
 # Assume that symbian OS always comes with sqlite
@@ -411,6 +394,7 @@ IDL_BINDINGS += \
     html/DataGridColumnList.idl \
     html/File.idl \
     html/FileList.idl \
+    html/HTMLAllCollection.idl \
     html/HTMLAudioElement.idl \
     html/HTMLAnchorElement.idl \
     html/HTMLAppletElement.idl \
@@ -720,10 +704,10 @@ SOURCES += \
     bindings/js/JSEventTarget.cpp \
     bindings/js/JSExceptionBase.cpp \
     bindings/js/JSGeolocationCustom.cpp \
-    bindings/js/JSHTMLAllCollection.cpp \
     bindings/js/JSHistoryCustom.cpp \
     bindings/js/JSHTMLAppletElementCustom.cpp \
     bindings/js/JSHTMLCanvasElementCustom.cpp \
+    bindings/js/JSHTMLAllCollectionCustom.cpp \
     bindings/js/JSHTMLCollectionCustom.cpp \
     bindings/js/JSHTMLDataGridElementCustom.cpp \
     bindings/js/JSHTMLDocumentCustom.cpp \
@@ -1007,6 +991,7 @@ SOURCES += \
     html/File.cpp \
     html/FileList.cpp \
     html/FormDataList.cpp \
+    html/HTMLAllCollection.cpp \
     html/HTMLAnchorElement.cpp \
     html/HTMLAppletElement.cpp \
     html/HTMLAreaElement.cpp \
@@ -1092,7 +1077,6 @@ SOURCES += \
     html/PreloadScanner.cpp \
     html/ValidityState.cpp \
     inspector/ConsoleMessage.cpp \
-    inspector/DOMDispatchTimelineItem.cpp \
     inspector/InspectorBackend.cpp \
     inspector/InspectorController.cpp \
     inspector/InspectorDatabaseResource.cpp \
@@ -1101,7 +1085,7 @@ SOURCES += \
     inspector/InspectorFrontend.cpp \
     inspector/InspectorResource.cpp \
     inspector/InspectorTimelineAgent.cpp \
-    inspector/TimelineItem.cpp \
+    inspector/TimelineRecordFactory.cpp \
     loader/archive/ArchiveFactory.cpp \
     loader/archive/ArchiveResource.cpp \
     loader/archive/ArchiveResourceCollection.cpp \
@@ -1204,6 +1188,7 @@ SOURCES += \
     platform/FileChooser.cpp \
     platform/GeolocationService.cpp \
     platform/image-decoders/qt/RGBA32BufferQt.cpp \
+    platform/graphics/filters/FEGaussianBlur.cpp \
     platform/graphics/FontDescription.cpp \
     platform/graphics/FontFamily.cpp \
     platform/graphics/BitmapImage.cpp \
@@ -1419,7 +1404,6 @@ HEADERS += \
     bindings/js/JSEventSourceConstructor.h \
     bindings/js/JSEventTarget.h \
     bindings/js/JSHistoryCustom.h \
-    bindings/js/JSHTMLAllCollection.h \
     bindings/js/JSHTMLAppletElementCustom.h \
     bindings/js/JSHTMLEmbedElementCustom.h \
     bindings/js/JSHTMLInputElementCustom.h \
@@ -1680,6 +1664,7 @@ HEADERS += \
     html/File.h \
     html/FileList.h \
     html/FormDataList.h \
+    html/HTMLAllCollection.h \
     html/HTMLAnchorElement.h \
     html/HTMLAppletElement.h \
     html/HTMLAreaElement.h \
@@ -1769,7 +1754,6 @@ HEADERS += \
     html/TimeRanges.h \
     html/ValidityState.h \
     inspector/ConsoleMessage.h \
-    inspector/DOMDispatchTimelineItem.h \
     inspector/InspectorBackend.h \
     inspector/InspectorController.h \
     inspector/InspectorDatabaseResource.h \
@@ -1781,7 +1765,7 @@ HEADERS += \
     inspector/JavaScriptDebugServer.h \
     inspector/JavaScriptProfile.h \
     inspector/JavaScriptProfileNode.h \
-    inspector/TimelineItem.h \
+    inspector/TimelineRecordFactory.h \
     loader/appcache/ApplicationCacheGroup.h \
     loader/appcache/ApplicationCacheHost.h \
     loader/appcache/ApplicationCache.h \
@@ -1890,6 +1874,7 @@ HEADERS += \
     platform/graphics/filters/FEColorMatrix.h \
     platform/graphics/filters/FEComponentTransfer.h \
     platform/graphics/filters/FEComposite.h \
+    platform/graphics/filters/FEGaussianBlur.h \
     platform/graphics/filters/FilterEffect.h \
     platform/graphics/filters/SourceAlpha.h \
     platform/graphics/filters/SourceGraphic.h \
@@ -2342,6 +2327,7 @@ HEADERS += \
     xml/XSLTExtensions.h \
     xml/XSLTProcessor.h \
     xml/XSLTUnicodeSort.h \
+    $$PWD/../WebKit/qt/Api/qwebplugindatabase_p.h \
     $$PWD/../WebKit/qt/WebCoreSupport/FrameLoaderClientQt.h \
     $$PWD/platform/network/qt/DnsPrefetchHelper.h
 
@@ -2515,13 +2501,15 @@ contains(DEFINES, ENABLE_NETSCAPE_PLUGIN_API=1) {
         }
     
         win32-* {
-            INCLUDEPATH += $$PWD/plugins/win
+            INCLUDEPATH += $$PWD/plugins/win \
+                           $$PWD/platform/win
     
             SOURCES += page/win/PageWin.cpp \
                        plugins/win/PluginDatabaseWin.cpp \
                        plugins/win/PluginPackageWin.cpp \
                        plugins/win/PluginMessageThrottlerWin.cpp \
-                       plugins/win/PluginViewWin.cpp
+                       plugins/win/PluginViewWin.cpp \
+                       platform/win/BitmapInfo.cpp
     
             LIBS += \
                 -ladvapi32 \
@@ -3369,6 +3357,12 @@ HEADERS += $$WEBKIT_API_HEADERS
     }
 }
 
+# :QTP: Temp workaround to get NPAPI headers exported
+BLD_INF_RULES.prj_exports += "bridge/npapi.h  $$MW_LAYER_PUBLIC_EXPORT_PATH(QtWebKit/npapi.h)"
+BLD_INF_RULES.prj_exports += "bridge/npruntime.h  $$MW_LAYER_PUBLIC_EXPORT_PATH(QtWebKit/npruntime.h)"
+BLD_INF_RULES.prj_exports += "plugins/npfunctions.h  $$MW_LAYER_PUBLIC_EXPORT_PATH(QtWebKit/npfunctions.h)"
+BLD_INF_RULES.prj_exports += "plugins/symbian/npinterface.h $$MW_LAYER_PUBLIC_EXPORT_PATH(QtWebKit/npinterface.h)"
+
 CONFIG(QTDIR_build):isEqual(QT_MAJOR_VERSION, 4):greaterThan(QT_MINOR_VERSION, 4) {
     # start with 4.5
     # Remove the following 2 lines if you want debug information in WebCore
@@ -3394,7 +3388,30 @@ CONFIG(QTDIR_build):isEqual(QT_MAJOR_VERSION, 4):greaterThan(QT_MINOR_VERSION, 4
     }
 }
 
-# ro-section can exceed default allocated space, so more rw-section little further
-symbian: MMP_RULES += "LINKEROPTION  armcc --rw-base 0x800000"
+# Temporary workaround to pick up the DEF file from the same place as all the others
+symbian {
+    shared {
+        contains(MMP_RULES, defBlock) {
+            MMP_RULES -= defBlock
+
+            MMP_RULES += "$${LITERAL_HASH}ifdef WINSCW" \
+                    "DEFFILE ../../../s60installs/bwins/$${TARGET}.def" \
+                    "$${LITERAL_HASH}elif defined EABI" \
+                    "DEFFILE ../../../s60installs/eabi/$${TARGET}.def" \
+                    "$${LITERAL_HASH}endif"
+        }
+    }
+}
+
+# :QTP:Disable all warnings, force debug build to be release build to avoid linker OOM, fix header clash
+symbian: {
+    QMAKE_CXXFLAGS.CW += -w off
+
+    MMP_RULES += "OPTION_REPLACE ARMCC -g"
+    MMP_RULES += "OPTION_REPLACE ARMCC -O0"
+
+    MMP_RULES += "USERINCLUDE ../JavaScriptCore/profiler"
+    MMP_RULES += "USERINCLUDE platform/animation"
+}
 
 

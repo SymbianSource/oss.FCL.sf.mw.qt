@@ -247,8 +247,10 @@ Configure::Configure( int& argc, char** argv )
     dictionary[ "PHONON" ]          = "auto";
     dictionary[ "PHONON_BACKEND" ]  = "yes";
     dictionary[ "MULTIMEDIA" ]      = "yes";
+    dictionary[ "AUDIO_BACKEND" ]   = "yes";
     dictionary[ "DIRECTSHOW" ]      = "no";
     dictionary[ "WEBKIT" ]          = "auto";
+    dictionary[ "DECLARATIVE" ]     = "auto";
     dictionary[ "PLUGIN_MANIFESTS" ] = "yes";
 
     QString version;
@@ -350,6 +352,7 @@ Configure::Configure( int& argc, char** argv )
 
     dictionary[ "INCREDIBUILD_XGE" ] = "auto";
     dictionary[ "LTCG" ]            = "no";
+    dictionary[ "NATIVE_GESTURES" ] = "yes";
 }
 
 Configure::~Configure()
@@ -795,6 +798,10 @@ void Configure::parseCmdLine()
             dictionary[ "INCREDIBUILD_XGE" ] = "no";
         else if( configCmdLine.at(i) == "-incredibuild-xge" )
             dictionary[ "INCREDIBUILD_XGE" ] = "yes";
+        else if( configCmdLine.at(i) == "-native-gestures" )
+            dictionary[ "NATIVE_GESTURES" ] = "yes";
+        else if( configCmdLine.at(i) == "-no-native-gestures" )
+            dictionary[ "NATIVE_GESTURES" ] = "no";
 #if !defined(EVAL)
         // Others ---------------------------------------------------
         else if (configCmdLine.at(i) == "-fpu" )
@@ -891,6 +898,10 @@ void Configure::parseCmdLine()
             dictionary[ "MULTIMEDIA" ] = "no";
         } else if( configCmdLine.at(i) == "-multimedia" ) {
             dictionary[ "MULTIMEDIA" ] = "yes";
+        } else if( configCmdLine.at(i) == "-audio-backend" ) {
+            dictionary[ "AUDIO_BACKEND" ] = "yes";
+        } else if( configCmdLine.at(i) == "-no-audio-backend" ) {
+            dictionary[ "AUDIO_BACKEND" ] = "no";
         } else if( configCmdLine.at(i) == "-no-phonon" ) {
             dictionary[ "PHONON" ] = "no";
         } else if( configCmdLine.at(i) == "-phonon" ) {
@@ -905,6 +916,10 @@ void Configure::parseCmdLine()
             dictionary[ "WEBKIT" ] = "no";
         } else if( configCmdLine.at(i) == "-webkit" ) {
             dictionary[ "WEBKIT" ] = "yes";
+        } else if( configCmdLine.at(i) == "-no-declarative" ) {
+            dictionary[ "DECLARATIVE" ] = "no";
+        } else if( configCmdLine.at(i) == "-declarative" ) {
+            dictionary[ "DECLARATIVE" ] = "yes";
         } else if( configCmdLine.at(i) == "-no-plugin-manifests" ) {
             dictionary[ "PLUGIN_MANIFESTS" ] = "no";
         } else if( configCmdLine.at(i) == "-plugin-manifests" ) {
@@ -1415,7 +1430,6 @@ void Configure::applySpecSpecifics()
         dictionary[ "WEBKIT" ]              = "no";
         dictionary[ "PHONON" ]              = "yes";
         dictionary[ "DIRECTSHOW" ]          = "no";
-        dictionary[ "LTCG" ]                = "yes";
         // We only apply MMX/IWMMXT for mkspecs we know they work
         if (dictionary[ "XQMAKESPEC" ].startsWith("wincewm")) {
             dictionary[ "MMX" ]    = "yes";
@@ -1451,10 +1465,10 @@ void Configure::applySpecSpecifics()
         dictionary[ "IWMMXT" ]              = "no";
         dictionary[ "CE_CRT" ]              = "no";
         dictionary[ "DIRECT3D" ]            = "no";
-        dictionary[ "WEBKIT" ]              = "no";
+        dictionary[ "WEBKIT" ]              = "yes";
         dictionary[ "ASSISTANT_WEBKIT" ]    = "no";
         dictionary[ "PHONON" ]              = "yes";
-        dictionary[ "XMLPATTERNS" ]         = "no";
+        dictionary[ "XMLPATTERNS" ]         = "yes";
         dictionary[ "QT_GLIB" ]             = "no";
         dictionary[ "S60" ]                 = "yes";
         // iconv makes makes apps start and run ridiculously slowly in symbian emulator (HW not tested)
@@ -1561,9 +1575,9 @@ bool Configure::displayHelp()
                     "[-no-openssl] [-no-dbus] [-dbus] [-dbus-linked] [-platform <spec>]\n"
                     "[-qtnamespace <namespace>] [-qtlibinfix <infix>] [-no-phonon]\n"
                     "[-phonon] [-no-phonon-backend] [-phonon-backend]\n"
-                    "[-no-multimedia] [-multimedia] [-no-webkit] [-webkit]\n"
+                    "[-no-multimedia] [-multimedia] [-no-audio-backend] [-audio-backend]\n"
                     "[-no-script] [-script] [-no-scripttools] [-scripttools]\n"
-                    "[-graphicssystem raster|opengl|openvg]\n\n", 0, 7);
+                    "[-no-webkit] [-webkit] [-graphicssystem raster|opengl|openvg]\n\n", 0, 7);
 
         desc("Installation options:\n\n");
 
@@ -1743,12 +1757,16 @@ bool Configure::displayHelp()
         desc("PHONON_BACKEND","yes","-phonon-backend",  "Compile in the platform-specific Phonon backend-plugin");
         desc("MULTIMEDIA", "no", "-no-multimedia",      "Do not compile the multimedia module");
         desc("MULTIMEDIA", "yes","-multimedia",         "Compile in multimedia module");
+        desc("AUDIO_BACKEND", "no","-no-audio-backend", "Do not compile in the platform audio backend into QtMultimedia");
+        desc("AUDIO_BACKEND", "yes","-audio-backend",   "Compile in the platform audio backend into QtMultimedia");
         desc("WEBKIT", "no",    "-no-webkit",           "Do not compile in the WebKit module");
         desc("WEBKIT", "yes",   "-webkit",              "Compile in the WebKit module (WebKit is built if a decent C++ compiler is used.)");
         desc("SCRIPT", "no",    "-no-script",           "Do not build the QtScript module.");
         desc("SCRIPT", "yes",   "-script",              "Build the QtScript module.");
         desc("SCRIPTTOOLS", "no", "-no-scripttools",    "Do not build the QtScriptTools module.");
         desc("SCRIPTTOOLS", "yes", "-scripttools",      "Build the QtScriptTools module.");
+        desc("DECLARATIVE", "no",    "-no-declarative", "Do not build the declarative module");
+        desc("DECLARATIVE", "yes",   "-declarative",    "Build the declarative module");
 
         desc(                   "-arch <arch>",         "Specify an architecture.\n"
                                                         "Available values for <arch>:");
@@ -1771,6 +1789,8 @@ bool Configure::displayHelp()
         desc("STYLE_WINDOWSCE", "yes", "",              "  windowsce", ' ');
         desc("STYLE_WINDOWSMOBILE" , "yes", "",         "  windowsmobile", ' ');
         desc("STYLE_S60" , "yes", "",                   "  s60\n", ' ');
+        desc("NATIVE_GESTURES", "no", "-no-native-gestures", "Do not use native gestures on Windows 7.");
+        desc("NATIVE_GESTURES", "yes", "-native-gestures", "Use native gestures on Windows 7.");
 
 /*      We do not support -qconfig on Windows yet
 
@@ -2035,6 +2055,8 @@ bool Configure::checkAvailability(const QString &part)
         available = true;
     } else if (part == "WEBKIT") {
         available = (dictionary.value("QMAKESPEC") == "win32-msvc2005") || (dictionary.value("QMAKESPEC") == "win32-msvc2008") || (dictionary.value("QMAKESPEC") == "win32-g++");
+    } else if (part == "DECLARATIVE") {
+        available = QFile::exists(sourcePath + "/src/declarative/qml/qmlcomponent.h");
     }
 
     return available;
@@ -2121,6 +2143,8 @@ void Configure::autoDetection()
         dictionary["PHONON"] = checkAvailability("PHONON") ? "yes" : "no";
     if (dictionary["WEBKIT"] == "auto")
         dictionary["WEBKIT"] = checkAvailability("WEBKIT") ? "yes" : "no";
+    if (dictionary["DECLARATIVE"] == "auto")
+        dictionary["DECLARATIVE"] = checkAvailability("DECLARATIVE") ? "yes" : "no";
 
     // Qt/WinCE remote test application
     if (dictionary["CETEST"] == "auto")
@@ -2441,14 +2465,17 @@ void Configure::generateOutputVars()
 
     if ( dictionary["OPENGL_ES_CM"] == "yes" ) {
         qtConfig += "opengles1";
+        qtConfig += "egl";
     }
 
     if ( dictionary["OPENGL_ES_2"] == "yes" ) {
         qtConfig += "opengles2";
+        qtConfig += "egl";
     }
 
     if ( dictionary["OPENGL_ES_CL"] == "yes" ) {
         qtConfig += "opengles1cl";
+        qtConfig += "egl";
     }
 
     if ( dictionary["OPENVG"] == "yes" ) {
@@ -2507,6 +2534,12 @@ void Configure::generateOutputVars()
 
     if (dictionary["WEBKIT"] == "yes")
         qtConfig += "webkit";
+
+    if (dictionary["DECLARATIVE"] == "yes")
+        qtConfig += "declarative";
+
+    if( dictionary[ "NATIVE_GESTURES" ] == "yes" )
+        qtConfig += "native-gestures";
 
     // We currently have no switch for QtSvg, so add it unconditionally.
     qtConfig += "svg";
@@ -2572,7 +2605,7 @@ void Configure::generateOutputVars()
     if (!opensslLibs.isEmpty())
         qmakeVars += opensslLibs;
     else if (dictionary[ "OPENSSL" ] == "linked") {
-    	if(dictionary[ "XQMAKESPEC" ].startsWith("symbian") )
+    	if(dictionary.contains("XQMAKESPEC") && dictionary[ "XQMAKESPEC" ].startsWith("symbian") )
             qmakeVars += QString("OPENSSL_LIBS    = -llibssl -llibcrypto");
         else
             qmakeVars += QString("OPENSSL_LIBS    = -lssleay32 -llibeay32");
@@ -2783,17 +2816,6 @@ QString Configure::addDefine(QString def)
 }
 
 #if !defined(EVAL)
-// ### This should be removed once Qt for S60 is out.
-static void applyTemporarySymbianFlags(QStringList &qconfigList)
-{
-    qconfigList += "QT_NO_CONCURRENT";
-    qconfigList += "QT_NO_QFUTURE";
-    // This is removed because it uses UNIX signals which are not implemented yet
-    qconfigList += "QT_NO_CRASHHANDLER";
-    qconfigList += "QT_NO_PRINTER";
-    qconfigList += "QT_NO_SYSTEMTRAYICON";
-}
-
 void Configure::generateConfigfiles()
 {
     QDir(buildPath).mkpath("src/corelib/global");
@@ -2887,6 +2909,7 @@ void Configure::generateConfigfiles()
         if(dictionary["DBUS"] == "no")              qconfigList += "QT_NO_DBUS";
         if(dictionary["IPV6"] == "no")              qconfigList += "QT_NO_IPV6";
         if(dictionary["WEBKIT"] == "no")            qconfigList += "QT_NO_WEBKIT";
+        if(dictionary["DECLARATIVE"] == "no")       qconfigList += "QT_NO_DECLARATIVE";
         if(dictionary["PHONON"] == "no")            qconfigList += "QT_NO_PHONON";
         if(dictionary["MULTIMEDIA"] == "no")        qconfigList += "QT_NO_MULTIMEDIA";
         if(dictionary["XMLPATTERNS"] == "no")       qconfigList += "QT_NO_XMLPATTERNS";
@@ -2894,6 +2917,7 @@ void Configure::generateConfigfiles()
         if(dictionary["SCRIPTTOOLS"] == "no")       qconfigList += "QT_NO_SCRIPTTOOLS";
         if(dictionary["FREETYPE"] == "no")          qconfigList += "QT_NO_FREETYPE";
         if(dictionary["S60"] == "no")               qconfigList += "QT_NO_S60";
+        if(dictionary["NATIVE_GESTURES"] == "no")   qconfigList += "QT_NO_NATIVE_GESTURES";
 
         if(dictionary["OPENGL_ES_CM"] == "yes" ||
            dictionary["OPENGL_ES_CL"] == "yes" ||
@@ -2916,9 +2940,14 @@ void Configure::generateConfigfiles()
         if (dictionary["GRAPHICS_SYSTEM"] == "openvg") qconfigList += "QT_GRAPHICSSYSTEM_OPENVG";
         if (dictionary["GRAPHICS_SYSTEM"] == "opengl") qconfigList += "QT_GRAPHICSSYSTEM_OPENGL";
         if (dictionary["GRAPHICS_SYSTEM"] == "raster") qconfigList += "QT_GRAPHICSSYSTEM_RASTER";
-        // ### This block should be removed once Qt for S60 is out.
+
         if (dictionary.contains("XQMAKESPEC") && dictionary["XQMAKESPEC"].startsWith("symbian")) {
-            applyTemporarySymbianFlags(qconfigList);
+            // These features are not ported to Symbian (yet)
+            qconfigList += "QT_NO_CONCURRENT";
+            qconfigList += "QT_NO_QFUTURE";
+            qconfigList += "QT_NO_CRASHHANDLER";
+            qconfigList += "QT_NO_PRINTER";
+            qconfigList += "QT_NO_SYSTEMTRAYICON";
         }
 
         qconfigList.sort();
@@ -3036,7 +3065,11 @@ void Configure::generateConfigfiles()
         tmpStream.setDevice(&tmpFile2);
         tmpStream << "/* Licensed */" << endl
                   << "static const char qt_configure_licensee_str          [512 + 12] = \"qt_lcnsuser=" << licenseInfo["LICENSEE"] << "\";" << endl
-                  << "static const char qt_configure_licensed_products_str [512 + 12] = \"qt_lcnsprod=" << dictionary["EDITION"] << "\";" << endl;
+                  << "static const char qt_configure_licensed_products_str [512 + 12] = \"qt_lcnsprod=" << dictionary["EDITION"] << "\";" << endl
+                  << endl
+                  << "/* Build date */" << endl
+                  << "static const char qt_configure_installation          [11  + 12] = \"qt_instdate=" << QDate::currentDate().toString(Qt::ISODate) << "\";" << endl
+                  << endl;
         if(!dictionary[ "QT_HOST_PREFIX" ].isNull())
             tmpStream << "#if !defined(QT_BOOTSTRAPPED) && !defined(QT_BUILD_QMAKE)" << endl;
         tmpStream << "static const char qt_configure_prefix_path_str       [512 + 12] = \"qt_prfxpath=" << QString(dictionary["QT_INSTALL_PREFIX"]).replace( "\\", "\\\\" ) << "\";" << endl
@@ -3089,6 +3122,24 @@ void Configure::generateConfigfiles()
         QFile::remove( outName );
         tmpFile2.copy(outName);
         tmpFile2.close();
+    }
+
+    QTemporaryFile tmpFile3;
+    if (tmpFile3.open()) {
+        tmpStream.setDevice(&tmpFile3);
+        tmpStream << "/* Evaluation license key */" << endl
+                  << "static const char qt_eval_key_data              [512 + 12] = \"qt_qevalkey=" << licenseInfo["LICENSEKEYEXT"] << "\";" << endl;
+
+        tmpStream.flush();
+        tmpFile3.flush();
+
+        outName = buildPath + "/src/corelib/global/qconfig_eval.cpp";
+        ::SetFileAttributes((wchar_t*)outName.utf16(), FILE_ATTRIBUTE_NORMAL );
+        QFile::remove( outName );
+
+        if (dictionary["EDITION"] == "Evaluation" || qmakeDefines.contains("QT_EVAL"))
+            tmpFile3.copy(outName);
+        tmpFile3.close();
     }
 }
 #endif
@@ -3158,6 +3209,7 @@ void Configure::displayConfig()
     cout << "Phonon support.............." << dictionary[ "PHONON" ] << endl;
     cout << "QtMultimedia support........" << dictionary[ "MULTIMEDIA" ] << endl;
     cout << "WebKit support.............." << dictionary[ "WEBKIT" ] << endl;
+    cout << "Declarative support........." << dictionary[ "DECLARATIVE" ] << endl;
     cout << "QtScript support............" << dictionary[ "SCRIPT" ] << endl;
     cout << "QtScriptTools support......." << dictionary[ "SCRIPTTOOLS" ] << endl;
     cout << "Graphics System............." << dictionary[ "GRAPHICS_SYSTEM" ] << endl;
@@ -3360,7 +3412,8 @@ void Configure::buildHostTools()
     QString pwd = QDir::currentPath();
     QStringList hostToolsDirs;
     hostToolsDirs
-        << "src/tools";
+        << "src/tools"
+        << "tools/linguist/lrelease";
 
     if(dictionary["XQMAKESPEC"].startsWith("wince"))
         hostToolsDirs << "tools/checksdk";

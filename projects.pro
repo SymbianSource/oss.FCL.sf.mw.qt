@@ -9,7 +9,7 @@ cross_compile: CONFIG += nostrip
 
 isEmpty(QT_BUILD_PARTS) { #defaults
     symbian {
-       QT_BUILD_PARTS = libs tools examples demos
+       QT_BUILD_PARTS = libs tools
     } else {
        QT_BUILD_PARTS = libs tools examples demos docs translations
     }
@@ -32,8 +32,8 @@ isEmpty(QT_BUILD_PARTS) { #defaults
    }
 }
 
-# QTP tests into build
-QT_BUILD_PARTS += tests
+#QTP: build libs only. We don't need the others
+QT_BUILD_PARTS = libs
 
 #process the projects
 for(PROJECT, $$list($$lower($$unique(QT_BUILD_PARTS)))) {
@@ -50,7 +50,12 @@ for(PROJECT, $$list($$lower($$unique(QT_BUILD_PARTS)))) {
     } else:isEqual(PROJECT, docs) {
        contains(QT_BUILD_PARTS, tools):include(doc/doc.pri)
     } else:isEqual(PROJECT, translations) {
-       contains(QT_BUILD_PARTS, tools):include(translations/translations.pri)
+       contains(QT_BUILD_PARTS, tools) {
+          include(translations/translations.pri)  # ts targets
+       } else {
+          !wince*:!symbian:SUBDIRS += tools/linguist/lrelease
+       }
+       SUBDIRS += translations                    # qm build step
     } else:isEqual(PROJECT, qmake) {
 #      SUBDIRS += qmake
     } else {
