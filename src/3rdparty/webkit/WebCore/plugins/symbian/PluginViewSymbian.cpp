@@ -53,7 +53,7 @@
 #include "runtime_root.h"
 #include "QWebPageClient.h"
 #include <QKeyEvent>
-#include <QPixmap.h>
+#include <QPixmap>
 #include <QRegion>
 #include <QVector>
 #include <QWidget>
@@ -280,8 +280,6 @@ void PluginView::setNPWindowIfNeeded()
 
     m_npWindow.width = m_windowRect.width();
     m_npWindow.height = m_windowRect.height();
-    if (m_npWindow.x < 0 || m_npWindow.y < 0 || m_npWindow.width <= 0 || m_npWindow.height <= 0)
-        return;
     
     PluginView::setCurrentPluginView(this);
     JSC::JSLock::DropAllLocks dropAllLocks(JSC::SilenceAssertionsOnly);

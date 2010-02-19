@@ -10694,10 +10694,10 @@ EXPORTS
 	?swipeAngle@QSwipeGesture@@QBEMXZ @ 10693 NONAME ; float QSwipeGesture::swipeAngle(void) const
 	?symbianEventFilter@QApplication@@UAE_NPBVQSymbianEvent@@@Z @ 10694 NONAME ; bool QApplication::symbianEventFilter(class QSymbianEvent const *)
 	?symbianFilterEvent@QInputContext@@UAE_NPAVQWidget@@PBVQSymbianEvent@@@Z @ 10695 NONAME ; bool QInputContext::symbianFilterEvent(class QWidget *, class QSymbianEvent const *)
-	?symbianHandleCommand@QApplicationPrivate@@QAEHH@Z @ 10696 NONAME ; int QApplicationPrivate::symbianHandleCommand(int)
+	?symbianHandleCommand@QApplicationPrivate@@QAEHH@Z @ 10696 NONAME ABSENT ; int QApplicationPrivate::symbianHandleCommand(int)
 	?symbianProcessEvent@QApplication@@QAEHPBVQSymbianEvent@@@Z @ 10697 NONAME ; int QApplication::symbianProcessEvent(class QSymbianEvent const *)
-	?symbianProcessWsEvent@QApplicationPrivate@@QAEHPBVTWsEvent@@@Z @ 10698 NONAME ; int QApplicationPrivate::symbianProcessWsEvent(class TWsEvent const *)
-	?symbianResourceChange@QApplicationPrivate@@QAEHH@Z @ 10699 NONAME ; int QApplicationPrivate::symbianResourceChange(int)
+	?symbianProcessWsEvent@QApplicationPrivate@@QAEHPBVTWsEvent@@@Z @ 10698 NONAME ABSENT ; int QApplicationPrivate::symbianProcessWsEvent(class TWsEvent const *)
+	?symbianResourceChange@QApplicationPrivate@@QAEHH@Z @ 10699 NONAME ABSENT ; int QApplicationPrivate::symbianResourceChange(int)
 	?symbol@Parser@QCss@@QBEABUSymbol@2@XZ @ 10700 NONAME ; struct QCss::Symbol const & QCss::Parser::symbol(void) const
 	?sync@QPaintEngineEx@@UAEXXZ @ 10701 NONAME ; void QPaintEngineEx::sync(void)
 	?syncBackingStore@QWidgetPrivate@@QAEXABVQRegion@@@Z @ 10702 NONAME ; void QWidgetPrivate::syncBackingStore(class QRegion const &)
@@ -12543,9 +12543,12 @@ EXPORTS
 	?setPixelFormat@QEglProperties@@QAEXW4Format@QImage@@@Z @12542 NONAME ; void QEglProperties::setPixelFormat(enum QImage::Format)
 	?setRenderableType@QEglProperties@@QAEXW4API@QEgl@@@Z @12543 NONAME ; void QEglProperties::setRenderableType(enum QEgl::API)
 	?setValue@QEglProperties@@QAEXHH@Z @12544 NONAME ; void QEglProperties::setValue(int, int)
-	?undoRedo@QTextDocumentPrivate@@QAEH_N@Z @12545 NONAME; int QTextDocumentPrivate::undoRedo(bool)
+	?undoRedo@QTextDocumentPrivate@@QAEH_N@Z @12545 NONAME ABSENT ; int QTextDocumentPrivate::undoRedo(bool)
 	?display@QEglContext@@QBEHXZ @12546 NONAME; int QEglContext::display(void) const 
 	?setApi@QEglContext@@QAEXW4API@QEgl@@@Z @12547 NONAME; void QEglContext::setApi(enum QEgl::API) 
 	?setConfig@QEglContext@@QAEXH@Z @12548 NONAME; void QEglContext::setConfig(int) 
 	?config@QEglContext@@QBEHXZ @12549 NONAME; int QEglContext::config(void) const
+	??0Tab@QTextOption@@QAE@ABU01@@Z @ 12550 NONAME ; QTextOption::Tab::Tab(struct QTextOption::Tab const &)
+	?effectiveBoundingRect@QGraphicsItemPrivate@@QBE?AVQRectF@@ABV2@@Z @ 12551 NONAME ; class QRectF QGraphicsItemPrivate::effectiveBoundingRect(class QRectF const &) const
+	?glyphCache@QFontEngine@@QBEPAVQFontEngineGlyphCache@@PAXW4Type@2@ABVQTransform@@@Z @ 12552 NONAME ; class QFontEngineGlyphCache * QFontEngine::glyphCache(void *, enum QFontEngineGlyphCache::Type, class QTransform const &) const
 

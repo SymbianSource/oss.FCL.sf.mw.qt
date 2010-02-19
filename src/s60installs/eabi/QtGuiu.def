@@ -11629,9 +11629,9 @@ EXPORTS
 	_ZN18QTapAndHoldGestureC1EP7QObject @ 11628 NONAME
 	_ZN18QTapAndHoldGestureC2EP7QObject @ 11629 NONAME
 	_ZN19QAbstractScrollArea18setViewportMarginsERK8QMargins @ 11630 NONAME
-	_ZN19QApplicationPrivate20symbianHandleCommandEi @ 11631 NONAME
-	_ZN19QApplicationPrivate21symbianProcessWsEventEPK8TWsEvent @ 11632 NONAME
-	_ZN19QApplicationPrivate21symbianResourceChangeEi @ 11633 NONAME
+	_ZN19QApplicationPrivate20symbianHandleCommandEi @ 11631 NONAME ABSENT
+	_ZN19QApplicationPrivate21symbianProcessWsEventEPK8TWsEvent @ 11632 NONAME ABSENT
+	_ZN19QApplicationPrivate21symbianResourceChangeEi @ 11633 NONAME ABSENT
 	_ZN19QGraphicsBlurEffect12setBlurHintsE6QFlagsINS_8BlurHintEE @ 11634 NONAME
 	_ZN19QGraphicsBlurEffect13setBlurRadiusEf @ 11635 NONAME
 	_ZN19QGraphicsBlurEffect16blurHintsChangedE6QFlagsINS_8BlurHintEE @ 11636 NONAME

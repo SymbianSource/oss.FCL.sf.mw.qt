@@ -6,9 +6,6 @@
 PRGDIR=`dirname "$0"`
 PRGDIR=`cd "$PRGDIR"; pwd`
 
-if $QMAKESPEC=""
-then
-    export QMAKESPEC=$PRGDIR/qt/mkspecs/symbian-abld
-fi
+[ -z "$QMAKESPEC" ] && export QMAKESPEC=$PRGDIR/qt/mkspecs/symbian-sbsv2
 
 "$PRGDIR/qt/qmake" "$@"

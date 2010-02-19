@@ -3,6 +3,7 @@ TEMPLATE         = \
 SUBDIRS          += \
                  animatedtiles \
                  appchooser \
+                 easing \
                  moveblocks \
                  states \
                  stickman \

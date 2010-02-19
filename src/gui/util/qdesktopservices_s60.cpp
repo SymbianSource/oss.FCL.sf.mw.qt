@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -66,8 +66,8 @@ const TUid KUidMsgTypeSMTP			= {0x10001028};	// 268439592
 #ifdef Q_WS_S60
 #  include <pathinfo.h>             // PathInfo
 #  ifdef USE_DOCUMENTHANDLER
-#    include <documenthandler.h>    // CDocumentHandler
-#    include <aknserverapp.h>
+#    include <DocumentHandler.h>    // CDocumentHandler
+#    include <AknServerApp.h>
 #  endif
 #else
 #  warning CDocumentHandler requires support for S60

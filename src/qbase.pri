@@ -4,7 +4,7 @@ INCLUDEPATH *= $$QMAKE_INCDIR_QT/$$TARGET #just for today to have some compat
 isEmpty(QT_ARCH):!isEmpty(ARCH):QT_ARCH=$$ARCH #another compat that will rot for change #215700
 TEMPLATE	= lib
 isEmpty(QT_MAJOR_VERSION) {
-   VERSION=4.6.1
+   VERSION=4.6.2
 } else {
    VERSION=$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}.$${QT_PATCH_VERSION}
 }
@@ -90,7 +90,7 @@ win32 {
     !static: DEFINES+=QT_MAKEDLL
 }
 symbian {
-    CONFIG += headerexport
+    CONFIG += headerexport symbian_no_export_sqlite
     shared {
         DEFINES+=QT_MAKEDLL
         TARGET.CAPABILITY = All -Tcb
@@ -105,10 +105,7 @@ symbian {
         contains(QT_CONFIG, private_tests) {
             #When building autotest configuration, there are extra exports from
             #the Qt DLLs, which we don't want in the frozen DEF files.
-            
-            # :QTP:Always use DEF files
-            # MMP_RULES += EXPORTUNFROZEN
-            MMP_RULES += defBlock
+            MMP_RULES += EXPORTUNFROZEN
         } else {
             #When building without autotests, DEF files are used by default.
             #This is to maintain binary compatibility with previous releases.
