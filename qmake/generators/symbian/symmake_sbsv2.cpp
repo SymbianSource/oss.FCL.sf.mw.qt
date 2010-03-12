@@ -110,7 +110,7 @@ void SymbianSbsv2MakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, boo
     releasePlatforms.removeAll("winscw"); // No release for emulator
 
     QString testClause;
-    if (project->values("CONFIG").contains("symbian_test", Qt::CaseInsensitive))
+    if (project->isActiveConfig("symbian_test"))
         testClause = QLatin1String(".test");
     else
         testClause = QLatin1String("");
@@ -370,18 +370,61 @@ void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t
     if (!project->values("SYMBIANTRANSLATIONS").isEmpty() && !translationFilename.isEmpty()) {
         QStringList symbianTranslations = project->values("SYMBIANTRANSLATIONS");
         QString symbianTrPath = project->first("SYMBIANTRANSLATIONDIR");
+        QString symbianTrSrcPath = project->first("SYMBIANTRANSLATIONSRCDIR");    	
+        QString symbianWinscwUdebQmPath = project->first("SYMBIANWINSCWUDEBTRANSLATIONDIR");  
+        QString symbianWinscwUrelQmPath = project->first("SYMBIANWINSCWURELTRANSLATIONDIR");  
         foreach (const QString &symbianTrans, symbianTranslations) {
-            QString translationTsFilename(translationFilename);
-            translationTsFilename.chop(3);
-            translationTsFilename.insert(0,symbianTrPath);
-            translationTsFilename.append(QString::fromLatin1("_"));
-            translationTsFilename.append(symbianTrans);
-            QString translationQmFilename(translationTsFilename);
-            translationTsFilename.append(QString::fromLatin1(".ts"));
-            translationQmFilename.append(QString::fromLatin1(".qm"));
+                    QString translationTsFilename(translationFilename);
+                    translationTsFilename.chop(3);
+                    translationTsFilename.insert(0,symbianTrPath);
+                    translationTsFilename.append(QString::fromLatin1("_"));
+                    translationTsFilename.append(symbianTrans);
+                    QString translationQmFilename(translationTsFilename);
+
+                    translationTsFilename.append(QString::fromLatin1(".ts"));
+                    // output path for armv5 qm files./epoc32/data/z/resource/qt/translations/
+                    translationQmFilename.append(QString::fromLatin1(".qm"));
+
+										// input path for ts files. /epoc32/include/platform/qt/translations/
+                    QString translationTsSrcFilename(translationFilename);
+                    translationTsSrcFilename.chop(3);
+                    translationTsSrcFilename.insert(0,symbianTrSrcPath);
+                    translationTsSrcFilename.append(QString::fromLatin1("_"));
+                    translationTsSrcFilename.append(symbianTrans);	
+                    translationTsSrcFilename.append(QString::fromLatin1(".ts"));
+                    	
+										// output path for winscw qm files. /epoc32/release/winscw/udeb/z/resource/qt/translations/
+                    QString translationQmWinscwUdebFilename(translationFilename);
+                    translationQmWinscwUdebFilename.chop(3);
+                    translationQmWinscwUdebFilename.insert(0,symbianWinscwUdebQmPath);
+                    translationQmWinscwUdebFilename.append(QString::fromLatin1("_"));
+                    translationQmWinscwUdebFilename.append(symbianTrans);
+                    translationQmWinscwUdebFilename.append(QString::fromLatin1(".qm"));                    	
+
+										// output path for winscw qm files. /epoc32/release/winscw/urel/z/resource/qt/translations/
+                    QString translationQmWinscwUrelFilename(translationFilename);
+                    translationQmWinscwUrelFilename.chop(3);
+                    translationQmWinscwUrelFilename.insert(0,symbianWinscwUrelQmPath);
+                    translationQmWinscwUrelFilename.append(QString::fromLatin1("_"));
+                    translationQmWinscwUrelFilename.append(symbianTrans);	
+                    translationQmWinscwUrelFilename.append(QString::fromLatin1(".qm")); 
+            
             t << "START EXTENSION qt/ts2qm" << endl;
-            t << "OPTION TSFILE " << translationTsFilename << endl;
+            t << "OPTION TSFILE " << translationTsSrcFilename << endl;
             t << "OPTION QMFILE " << translationQmFilename << endl;
+            t << "END" << endl;
+            t << endl;
+            
+            //winscw udeb  
+            t << "START EXTENSION qt/ts2qm" << endl;
+            t << "OPTION TSFILE " << translationTsSrcFilename << endl;
+            t << "OPTION QMFILE " << translationQmWinscwUdebFilename << endl;
+            t << "END" << endl;
+            t << endl;
+            //winscw urel
+            t << "START EXTENSION qt/ts2qm" << endl;
+            t << "OPTION TSFILE " << translationTsSrcFilename << endl;
+            t << "OPTION QMFILE " << translationQmWinscwUrelFilename << endl;
             t << "END" << endl;
             t << endl;
         }

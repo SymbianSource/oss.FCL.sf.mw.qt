@@ -53,7 +53,7 @@
 #include "runtime_root.h"
 #include "QWebPageClient.h"
 #include <QKeyEvent>
-#include <QPixmap>
+#include <QPixmap.h>
 #include <QRegion>
 #include <QVector>
 #include <QWidget>

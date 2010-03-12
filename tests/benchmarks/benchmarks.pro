@@ -2,7 +2,10 @@ TEMPLATE = subdirs
 SUBDIRS = containers-associative \
 	qanimation \
 	qbytearray \
-	qfile_vs_qnetworkaccessmanager \
+        #qfileinfo \
+        qfile_vs_qnetworkaccessmanager \
+        qfontmetrics \
+        qhostinfo \
 	qpainter \
 	qtestlib-simple	events \
         qtext \

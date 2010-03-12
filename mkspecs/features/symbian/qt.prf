@@ -41,12 +41,14 @@ isEmpty(TARGET.EPOCSTACKSIZE):TARGET.EPOCSTACKSIZE = 0x14000
 isEmpty(TARGET.EPOCHEAPSIZE):TARGET.EPOCHEAPSIZE = 0x020000 0x800000
 
 INCLUDEPATH += $$APP_LAYER_SYSTEMINCLUDE
-for(QTLIB, $$list($$lower($$unique(QT)))) {
-    unset(qlib)
-    isEqual(QTLIB, phonon):qlib = phonon
-    else:qlib = qt$$QTLIB
-    INCLUDEPATH += $$MW_LAYER_PUBLIC_EXPORT_PATH($$qlib)
-}
+#QTP: qtAddLibrary function adds the same includes. Following strins duplicate 
+#Qt includes in incorrect lower case in the generated mmp files. 
+#for(QTLIB, $$list($$lower($$unique(QT)))) {
+#    unset(qlib)
+#    isEqual(QTLIB, phonon):qlib = phonon
+#    else:qlib = qt$$QTLIB
+#    INCLUDEPATH += $$MW_LAYER_PUBLIC_EXPORT_PATH($$qlib)
+#}
 
 #QTP: add userinclude 
 MMP_RULES+="USERINCLUDE  ."

@@ -81,7 +81,8 @@ protected:
     QHash<QString, QString> qt2S60LangMapTable;
 
     QString fixedTarget;
-
+	QString translationFileName; 
+		
     void removeSpecialCharacters(QString& str);
     QString fixPathForMmp(const QString& origPath, const QDir& parentDir);
     QString canonizePath(const QString& origPath);

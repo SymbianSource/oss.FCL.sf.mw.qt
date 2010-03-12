@@ -71,7 +71,7 @@ BrowserView::BrowserView(QWidget *parent)
     m_zoomLevels << 100;
     m_zoomLevels << 110 << 120 << 133 << 150 << 170 << 200 << 240 << 300;
 
-    QTimer::singleShot(0, this, SLOT(initialize()));
+    initialize();
 }
 
 void BrowserView::initialize()
@@ -82,6 +82,7 @@ void BrowserView::initialize()
     connect(m_controlStrip, SIGNAL(menuClicked()), SIGNAL(menuButtonClicked()));
     connect(m_controlStrip, SIGNAL(backClicked()), m_webView, SLOT(back()));
     connect(m_controlStrip, SIGNAL(forwardClicked()), m_webView, SLOT(forward()));
+    connect(m_controlStrip, SIGNAL(closeClicked()), qApp, SLOT(quit()));
 
     QPalette pal = m_webView->palette();
     pal.setBrush(QPalette::Base, Qt::white);

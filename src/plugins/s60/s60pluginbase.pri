@@ -6,11 +6,12 @@ CONFIG  -= plugin
 
 MMP_RULES += NOEXPORTLIBRARY
 
-defBlock = \
+# :QTP:QTPROD-479:defBlock name clashes with def_block.prf
+pluginDefBlock = \
     "$${LITERAL_HASH}ifdef WINSCW" \
     "DEFFILE ../bwins/qts60plugin.def" \
     "$${LITERAL_HASH}else" \
     "DEFFILE ../eabi/qts60plugin.def" \
     "$${LITERAL_HASH}endif"
 
-MMP_RULES += defBlock
+MMP_RULES += pluginDefBlock

@@ -93,12 +93,12 @@ void BrowserWindow::setSlideValue(qreal slideRatio)
 {
     // we use a ratio to handle resize corectly
     const int pos = -qRound(slideRatio * width());
-    m_slidingSurface->scroll(pos - m_homeView->x(), 0);
+    m_slidingSurface->scroll(pos - m_browserView->x(), 0);
 
-    if (qFuzzyCompare(slideRatio, static_cast<qreal>(1.0f))) {
+    if (qFuzzyCompare(slideRatio, static_cast<qreal>(0.0f))) {
         m_browserView->show();
         m_homeView->hide();
-    } else if (qFuzzyCompare(slideRatio, static_cast<qreal>(0.0f))) {
+    } else if (qFuzzyCompare(slideRatio, static_cast<qreal>(1.0f))) {
         m_homeView->show();
         m_browserView->hide();
     } else {
@@ -110,13 +110,13 @@ void BrowserWindow::setSlideValue(qreal slideRatio)
 qreal BrowserWindow::slideValue() const
 {
     Q_ASSERT(m_slidingSurface->x() < width());
-    return static_cast<qreal>(qAbs(m_homeView->x())) / width();
+    return static_cast<qreal>(qAbs(m_browserView->x())) / width();
 }
 
 void BrowserWindow::showHomeView()
 {
     m_animation->setStartValue(slideValue());
-    m_animation->setEndValue(0.0f);
+    m_animation->setEndValue(1.0f);
     m_animation->start();
     m_homeView->setFocus();
 }
@@ -124,7 +124,7 @@ void BrowserWindow::showHomeView()
 void BrowserWindow::showBrowserView()
 {
     m_animation->setStartValue(slideValue());
-    m_animation->setEndValue(1.0f);
+    m_animation->setEndValue(0.0f);
     m_animation->start();
 
     m_browserView->setFocus();
@@ -140,7 +140,7 @@ void BrowserWindow::keyReleaseEvent(QKeyEvent *event)
                                                              ? QAbstractAnimation::Forward
                                                                  : QAbstractAnimation::Backward;
             m_animation->setDirection(direction);
-        } else if (qFuzzyCompare(slideValue(), static_cast<qreal>(1.0f)))
+        } else if (qFuzzyCompare(slideValue(), static_cast<qreal>(0.0f)))
             showHomeView();
         else
             showBrowserView();
@@ -151,16 +151,16 @@ void BrowserWindow::keyReleaseEvent(QKeyEvent *event)
 void BrowserWindow::resizeEvent(QResizeEvent *event)
 {
     const QSize oldSize = event->oldSize();
-    const qreal oldSlidingRatio = static_cast<qreal>(qAbs(m_homeView->x())) / oldSize.width();
+    const qreal oldSlidingRatio = static_cast<qreal>(qAbs(m_browserView->x())) / oldSize.width();
 
     const QSize newSize = event->size();
     m_slidingSurface->resize(newSize.width() * 2, newSize.height());
 
     m_homeView->resize(newSize);
-    m_homeView->move(0, 0);
+    m_homeView->move(newSize.width(), 0);
 
     m_browserView->resize(newSize);
-    m_browserView->move(newSize.width(), 0);
+    m_browserView->move(0, 0);
 
     setSlideValue(oldSlidingRatio);
 }

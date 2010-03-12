@@ -15,7 +15,12 @@ SINGLETON:=$(call sanitise,TARGET_$(PREDEP_TARGET))
 ifeq ($(findstring :,$(firstword $(COMMAND))), :)
 	MY_CMD:=$(COMMAND)
 else
+#Additional checking is necessary for the Linux compilation
+    ifeq ($(findstring $(EPOCROOT), $(firstword $(COMMAND))), $(EPOCROOT))
+	MY_CMD:=$(COMMAND)
+    else
 	MY_CMD:=$(EPOCROOT)$(COMMAND)
+    endif
 endif
 
 define qmake_extra_pre_targetdep

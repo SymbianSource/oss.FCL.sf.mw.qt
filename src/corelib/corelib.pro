@@ -36,4 +36,6 @@ symbian: {
     MMP_RULES -= PAGED
     MMP_RULES *= UNPAGED
     LIBS += -lflogger
+    # Timezone server
+    LIBS += -ltzclient
 }
