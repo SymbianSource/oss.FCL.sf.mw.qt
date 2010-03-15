@@ -1,10 +1,3 @@
-#
-# Copyright (c) 2008 Nokia Corporation and/or its subsidiary(-ies).
-# All rights reserved.
-#
-# Description:  
-#
-
 # All paths used in this file end with the path delimiter '/'
 
 include $(EPOCROOT)epoc32/tools/shell/$(notdir $(basename $(SHELL))).mk
@@ -41,7 +34,6 @@ $(TARGETDIR):
 $(SOURCEDIR)qmake$(DOTEXE): $(QT_ROOT)configure$(DOTEXE)
 	echo Configuring Qt for build on $(CONF_PLATFORM) with $(XPLATFORM) as build setup
 	cd $(CONFIGURE_ROOT) && $(QT_ROOT)configure$(DOTEXE) -platform $(CONF_PLATFORM) -xplatform $(XPLATFORM) $(OPTIONS)
-	$(COPY) $(QT_ROOT).qmake.cache $(EPOC_ROOT)$(INSTALLPATH)qmake.cache
 	$(COPY) $(EPOC_ROOT)epoc32/gcc_mingw/bin/mingwm10.dll $(EPOC_ROOT)$(INSTALLPATH)mingwm10.dll
 	$(COPY) $(EPOC_ROOT)epoc32/gcc_mingw/bin/mingwm10.dll $(QT_ROOT)bin/mingwm10.dll
 	

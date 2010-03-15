@@ -17,13 +17,8 @@ qtconfig.flm /epoc32/tools/makefile_templates/qt/qtconfig.flm
 qtconfig.mk /epoc32/tools/makefile_templates/qt/qtconfig.mk
 qtconfig.meta /epoc32/tools/makefile_templates/qt/qtconfig.meta
 
-#ifdef SBSV2
 wrappers/qmake.bat  /epoc32/tools/qmake.bat
 wrappers/qmake      /epoc32/tools/qmake
-#else
-wrappers/qmake_abld.bat  /epoc32/tools/qmake.bat
-wrappers/qmake_abld      /epoc32/tools/qmake
-#endif
 wrappers/moc.bat    /epoc32/tools/moc.bat
 wrappers/moc        /epoc32/tools/moc
 wrappers/rcc.bat    /epoc32/tools/rcc.bat
