@@ -97,8 +97,7 @@ equals(MOC_DIR, .) {
 }
 
 #auto depend on moc
-# :QTP:QTPROD-14: Symbian build wrongly marked as Unix, generating moc dependency which does not make sense
-unix,!symbian:!no_mocdepend {
+unix:!symbian:!no_mocdepend {
      moc_source.depends += $$first(QMAKE_MOC)
      moc_header.depends += $$first(QMAKE_MOC)
      !contains(TARGET, moc) { #auto build moc

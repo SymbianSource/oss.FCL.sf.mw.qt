@@ -48,13 +48,6 @@
 #include <qurl.h>
 #include <private/qcore_symbian_p.h>
 
-/* :QTP:QTBUG-5713: illegal app layer dependency
-#include <miutset.h>                // KUidMsgTypeSMTP
-*/
-/** UID of an SMTP message type. */
-const TUid KUidMsgTypeSMTP			= {0x10001028};	// 268439592
-
-
 #include <txtrich.h>                // CRichText
 #include <f32file.h>                // TDriveUnit etc
 #include <eikenv.h>                 // CEikonEnv
@@ -62,6 +55,9 @@ const TUid KUidMsgTypeSMTP			= {0x10001028};	// 268439592
 #include <apgtask.h>                // TApaTaskList, TApaTask
 #include <rsendas.h>                // RSendAs
 #include <rsendasmessage.h>         // RSendAsMessage
+
+// copied from miutset.h, so we don't get a dependency into the app layer
+const TUid KUidMsgTypeSMTP			= {0x10001028};	// 268439592
 
 #ifdef Q_WS_S60
 #  include <pathinfo.h>             // PathInfo

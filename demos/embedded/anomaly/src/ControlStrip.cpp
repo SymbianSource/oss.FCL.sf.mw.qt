@@ -75,23 +75,22 @@ void ControlStrip::mousePressEvent(QMouseEvent *event)
     }
 
     if (x > width() - h) {
-    		emit closeClicked();    		
-    		event->accept();
-    		return;
-            
-        }
+        emit closeClicked();
+        event->accept();
+        return;
+    }
 
     if ((x < width() - 2 * h) && (x > width() - 3 * h)) {
-    		emit forwardClicked();
-    		event->accept();
-    		return;
-        }
+        emit forwardClicked();
+        event->accept();
+        return;
+    }
 
     if ((x < width() - 3 * h) && (x > width() - 5 * h)) {
-    		emit backClicked();
-    		event->accept();
-    		return;
-        }
+        emit backClicked();
+        event->accept();
+        return;
+    }
 }
 
 void ControlStrip::paintEvent(QPaintEvent *event)
@@ -99,14 +98,13 @@ void ControlStrip::paintEvent(QPaintEvent *event)
     int h = height();
     int s = (h - menuPixmap.height()) / 2;
 
+    QPainter p(this);
+    p.fillRect(event->rect(), QColor(32, 32, 32, 192));
+    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    p.drawPixmap(s, s, menuPixmap);
+    p.drawPixmap(width() - h + s, s, closePixmap);
+    p.drawPixmap(width() - 3 * h + s, s, forwardPixmap);
+    p.drawPixmap(width() - 5 * h + s, s, backPixmap);
 
-	QPainter p(this);
-	p.fillRect(event->rect(), QColor(32, 32, 32, 192));
-	p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-	p.drawPixmap(s, s, menuPixmap);
-	p.drawPixmap(width() - h + s, s, closePixmap);	    
-	p.drawPixmap(width() - 3 * h + s, s, forwardPixmap);
-	p.drawPixmap(width() - 5 * h + s, s, backPixmap);
-	    
-	p.end();
+    p.end();
 }

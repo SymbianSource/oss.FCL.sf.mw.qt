@@ -57,14 +57,15 @@ Dialog::Dialog(QWidget *parent, bool smallScreen)
     setLayout(layout);
 
 #ifdef QT_SOFTKEYS_ENABLED
+    QAction *exitAction = new QAction(tr("Exit"), this);
+    exitAction->setSoftKeyRole(QAction::NegativeSoftKey);
+    connect (exitAction, SIGNAL(triggered()),this, SLOT(close()));
+    addAction (exitAction);
 
-    QAction *exitAction = new QAction(tr("Exit"), this); 
-    exitAction->setSoftKeyRole(QAction::NegativeSoftKey); 
-    connect (exitAction, SIGNAL(triggered()),this, SLOT(close())); 
-    addAction (exitAction); 
-
+    Qt::WindowFlags flags = windowFlags();
+    flags |= Qt::WindowSoftkeysVisibleHint;
+    setWindowFlags(flags);
 #endif
-
 
     connect(lineEdit, SIGNAL(textChanged(QString)),
             wigglyWidget, SLOT(setText(QString)));

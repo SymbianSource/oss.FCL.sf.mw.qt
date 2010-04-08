@@ -320,8 +320,6 @@ QPixmap::QPixmap(const char * const xpm[])
 QPixmap::~QPixmap()
 {
     Q_ASSERT(!data || data->ref >= 1); // Catch if ref-counting changes again
-    if (data && data->is_cached && data->ref == 1) // ref will be decrememnted after destructor returns
-        QImagePixmapCleanupHooks::executePixmapDestructionHooks(this);
 }
 
 /*!
@@ -833,21 +831,14 @@ bool QPixmap::load(const QString &fileName, const char *format, Qt::ImageConvers
     if (QPixmapCache::find(key, *this))
         return true;
 
-    bool ok;
-
-    if (data) {
-        ok = data->fromFile(fileName, format, flags);
-    } else {
-        QScopedPointer<QPixmapData> tmp(QPixmapData::create(0, 0, QPixmapData::PixmapType));
-        ok = tmp->fromFile(fileName, format, flags);
-        if (ok)
-            data = tmp.take();
+    QScopedPointer<QPixmapData> tmp(QPixmapData::create(0, 0, data ? data->type : QPixmapData::PixmapType));
+    if (tmp->fromFile(fileName, format, flags)) {
+        data = tmp.take();
+        QPixmapCache::insert(key, *this);
+        return true;
     }
 
-    if (ok)
-        QPixmapCache::insert(key, *this);
-
-    return ok;
+    return false;
 }
 
 /*!
@@ -1025,12 +1016,8 @@ qint64 QPixmap::cacheKey() const
     if (isNull())
         return 0;
 
-    int classKey = data->classId();
-    if (classKey >= 1024)
-        classKey = -(classKey >> 10);
-    return ((((qint64) classKey) << 56)
-            | (((qint64) data->serialNumber()) << 32)
-            | ((qint64) (data->detach_no)));
+    Q_ASSERT(data);
+    return data->cacheKey();
 }
 
 static void sendResizeEvents(QWidget *target)
@@ -1676,10 +1663,9 @@ QPixmap QPixmap::transformed(const QMatrix &matrix, Qt::TransformationMode mode)
     \o
 
     The hasAlphaChannel() returns true if the pixmap has a format that
-    respects the alpha channel, otherwise returns false, while the
-    hasAlpha() function returns true if the pixmap has an alpha
-    channel \e or a mask (otherwise false). The mask() function returns
-    the mask as a QBitmap object, which can be set using setMask().
+    respects the alpha channel, otherwise returns false. The hasAlpha(),
+    setMask() and mask() functions are legacy and should not be used.
+    They are potentially very slow.
 
     The createHeuristicMask() function creates and returns a 1-bpp
     heuristic mask (i.e. a QBitmap) for this pixmap. It works by
@@ -1765,6 +1751,8 @@ QPixmap QPixmap::transformed(const QMatrix &matrix, Qt::TransformationMode mode)
 /*!
     Returns true if this pixmap has an alpha channel, \e or has a
     mask, otherwise returns false.
+
+    \warning This is potentially an expensive operation.
 
     \sa hasAlphaChannel(), mask()
 */
@@ -1943,7 +1931,7 @@ void QPixmap::detach()
     }
 
     if (data->is_cached && data->ref == 1)
-        QImagePixmapCleanupHooks::executePixmapModificationHooks(this);
+        QImagePixmapCleanupHooks::executePixmapDataModificationHooks(data.data());
 
 #if defined(Q_WS_MAC)
     QMacPixmapData *macData = id == QPixmapData::MacClass ? static_cast<QMacPixmapData*>(data.data()) : 0;
@@ -2031,11 +2019,15 @@ QPixmap QPixmap::fromImage(const QImage &image, Qt::ImageConversionFlags flags)
     over the one you grab, you get pixels from the overlying window,
     too. The mouse cursor is generally not grabbed.
 
-    Note on X11that if the given \a window doesn't have the same depth
+    Note on X11 that if the given \a window doesn't have the same depth
     as the root window, and another window partially or entirely
     obscures the one you grab, you will \e not get pixels from the
     overlying window.  The contents of the obscured areas in the
     pixmap will be undefined and uninitialized.
+
+    On Windows Vista and above grabbing a layered window, which is
+    created by setting the Qt::WA_TranslucentBackground attribute, will
+    not work. Instead grabbing the desktop widget should work.
 
     \warning In general, grabbing an area outside the screen is not
     safe. This depends on the underlying window system.

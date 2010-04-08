@@ -708,13 +708,14 @@ void QPainterPrivate::updateEmulationSpecifier(QPainterState *s)
         bool penTextureAlpha = false;
         if (penBrush.style() == Qt::TexturePattern)
             penTextureAlpha = qHasPixmapTexture(penBrush)
-                              ? penBrush.texture().hasAlpha()
+                              ? (penBrush.texture().depth() > 1) && penBrush.texture().hasAlpha()
                               : penBrush.textureImage().hasAlphaChannel();
         bool brushTextureAlpha = false;
-        if (s->brush.style() == Qt::TexturePattern)
+        if (s->brush.style() == Qt::TexturePattern) {
             brushTextureAlpha = qHasPixmapTexture(s->brush)
-                                ? s->brush.texture().hasAlpha()
+                                ? (s->brush.texture().depth() > 1) && s->brush.texture().hasAlpha()
                                 : s->brush.textureImage().hasAlphaChannel();
+        }
         if (((penBrush.style() == Qt::TexturePattern && penTextureAlpha)
              || (s->brush.style() == Qt::TexturePattern && brushTextureAlpha))
             && !engine->hasFeature(QPaintEngine::MaskedBrush))
@@ -1986,12 +1987,25 @@ QPaintEngine *QPainter::paintEngine() const
     endNativePainting().
 
     Note that only the states the underlying paint engine changes will be reset
-    to their respective default states. If, for example, the OpenGL polygon
-    mode is changed by the user inside a beginNativePaint()/endNativePainting()
-    block, it will not be reset to the default state by endNativePainting().
+    to their respective default states. The states we reset may change from
+    release to release. The following states are currently reset in the OpenGL
+    2 engine:
 
-    Here is an example that shows intermixing of painter commands
-    and raw OpenGL commands:
+    \list
+    \i blending is disabled
+    \i the depth, stencil and scissor tests are disabled
+    \i the active texture unit is reset to 0
+    \i the depth mask, depth function and the clear depth are reset to their
+    default values
+    \i the stencil mask, stencil operation and stencil function are reset to
+    their default values
+     \i the current color is reset to solid white
+    \endlist
+
+    If, for example, the OpenGL polygon mode is changed by the user inside a
+    beginNativePaint()/endNativePainting() block, it will not be reset to the
+    default state by endNativePainting(). Here is an example that shows
+    intermixing of painter commands and raw OpenGL commands:
 
     \snippet doc/src/snippets/code/src_gui_painting_qpainter.cpp 21
 
@@ -7509,7 +7523,7 @@ QPaintDevice *QPainter::redirected(const QPaintDevice *device, QPoint *offset)
             return widgetPrivate->redirected(offset);
     }
 
-    if (*globalRedirectionAtomic() == 0)
+    if (!globalRedirectionAtomic() || *globalRedirectionAtomic() == 0)
         return 0;
 
     QMutexLocker locker(globalRedirectionsMutex());
@@ -7529,7 +7543,7 @@ QPaintDevice *QPainter::redirected(const QPaintDevice *device, QPoint *offset)
 
 void qt_painter_removePaintDevice(QPaintDevice *dev)
 {
-    if (*globalRedirectionAtomic() == 0)
+    if (!globalRedirectionAtomic() || *globalRedirectionAtomic() == 0)
         return;
 
     QMutex *mutex = 0;

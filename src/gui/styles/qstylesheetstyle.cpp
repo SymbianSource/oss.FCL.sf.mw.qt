@@ -1125,6 +1125,7 @@ void QRenderRule::fixupBorder(int nativeWidth)
 
 void QRenderRule::drawBorderImage(QPainter *p, const QRect& rect)
 {
+    setClip(p, rect);
     static const Qt::TileRule tileMode2TileRule[] = {
         Qt::StretchTile, Qt::RoundTile, Qt::StretchTile, Qt::RepeatTile, Qt::StretchTile };
 
@@ -1142,6 +1143,7 @@ void QRenderRule::drawBorderImage(QPainter *p, const QRect& rect)
                       QRect(QPoint(), borderImageData->pixmap.size()), sourceMargins,
                       QTileRules(tileMode2TileRule[borderImageData->horizStretch], tileMode2TileRule[borderImageData->vertStretch]));
     p->setRenderHint(QPainter::SmoothPixmapTransform, wasSmoothPixmapTransform);
+    unsetClip(p);
 }
 
 QRect QRenderRule::originRect(const QRect &rect, Origin origin) const
@@ -5740,6 +5742,13 @@ QRect QStyleSheetStyle::subElementRect(SubElement se, const QStyleOption *opt, c
         QRenderRule subRule = renderRule(w, opt, PseudoElement_DockWidgetTitle);
         return positionRect(w, subRule, subRule2, pe, opt->rect, opt->direction);
                                    }
+
+#ifndef QT_NO_TOOLBAR
+    case SE_ToolBarHandle:
+        if (hasStyleRule(w, PseudoElement_ToolBarHandle))
+            return ParentStyle::subElementRect(se, opt, w);
+        break;
+#endif //QT_NO_TOOLBAR
 
     default:
         break;

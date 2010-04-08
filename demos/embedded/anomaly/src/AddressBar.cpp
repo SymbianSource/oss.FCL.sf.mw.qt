@@ -64,9 +64,9 @@ public:
 AddressBar::AddressBar(QWidget *parent)
     : QWidget(parent)
 {
-    m_lineEdit = new LineEdit(this);
+    m_lineEdit = new LineEdit(parent);
     connect(m_lineEdit, SIGNAL(returnPressed()), SLOT(processAddress()));
-    m_toolButton = new QToolButton(this);
+    m_toolButton = new QToolButton(parent);
     m_toolButton->setText("Go");
     connect(m_toolButton, SIGNAL(clicked()), SLOT(processAddress()));
 }

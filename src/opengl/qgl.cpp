@@ -104,6 +104,10 @@ QT_BEGIN_NAMESPACE
 QGLExtensionFuncs QGLContextPrivate::qt_extensionFuncs;
 #endif
 
+#ifdef Q_WS_X11
+extern const QX11Info *qt_x11Info(const QPaintDevice *pd);
+#endif
+
 struct QGLThreadContext {
     QGLContext *context;
 };
@@ -1590,22 +1594,18 @@ QGLTextureCache::QGLTextureCache()
     Q_ASSERT(qt_gl_texture_cache == 0);
     qt_gl_texture_cache = this;
 
-    QImagePixmapCleanupHooks::instance()->addPixmapModificationHook(cleanupTextures);
-#ifdef Q_WS_X11
-    QImagePixmapCleanupHooks::instance()->addPixmapDestructionHook(cleanupPixmapSurfaces);
-#endif
-    QImagePixmapCleanupHooks::instance()->addImageHook(imageCleanupHook);
+    QImagePixmapCleanupHooks::instance()->addPixmapDataModificationHook(cleanupTexturesForPixampData);
+    QImagePixmapCleanupHooks::instance()->addPixmapDataDestructionHook(cleanupBeforePixmapDestruction);
+    QImagePixmapCleanupHooks::instance()->addImageHook(cleanupTexturesForCacheKey);
 }
 
 QGLTextureCache::~QGLTextureCache()
 {
     qt_gl_texture_cache = 0;
 
-    QImagePixmapCleanupHooks::instance()->removePixmapModificationHook(cleanupTextures);
-#ifdef Q_WS_X11
-    QImagePixmapCleanupHooks::instance()->removePixmapDestructionHook(cleanupPixmapSurfaces);
-#endif
-    QImagePixmapCleanupHooks::instance()->removeImageHook(imageCleanupHook);
+    QImagePixmapCleanupHooks::instance()->removePixmapDataModificationHook(cleanupTexturesForPixampData);
+    QImagePixmapCleanupHooks::instance()->removePixmapDataDestructionHook(cleanupBeforePixmapDestruction);
+    QImagePixmapCleanupHooks::instance()->removeImageHook(cleanupTexturesForCacheKey);
 }
 
 void QGLTextureCache::insert(QGLContext* ctx, qint64 key, QGLTexture* texture, int cost)
@@ -1661,41 +1661,33 @@ QGLTextureCache* QGLTextureCache::instance()
   a hook that removes textures from the cache when a pixmap/image
   is deref'ed
 */
-void QGLTextureCache::imageCleanupHook(qint64 cacheKey)
-{
-    // ### remove when the GL texture cache becomes thread-safe
-    if (qApp->thread() != QThread::currentThread())
-        return;
-    QGLTexture *texture = instance()->getTexture(cacheKey);
-    if (texture && texture->options & QGLContext::MemoryManagedBindOption)
-        instance()->remove(cacheKey);
-}
-
-
-void QGLTextureCache::cleanupTextures(QPixmap* pixmap)
+void QGLTextureCache::cleanupTexturesForCacheKey(qint64 cacheKey)
 {
     // ### remove when the GL texture cache becomes thread-safe
     if (qApp->thread() == QThread::currentThread()) {
-        const qint64 cacheKey = pixmap->cacheKey();
-        QGLTexture *texture = instance()->getTexture(cacheKey);
-        if (texture && texture->options & QGLContext::MemoryManagedBindOption)
-            instance()->remove(cacheKey);
+        instance()->remove(cacheKey);
+        Q_ASSERT(instance()->getTexture(cacheKey) == 0);
     }
 }
 
-#if defined(Q_WS_X11)
-void QGLTextureCache::cleanupPixmapSurfaces(QPixmap* pixmap)
+
+void QGLTextureCache::cleanupTexturesForPixampData(QPixmapData* pmd)
+{
+    cleanupTexturesForCacheKey(pmd->cacheKey());
+}
+
+void QGLTextureCache::cleanupBeforePixmapDestruction(QPixmapData* pmd)
 {
     // Remove any bound textures first:
-    cleanupTextures(pixmap);
+    cleanupTexturesForPixampData(pmd);
 
-    QPixmapData *pd = pixmap->data_ptr().data();
-    if (pd->classId() == QPixmapData::X11Class) {
-        Q_ASSERT(pd->ref == 1); // Make sure reference counting isn't broken
-        QGLContextPrivate::destroyGlSurfaceForPixmap(pd);
+#if defined(Q_WS_X11)
+    if (pmd->classId() == QPixmapData::X11Class) {
+        Q_ASSERT(pmd->ref == 0); // Make sure reference counting isn't broken
+        QGLContextPrivate::destroyGlSurfaceForPixmap(pmd);
     }
-}
 #endif
+}
 
 void QGLTextureCache::deleteIfEmpty()
 {
@@ -2088,8 +2080,9 @@ QGLTexture *QGLContextPrivate::bindTexture(const QImage &image, GLenum target, G
     // NOTE: bindTexture(const QImage&, GLenum, GLint, const qint64, bool) should never return null
     Q_ASSERT(texture);
 
-    if (texture->id > 0)
-        QImagePixmapCleanupHooks::enableCleanupHooks(image);
+    // Enable the cleanup hooks for this image so that the texture cache entry is removed when the
+    // image gets deleted:
+    QImagePixmapCleanupHooks::enableCleanupHooks(image);
 
     return texture;
 }
@@ -2143,6 +2136,7 @@ QGLTexture* QGLContextPrivate::bindTexture(const QImage &image, GLenum target, G
     int tx_h = qt_next_power_of_two(image.height());
 
     QImage img = image;
+
     if (!(QGLExtensions::glExtensions() & QGLExtensions::NPOTTextures)
         && !(QGLFormat::openGLVersionFlags() & QGLFormat::OpenGL_ES_Version_2_0)
         && (target == GL_TEXTURE_2D && (tx_w != image.width() || tx_h != image.height())))
@@ -2311,6 +2305,7 @@ QGLTexture* QGLContextPrivate::bindTexture(const QImage &image, GLenum target, G
     int cost = img.width()*img.height()*4/1024;
     QGLTexture *texture = new QGLTexture(q, tx_id, target, options);
     QGLTextureCache::instance()->insert(q, key, texture, cost);
+
     return texture;
 }
 
@@ -2355,7 +2350,10 @@ QGLTexture *QGLContextPrivate::bindTexture(const QPixmap &pixmap, GLenum target,
 
 #if defined(Q_WS_X11)
     // Try to use texture_from_pixmap
-    if (pd->classId() == QPixmapData::X11Class && pd->pixelType() == QPixmapData::PixmapType) {
+    const QX11Info *xinfo = qt_x11Info(paintDevice);
+    if (pd->classId() == QPixmapData::X11Class && pd->pixelType() == QPixmapData::PixmapType
+        && xinfo && xinfo->screen() == pixmap.x11Info().screen())
+    {
         texture = bindTextureFromNativePixmap(pd, key, options);
         if (texture) {
             texture->options |= QGLContext::MemoryManagedBindOption;
@@ -2424,7 +2422,7 @@ GLuint QGLContext::bindTexture(const QImage &image, GLenum target, GLint format)
         return 0;
 
     Q_D(QGLContext);
-    QGLTexture *texture = d->bindTexture(image, target, format, false, DefaultBindOption);
+    QGLTexture *texture = d->bindTexture(image, target, format, DefaultBindOption);
     return texture->id;
 }
 
@@ -2564,11 +2562,13 @@ void QGLContext::deleteTexture(GLuint id)
     for (int i = 0; i < ddsKeys.size(); ++i) {
         GLuint texture = dds_cache->value(ddsKeys.at(i));
         if (id == texture) {
-            glDeleteTextures(1, &texture);
             dds_cache->remove(ddsKeys.at(i));
-            return;
+            break;
         }
     }
+
+    // Finally, actually delete the texture ID
+    glDeleteTextures(1, &id);
 }
 
 #ifdef Q_MAC_COMPAT_GL_FUNCTIONS
@@ -5451,7 +5451,7 @@ QSize QGLTexture::bindCompressedTexturePVR(const char *buf, int len)
     quint32 level = 0;
     quint32 width = pvrHeader->width;
     quint32 height = pvrHeader->height;
-    while (bufferSize > 0 && level < pvrHeader->mipMapCount) {
+    while (bufferSize > 0 && level <= pvrHeader->mipMapCount) {
         quint32 size =
             (qMax(width, minWidth) * qMax(height, minHeight) *
              pvrHeader->bitsPerPixel) / 8;

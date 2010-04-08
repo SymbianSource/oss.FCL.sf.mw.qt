@@ -244,6 +244,7 @@ private slots:
 #endif
     void render_data();
     void render();
+    void renderItemsWithNegativeWidthOrHeight();
     void contextMenuEvent();
     void contextMenuEvent_ItemIgnoresTransformations();
     void update();
@@ -282,6 +283,7 @@ private slots:
     void task250680_childClip();
     void taskQTBUG_5904_crashWithDeviceCoordinateCache();
     void taskQT657_paintIntoCacheWithTransparentParts();
+    void taskQTBUG_7863_paintIntoCacheWithTransparentParts();
 };
 
 void tst_QGraphicsScene::initTestCase()
@@ -2750,6 +2752,41 @@ void tst_QGraphicsScene::render()
     }
 }
 
+void tst_QGraphicsScene::renderItemsWithNegativeWidthOrHeight()
+{
+    QGraphicsScene scene(0, 0, 150, 150);
+
+    // Add item with negative width.
+    QGraphicsRectItem *item1 = new QGraphicsRectItem(0, 0, -150, 50);
+    item1->setBrush(Qt::red);
+    item1->setPos(150, 50);
+    scene.addItem(item1);
+
+    // Add item with negative height.
+    QGraphicsRectItem *item2 = new QGraphicsRectItem(0, 0, 50, -150);
+    item2->setBrush(Qt::blue);
+    item2->setPos(50, 150);
+    scene.addItem(item2);
+
+    QGraphicsView view(&scene);
+    view.setFrameStyle(QFrame::NoFrame);
+    view.resize(150, 150);
+    view.show();
+    QCOMPARE(view.viewport()->size(), QSize(150, 150));
+
+    QImage expected(view.viewport()->size(), QImage::Format_RGB32);
+    view.viewport()->render(&expected);
+
+    // Make sure the scene background is the same as the viewport background.
+    scene.setBackgroundBrush(view.viewport()->palette().brush(view.viewport()->backgroundRole()));
+    QImage actual(150, 150, QImage::Format_RGB32);
+    QPainter painter(&actual);
+    scene.render(&painter);
+    painter.end();
+
+    QCOMPARE(actual, expected);
+}
+
 void tst_QGraphicsScene::contextMenuEvent()
 {
     QGraphicsScene scene;
@@ -2806,14 +2843,14 @@ void tst_QGraphicsScene::contextMenuEvent_ItemIgnoresTransformations()
 
     {
         QPoint pos(50, 50);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(event.isAccepted());
     }
     {
         QPoint pos(150, 150);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(!event.isAccepted());
@@ -2821,14 +2858,14 @@ void tst_QGraphicsScene::contextMenuEvent_ItemIgnoresTransformations()
     view.scale(1.5, 1.5);
     {
         QPoint pos(25, 25);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(event.isAccepted());
     }
     {
         QPoint pos(55, 55);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(!event.isAccepted());
@@ -4312,12 +4349,14 @@ void tst_QGraphicsScene::taskQTBUG_5904_crashWithDeviceCoordinateCache()
 
 void tst_QGraphicsScene::taskQT657_paintIntoCacheWithTransparentParts()
 {
+    // Test using DeviceCoordinateCache and opaque item
     QWidget *w = new QWidget();
-    w->setPalette(Qt::blue);
+    w->setPalette(QColor(0, 0, 255));
     w->setGeometry(0, 0, 50, 50);
 
     QGraphicsScene *scene = new QGraphicsScene();
-    QGraphicsView *view = new QGraphicsView(scene);
+    CustomView *view = new CustomView;
+    view->setScene(scene);
 
     QGraphicsProxyWidget *proxy = scene->addWidget(w);
     proxy->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
@@ -4325,13 +4364,14 @@ void tst_QGraphicsScene::taskQT657_paintIntoCacheWithTransparentParts()
 
     view->show();
     QTest::qWaitForWindowShown(view);
-    w->update(10,10,10,10);
+    view->repaints = 0;
+    proxy->update(10, 10, 10, 10);
     QTest::qWait(50);
+    QTRY_VERIFY(view->repaints > 0);
 
     QPixmap pix;
     QGraphicsItemPrivate* itemp = QGraphicsItemPrivate::get(proxy);
-    QPixmapCache::Key key = itemp->extraItemCache()->deviceData.value(view->viewport()).key;
-    QVERIFY(QPixmapCache::find(key, &pix));
+    QTRY_VERIFY(QPixmapCache::find(itemp->extraItemCache()->deviceData.value(view->viewport()).key, &pix));
 
     QTransform t = proxy->sceneTransform();
     // Map from scene coordinates to pixmap coordinates.
@@ -4345,6 +4385,138 @@ void tst_QGraphicsScene::taskQT657_paintIntoCacheWithTransparentParts()
     for(int i = 0; i < im.width(); i++) {
         for(int j = 0; j < im.height(); j++)
             QCOMPARE(qAlpha(im.pixel(i, j)), 255);
+    }
+
+    delete w;
+}
+
+void tst_QGraphicsScene::taskQTBUG_7863_paintIntoCacheWithTransparentParts()
+{
+    // Test using DeviceCoordinateCache and semi-transparent item
+    {
+        QGraphicsRectItem *backItem = new QGraphicsRectItem(0, 0, 100, 100);
+        backItem->setBrush(QColor(255, 255, 0));
+        QGraphicsRectItem *rectItem = new QGraphicsRectItem(0, 0, 50, 50);
+        rectItem->setBrush(QColor(0, 0, 255, 125));
+        rectItem->setParentItem(backItem);
+
+        QGraphicsScene *scene = new QGraphicsScene();
+        CustomView *view = new CustomView;
+        view->setScene(scene);
+
+        scene->addItem(backItem);
+        rectItem->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+        backItem->rotate(15);
+
+        view->show();
+        QTest::qWaitForWindowShown(view);
+        view->repaints = 0;
+        rectItem->update(10, 10, 10, 10);
+        QTest::qWait(50);
+        QTRY_VERIFY(view->repaints > 0);
+
+        QPixmap pix;
+        QGraphicsItemPrivate* itemp = QGraphicsItemPrivate::get(rectItem);
+        QTRY_VERIFY(QPixmapCache::find(itemp->extraItemCache()->deviceData.value(view->viewport()).key, &pix));
+
+        QTransform t = rectItem->sceneTransform();
+        // Map from scene coordinates to pixmap coordinates.
+        // X origin in the pixmap is the most-left point
+        // of the item's boundingRect in the scene.
+        qreal adjust = t.mapRect(rectItem->boundingRect().toRect()).left();
+        QRect rect = t.mapRect(QRect(10, 10, 10, 10)).adjusted(-adjust, 0, -adjust + 1, 1);
+        QPixmap subpix = pix.copy(rect);
+
+        QImage im = subpix.toImage();
+        for(int i = 0; i < im.width(); i++) {
+            for(int j = 0; j < im.height(); j++) {
+                QCOMPARE(qAlpha(im.pixel(i, j)), 125);
+            }
+        }
+
+        delete view;
+    }
+
+    // Test using ItemCoordinateCache and opaque item
+    {
+        QGraphicsRectItem *rectItem = new QGraphicsRectItem(0, 0, 50, 50);
+        rectItem->setBrush(QColor(0, 0, 255));
+
+        QGraphicsScene *scene = new QGraphicsScene();
+        CustomView *view = new CustomView;
+        view->setScene(scene);
+
+        scene->addItem(rectItem);
+        rectItem->setCacheMode(QGraphicsItem::ItemCoordinateCache);
+        rectItem->rotate(15);
+
+        view->show();
+        QTest::qWaitForWindowShown(view);
+        view->repaints = 0;
+        rectItem->update(10, 10, 10, 10);
+        QTest::qWait(50);
+        QTRY_VERIFY(view->repaints > 0);
+
+        QPixmap pix;
+        QGraphicsItemPrivate* itemp = QGraphicsItemPrivate::get(rectItem);
+        QTRY_VERIFY(QPixmapCache::find(itemp->extraItemCache()->key, &pix));
+
+        QTransform t = rectItem->sceneTransform();
+        // Map from scene coordinates to pixmap coordinates.
+        // X origin in the pixmap is the most-left point
+        // of the item's boundingRect in the scene.
+        qreal adjust = t.mapRect(rectItem->boundingRect().toRect()).left();
+        QRect rect = t.mapRect(QRect(10, 10, 10, 10)).adjusted(-adjust, 0, -adjust + 1, 1);
+        QPixmap subpix = pix.copy(rect);
+
+        QImage im = subpix.toImage();
+        for(int i = 0; i < im.width(); i++) {
+            for(int j = 0; j < im.height(); j++)
+                QCOMPARE(qAlpha(im.pixel(i, j)), 255);
+        }
+
+        delete view;
+    }
+
+    // Test using ItemCoordinateCache and semi-transparent item
+    {
+        QGraphicsRectItem *rectItem = new QGraphicsRectItem(0, 0, 50, 50);
+        rectItem->setBrush(QColor(0, 0, 255, 125));
+
+        QGraphicsScene *scene = new QGraphicsScene();
+        CustomView *view = new CustomView;
+        view->setScene(scene);
+
+        scene->addItem(rectItem);
+        rectItem->setCacheMode(QGraphicsItem::ItemCoordinateCache);
+        rectItem->rotate(15);
+
+        view->show();
+        QTest::qWaitForWindowShown(view);
+        view->repaints = 0;
+        rectItem->update(10, 10, 10, 10);
+        QTest::qWait(50);
+        QTRY_VERIFY(view->repaints > 0);
+
+        QPixmap pix;
+        QGraphicsItemPrivate* itemp = QGraphicsItemPrivate::get(rectItem);
+        QTRY_VERIFY(QPixmapCache::find(itemp->extraItemCache()->key, &pix));
+
+        QTransform t = rectItem->sceneTransform();
+        // Map from scene coordinates to pixmap coordinates.
+        // X origin in the pixmap is the most-left point
+        // of the item's boundingRect in the scene.
+        qreal adjust = t.mapRect(rectItem->boundingRect().toRect()).left();
+        QRect rect = t.mapRect(QRect(10, 10, 10, 10)).adjusted(-adjust, 0, -adjust + 1, 1);
+        QPixmap subpix = pix.copy(rect);
+
+        QImage im = subpix.toImage();
+        for(int i = 0; i < im.width(); i++) {
+            for(int j = 0; j < im.height(); j++)
+                QCOMPARE(qAlpha(im.pixel(i, j)), 125);
+        }
+
+        delete view;
     }
 }
 

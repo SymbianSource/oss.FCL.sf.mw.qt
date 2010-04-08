@@ -70,10 +70,12 @@ my $check_includes = 0;
 my $copy_headers = 0;
 my $create_uic_class_map = 1;
 my $create_private_headers = 1;
+my $oneway = 0;
 my @modules_to_sync ;
 $force_relative = 1 if ( -d "/System/Library/Frameworks" );
 my $out_basedir = $basedir;
 $out_basedir =~ s=\\=/=g;
+my $out_subdir = 'include';
 
 # functions ----------------------------------------------------------
 
@@ -93,6 +95,9 @@ sub showUsage
     print "  -windows              Force platform to Windows          (default: " . ($force_win ? "yes" : "no") . ")\n";
     print "  -showonly             Show action but not perform        (default: " . ($showonly ? "yes" : "no") . ")\n";
     print "  -outdir <PATH>        Specify output directory for sync  (default: $out_basedir)\n";
+    print "  -outsubdir <DIR>      Target subdir under outdir         (default: $out_subdir)\n";
+    print "  -public               Create only public headers         (default: " . ($create_private_headers ? "no" : "yes") . ")\n";
+    print "  -oneway               Don't sync back from outdir        (default: " . ($oneway ? "yes" : "no") . ")\n";
     print "  -separate-module <NAME>:<PROFILEDIR>:<HEADERDIR> Create headers for <NAME> with original headers in <HEADERDIR> relative to <PROFILEDIR> \n";
     print "  -help                 This help\n";
     exit 0;
@@ -194,6 +199,8 @@ sub classNames {
         push @ret, "QtConcurrentFilter"
     } elsif(basename($iheader) eq "qtconcurrentrun.h") {
         push @ret, "QtConcurrentRun"
+    } elsif(basename($iheader) eq "qaudio.h") {
+        push @ret, "QAudio"
     }
 
     my $parsable = "";
@@ -435,7 +442,7 @@ sub fileCompare {
 #          ifile, string, destination name of duplicate
 #
 # Purpose: Keeps files in sync so changes in the newer file will be
-#          written to the other.
+#          written to the other. Don't sync back if $oneway is set.
 # Returns: 1 if files were synced, else 0.
 # Warning: Dies if script cannot get write access.
 ######################################################################
@@ -461,9 +468,10 @@ sub copyFile
     }
 
     if ( $knowdiff || ($filecontents ne $ifilecontents) ) {
-	if ( $copy > 0 ) {
+	if ( $copy > 0 && !$oneway) {
 	    my $file_dir = dirname($file);
 	    mkpath $file_dir, 0777 unless(-e "$file_dir");
+	    print "$file $ifile $copy\n";
 	    open(O, "> " . $file) || die "Could not open $file for writing (no write permission?)";
 	    local $/;
 	    binmode O;
@@ -599,6 +607,15 @@ while ( @ARGV ) {
     } elsif("$arg" eq '*') {
         # workaround for windows 9x where "%*" expands to "*"
         $var = 1;
+    } elsif("$arg" eq "-outsubdir") {
+	$var = "outsubdir";
+	$val = shift @ARGV;
+    } elsif("$arg" eq "-public") {
+	$var = "public";
+	$val = "yes";
+    } elsif("$arg" eq "-oneway") {
+	$var = "oneway";
+	$val = "yes";
     }
 
     #do something
@@ -641,6 +658,12 @@ while ( @ARGV ) {
 	} elsif($force_relative) {
 	    $force_relative--;
 	}
+    } elsif ("$var" eq "public") {
+	$create_private_headers = ("$val" eq "yes" ? 0 : 1);
+    } elsif ("$var" eq "oneway") {
+	$oneway = ("$val" eq "yes" ? 1 : 0);
+    } elsif ("$var" eq "outsubdir") {
+	$out_subdir = $val;
     } elsif ("$var" eq "module") {
 	print "module :$val:\n";
 	die "No such module: $val" unless(defined $modules{$val});
@@ -670,7 +693,7 @@ while ( @ARGV ) {
 $isunix = checkUnix; #cache checkUnix
 
 # create path
-mkpath "$out_basedir/include", 0777;
+mkpath "$out_basedir/$out_subdir", 0777;
 
 my @ignore_headers = ();
 my $class_lib_map_contents = "";
@@ -726,7 +749,7 @@ foreach (@modules_to_sync) {
 
     #remove the old files
     if($remove_stale) {
-	my @subdirs = ("$out_basedir/include/$lib");
+	my @subdirs = ("$out_basedir/$out_subdir/$lib");
 	foreach (@subdirs) {
 	    my $subdir = "$_";
 	    if (opendir DIR, "$subdir") {
@@ -736,7 +759,7 @@ foreach (@modules_to_sync) {
 			push @subdirs, "$file" unless($t eq "." || $t eq "..");
 		    } else {
 			my @files = ("$file");
-			#push @files, "$out_basedir/include/Qt/$t" if(-e "$out_basedir/include/Qt/$t");
+			#push @files, "$out_basedir/$out_subdir/Qt/$t" if(-e "$out_basedir/$out_subdir/Qt/$t");
 			foreach (@files) {
 			   my $file = $_;
 			   my $remove_file = 0;
@@ -817,8 +840,8 @@ foreach (@modules_to_sync) {
 			#find out all the places it goes..
 			my @headers;
 			if ($public_header) {
-			    @headers = ( "$out_basedir/include/$lib/$header" );
-			    push @headers, "$out_basedir/include/Qt/$header"
+			    @headers = ( "$out_basedir/$out_subdir/$lib/$header" );
+			    push @headers, "$out_basedir/$out_subdir/Qt/$header"
 			      if ("$lib" ne "phonon" && "$subdir" =~ /^$basedir\/src/);
 
 			    foreach(@classes) {
@@ -830,16 +853,16 @@ foreach (@modules_to_sync) {
 #				   class =~ s,::,/,g;
 #				}
 				$class_lib_map_contents .= "QT_CLASS_LIB($_, $lib, $header_base)\n";
-				$header_copies++ if(syncHeader("$out_basedir/include/$lib/$class", "$out_basedir/include/$lib/$header", 0));
+				$header_copies++ if(syncHeader("$out_basedir/$out_subdir/$lib/$class", "$out_basedir/$out_subdir/$lib/$header", 0));
 
 				# KDE-Compat headers for Phonon
 				if ($lib eq "phonon") {
-				    $header_copies++ if (syncHeader("$out_basedir/include/phonon_compat/Phonon/$class", "$out_basedir/include/$lib/$header", 0));
+				    $header_copies++ if (syncHeader("$out_basedir/$out_subdir/phonon_compat/Phonon/$class", "$out_basedir/$out_subdir/$lib/$header", 0));
 				}
 			    }
 			} elsif ($create_private_headers) {
-			    @headers = ( "$out_basedir/include/$lib/private/$header" );
-			    push @headers, "$out_basedir/include/Qt/private/$header"
+			    @headers = ( "$out_basedir/$out_subdir/$lib/private/$header" );
+			    push @headers, "$out_basedir/$out_subdir/Qt/private/$header"
                               if ("$lib" ne "phonon");
 			}
 			foreach(@headers) { #sync them
@@ -860,7 +883,7 @@ foreach (@modules_to_sync) {
 #				    if ($class =~ m/::/) {
 #					$class =~ s,::,/,g;
 #				    }
-				    my $class_header = fixPaths("$out_basedir/include/$lib/$class",
+				    my $class_header = fixPaths("$out_basedir/$out_subdir/$lib/$class",
 								$current_dir) . " ";
 				    $pri_install_classes .= $class_header
 								unless($pri_install_classes =~ $class_header);
@@ -884,8 +907,8 @@ foreach (@modules_to_sync) {
 
     unless($showonly) {
         my @master_includes;
-	push @master_includes, "$out_basedir/include/$lib/$lib";
-	push @master_includes, "$out_basedir/include/phonon_compat/Phonon/Phonon" if ($lib eq "phonon");
+	push @master_includes, "$out_basedir/$out_subdir/$lib/$lib";
+	push @master_includes, "$out_basedir/$out_subdir/phonon_compat/Phonon/Phonon" if ($lib eq "phonon");
         foreach my $master_include (@master_includes) {
             #generate the "master" include file
             $pri_install_files .= fixPaths($master_include, "$modules{$lib}") . " "; #get the master file installed too
@@ -913,7 +936,7 @@ foreach (@modules_to_sync) {
 	$headers_pri_contents .= "SYNCQT.HEADER_FILES = $pri_install_files\n";
 	$headers_pri_contents .= "SYNCQT.HEADER_CLASSES = $pri_install_classes\n";
 	$headers_pri_contents .= "SYNCQT.PRIVATE_HEADER_FILES = $pri_install_pfiles\n";
-        my $headers_pri_file = "$out_basedir/include/$lib/headers.pri";
+        my $headers_pri_file = "$out_basedir/$out_subdir/$lib/headers.pri";
         if(-e "$headers_pri_file") {
             open HEADERS_PRI_FILE, "<$headers_pri_file";
             local $/;
@@ -1038,7 +1061,7 @@ if($check_includes) {
 					if($include) {
 					    for (keys(%modules)) {
 						my $trylib = $_;
-						if(-e "$out_basedir/include/$trylib/$include") {
+						if(-e "$out_basedir/$out_subdir/$trylib/$include") {
 						    print "WARNING: $iheader includes $include when it should include $trylib/$include\n";
 						}
 					    }

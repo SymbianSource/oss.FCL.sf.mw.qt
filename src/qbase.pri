@@ -4,7 +4,7 @@ INCLUDEPATH *= $$QMAKE_INCDIR_QT/$$TARGET #just for today to have some compat
 isEmpty(QT_ARCH):!isEmpty(ARCH):QT_ARCH=$$ARCH #another compat that will rot for change #215700
 TEMPLATE	= lib
 isEmpty(QT_MAJOR_VERSION) {
-   VERSION=4.6.2
+   VERSION=4.6.3
 } else {
    VERSION=$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}.$${QT_PATCH_VERSION}
 }
@@ -90,7 +90,11 @@ win32 {
     !static: DEFINES+=QT_MAKEDLL
 }
 symbian {
-    CONFIG += headerexport symbian_no_export_sqlite
+    # load the environment specific feature definitions
+    exists($${EPOCROOT}epoc32/tools/qt/mkspecs/features/environment.prf) {
+        load($${EPOCROOT}epoc32/tools/qt/mkspecs/features/environment.prf)
+    }
+    
     shared {
         DEFINES+=QT_MAKEDLL
         TARGET.CAPABILITY = All -Tcb
@@ -109,6 +113,10 @@ symbian {
         }
     }
     load(armcc_warnings)
+
+    # workaround for the fact that some of our required includes in Symbian^3
+    # now depend upon files in epoc32/include/platform
+    INCLUDEPATH += $$OS_LAYER_SYSTEMINCLUDE
 }
 win32-borland:INCLUDEPATH += kernel
 

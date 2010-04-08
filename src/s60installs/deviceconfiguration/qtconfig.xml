@@ -9,7 +9,7 @@
 		<param name='QT_ROOT' default='../../../'/>
 		<param name='INSTALLPATH' default='epoc32/tools/qt'/>
 		<param name='XPLATFORM' default='symbian-sbsv2'/>
-		<param name='PLATFORM.WIN32' default='win32-g++-symbian' />
+		<param name='PLATFORM.WIN32' default='win32-g++' />
 		<param name='PLATFORM.LINUX' default='linux-g++-32' />
 		<param name='OPTIONS' default='' />
 	</interface>

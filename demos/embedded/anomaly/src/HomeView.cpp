@@ -51,16 +51,12 @@ HomeView::HomeView(QWidget *parent)
     : QWidget(parent)
     , m_addressBar(0)
 {
-    m_addressBar = new AddressBar(this);
+    m_addressBar = new AddressBar(parent);
     connect(m_addressBar, SIGNAL(addressEntered(QString)), SLOT(gotoAddress(QString)));
 
-    m_bookmarks = new BookmarksView(this);
+    m_bookmarks = new BookmarksView(parent);
     connect(m_bookmarks, SIGNAL(urlSelected(QUrl)), SIGNAL(urlActivated(QUrl)));
 
-    QPalette pal =  m_bookmarks->palette();
-    pal.setBrush(QPalette::Base, Qt::white);
-    m_bookmarks->setPalette(pal);
-     
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setMargin(4);
     layout->setSpacing(4);

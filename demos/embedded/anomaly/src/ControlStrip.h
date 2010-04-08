@@ -58,7 +58,7 @@ signals:
     void menuClicked();
     void backClicked();
     void forwardClicked();
-    void closeClicked ();
+    void closeClicked();
 
 protected:
     void paintEvent(QPaintEvent *event);

@@ -250,6 +250,7 @@ private slots:
 #else
     void persistentWinId();
 #endif
+    void showNativeChild();
     void qobject_castInDestroyedSlot();
 
     void showHideEvent_data();
@@ -391,10 +392,17 @@ private slots:
 
 #ifdef Q_OS_SYMBIAN
     void cbaVisibility();
+    void fullScreenWindowModeTransitions();
+    void maximizedWindowModeTransitions();
+    void minimizedWindowModeTransitions();
+    void normalWindowModeTransitions();
 #endif
 
     void focusProxyAndInputMethods();
     void scrollWithoutBackingStore();
+
+    void taskQTBUG_7532_tabOrderWithFocusProxy();
+    void movedAndResizedAttributes();
 
 private:
     bool ensureScreenSize(int width, int height);
@@ -4579,6 +4587,16 @@ void tst_QWidget::persistentWinId()
     delete parent;
 }
 #endif // Q_OS_SYMBIAN
+
+void tst_QWidget::showNativeChild()
+{
+    QWidget topLevel;
+    topLevel.setGeometry(0, 0, 100, 100);
+    QWidget child(&topLevel);
+    child.winId();
+    topLevel.show();
+    QTest::qWaitForWindowShown(&topLevel);
+}
 
 class ShowHideEventWidget : public QWidget
 {
@@ -8812,7 +8830,15 @@ void tst_QWidget::translucentWidget()
 #endif
     QTest::qWait(200);
 
-    QPixmap widgetSnapshot = QPixmap::grabWindow(label.winId());
+    QPixmap widgetSnapshot;
+
+#ifdef Q_WS_WIN
+    QWidget *desktopWidget = QApplication::desktop()->screen(0);
+    if (QSysInfo::windowsVersion() >= QSysInfo::WV_VISTA)
+        widgetSnapshot = QPixmap::grabWindow(desktopWidget->winId(), 0,0, label.width(), label.height());
+    else
+#endif
+        widgetSnapshot = QPixmap::grabWindow(label.winId());
     QImage actual = widgetSnapshot.toImage().convertToFormat(QImage::Format_RGB32);
     QImage expected = pm.toImage().convertToFormat(QImage::Format_RGB32);
     QCOMPARE(actual.size(),expected.size());
@@ -9687,6 +9713,226 @@ void tst_QWidget::cbaVisibility()
     CEikButtonGroupContainer* buttonGroup = CEikonEnv::Static()->AppUiFactory()->Cba();
     QVERIFY(buttonGroup->IsVisible());
 }
+
+void tst_QWidget::fullScreenWindowModeTransitions()
+{
+    QWidget widget;
+    QVBoxLayout *layout = new QVBoxLayout;
+    QPushButton *button = new QPushButton("test Button");
+    layout->addWidget(button);
+    widget.setLayout(layout);
+    widget.show();
+
+    const QRect normalGeometry = widget.normalGeometry();
+    const QRect fullScreenGeometry = qApp->desktop()->screenGeometry(&widget);
+    const QRect maximumScreenGeometry = qApp->desktop()->availableGeometry(&widget);
+    CEikStatusPane *statusPane = CEikonEnv::Static()->AppUiFactory()->StatusPane();
+    CEikButtonGroupContainer *buttonGroup = CEikonEnv::Static()->AppUiFactory()->Cba();
+
+    //Enter
+    widget.showNormal();
+    widget.showFullScreen();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    widget.showMaximized();
+    widget.showFullScreen();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    widget.showMinimized();
+    widget.showFullScreen();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    //Exit
+    widget.showFullScreen();
+    widget.showNormal();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showFullScreen();
+    widget.showMaximized();
+    QCOMPARE(widget.geometry(), maximumScreenGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showFullScreen();
+    widget.showMinimized();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+}
+
+void tst_QWidget::maximizedWindowModeTransitions()
+{
+    QWidget widget;
+    QVBoxLayout *layout = new QVBoxLayout;
+    QPushButton *button = new QPushButton("test Button");
+    layout->addWidget(button);
+    widget.setLayout(layout);
+    widget.show();
+
+    const QRect normalGeometry = widget.normalGeometry();
+    const QRect fullScreenGeometry = qApp->desktop()->screenGeometry(&widget);
+    const QRect maximumScreenGeometry = qApp->desktop()->availableGeometry(&widget);
+    CEikStatusPane *statusPane = CEikonEnv::Static()->AppUiFactory()->StatusPane();
+    CEikButtonGroupContainer *buttonGroup = CEikonEnv::Static()->AppUiFactory()->Cba();
+
+    //Enter
+    widget.showNormal();
+    widget.showMaximized();
+    QCOMPARE(widget.geometry(), maximumScreenGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showFullScreen();
+    widget.showMaximized();
+    QCOMPARE(widget.geometry(), maximumScreenGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showMinimized();
+    widget.showMaximized();
+    QCOMPARE(widget.geometry(), maximumScreenGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    //Exit
+    widget.showMaximized();
+    widget.showNormal();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showMaximized();
+    widget.showFullScreen();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    widget.showMaximized();
+    widget.showMinimized();
+    // Since showMinimized hides window decoration availableGeometry gives different value
+    // than with decoration visible. Altual size does not really matter since widget is invisible.
+    QCOMPARE(widget.geometry(), qApp->desktop()->availableGeometry(&widget));
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+}
+
+void tst_QWidget::minimizedWindowModeTransitions()
+{
+    QWidget widget;
+    QVBoxLayout *layout = new QVBoxLayout;
+    QPushButton *button = new QPushButton("test Button");
+    layout->addWidget(button);
+    widget.setLayout(layout);
+    widget.show();
+
+    const QRect normalGeometry = widget.normalGeometry();
+    const QRect fullScreenGeometry = qApp->desktop()->screenGeometry(&widget);
+    const QRect maximumScreenGeometry = qApp->desktop()->availableGeometry(&widget);
+    CEikStatusPane *statusPane = CEikonEnv::Static()->AppUiFactory()->StatusPane();
+    CEikButtonGroupContainer *buttonGroup = CEikonEnv::Static()->AppUiFactory()->Cba();
+
+    //Enter
+    widget.showNormal();
+    widget.showMinimized();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    widget.showFullScreen();
+    widget.showMinimized();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    widget.showMaximized();
+    widget.showMinimized();
+    // Since showMinimized hides window decoration availableGeometry gives different value
+    // than with decoration visible. Altual size does not really matter since widget is invisible.
+    QCOMPARE(widget.geometry(), qApp->desktop()->availableGeometry(&widget));
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    //Exit
+    widget.showMinimized();
+    widget.showNormal();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showMinimized();
+    widget.showFullScreen();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    widget.showMinimized();
+    widget.showMaximized();
+    QCOMPARE(widget.geometry(), maximumScreenGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+}
+
+void tst_QWidget::normalWindowModeTransitions()
+{
+    QWidget widget;
+    QVBoxLayout *layout = new QVBoxLayout;
+    QPushButton *button = new QPushButton("test Button");
+    layout->addWidget(button);
+    widget.setLayout(layout);
+    widget.show();
+
+    const QRect normalGeometry = widget.normalGeometry();
+    const QRect fullScreenGeometry = qApp->desktop()->screenGeometry(&widget);
+    const QRect maximumScreenGeometry = qApp->desktop()->availableGeometry(&widget);
+    CEikStatusPane *statusPane = CEikonEnv::Static()->AppUiFactory()->StatusPane();
+    CEikButtonGroupContainer *buttonGroup = CEikonEnv::Static()->AppUiFactory()->Cba();
+
+    //Enter
+    widget.showMaximized();
+    widget.showNormal();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showFullScreen();
+    widget.showNormal();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showMinimized();
+    widget.showNormal();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    //Exit
+    widget.showNormal();
+    widget.showMaximized();
+    QCOMPARE(widget.geometry(), maximumScreenGeometry);
+    QVERIFY(buttonGroup->IsVisible());
+    QVERIFY(statusPane->IsVisible());
+
+    widget.showNormal();
+    widget.showFullScreen();
+    QCOMPARE(widget.geometry(), fullScreenGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+
+    widget.showNormal();
+    widget.showMinimized();
+    QCOMPARE(widget.geometry(), normalGeometry);
+    QVERIFY(!buttonGroup->IsVisible());
+    QVERIFY(!statusPane->IsVisible());
+}
 #endif
 
 class InputContextTester : public QInputContext
@@ -9781,6 +10027,74 @@ void tst_QWidget::scrollWithoutBackingStore()
     QCOMPARE(child.pos(),QPoint(25,25));
     scrollable.enableBackingStore();
     QCOMPARE(child.pos(),QPoint(25,25));
+}
+
+void tst_QWidget::taskQTBUG_7532_tabOrderWithFocusProxy()
+{
+    QWidget w;
+    w.setFocusPolicy(Qt::TabFocus);
+    QWidget *fp = new QWidget(&w);
+    fp->setFocusPolicy(Qt::TabFocus);
+    w.setFocusProxy(fp);
+    QWidget::setTabOrder(&w, fp);
+
+    // No Q_ASSERT, then it's allright.
+}
+
+void tst_QWidget::movedAndResizedAttributes()
+{
+#if defined (Q_OS_MAC) || defined(Q_WS_QWS) || defined(Q_OS_SYMBIAN)
+    QEXPECT_FAIL("", "FixMe, QTBUG-8941 and QTBUG-8977", Abort);
+    QVERIFY(false);
+#else
+    QWidget w;
+    w.show();
+
+    QVERIFY(!w.testAttribute(Qt::WA_Moved));
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.setWindowState(Qt::WindowFullScreen);
+
+    QVERIFY(!w.testAttribute(Qt::WA_Moved));
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.setWindowState(Qt::WindowMaximized);
+
+    QVERIFY(!w.testAttribute(Qt::WA_Moved));
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.setWindowState(Qt::WindowMinimized);
+
+    QVERIFY(!w.testAttribute(Qt::WA_Moved));
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.showNormal();
+
+    QVERIFY(!w.testAttribute(Qt::WA_Moved));
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.showMaximized();
+
+    QVERIFY(!w.testAttribute(Qt::WA_Moved));
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.showFullScreen();
+
+    QVERIFY(!w.testAttribute(Qt::WA_Moved));
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.showNormal();
+    w.move(10,10);
+    QVERIFY(w.testAttribute(Qt::WA_Moved));
+#if defined(Q_OS_WIN)
+    QEXPECT_FAIL("", "FixMe, QTBUG-8911", Abort);
+#endif
+    QVERIFY(!w.testAttribute(Qt::WA_Resized));
+
+    w.resize(100, 100);
+    QVERIFY(w.testAttribute(Qt::WA_Moved));
+    QVERIFY(w.testAttribute(Qt::WA_Resized));
+#endif
 }
 
 QTEST_MAIN(tst_QWidget)

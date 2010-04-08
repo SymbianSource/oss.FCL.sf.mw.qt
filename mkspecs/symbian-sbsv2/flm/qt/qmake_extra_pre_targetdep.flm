@@ -35,6 +35,7 @@ $(PREDEP_TARGET): $(DEPS)
 endef
 
 ifeq ($($(SINGLETON)),)
+$(call makepathfor,$(PREDEP_TARGET))
 $(eval $(qmake_extra_pre_targetdep))
 $(eval $(call GenerateStandardCleanTarget,$(PREDEP_TARGET),''))
 endif	

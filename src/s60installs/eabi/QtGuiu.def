@@ -1818,7 +1818,7 @@ EXPORTS
 	_ZN12QLineControl17_q_deleteSelectedEv @ 1817 NONAME
 	_ZN12QLineControl17processMouseEventEP11QMouseEvent @ 1818 NONAME
 	_ZN12QLineControl17resetInputContextEv @ 1819 NONAME
-	_ZN12QLineControl17updateDisplayTextEv @ 1820 NONAME
+	_ZN12QLineControl17updateDisplayTextEv @ 1820 NONAME ABSENT
 	_ZN12QLineControl18displayTextChangedERK7QString @ 1821 NONAME
 	_ZN12QLineControl18removeSelectedTextEv @ 1822 NONAME
 	_ZN12QLineControl19_q_clipboardChangedEv @ 1823 NONAME
@@ -4663,7 +4663,7 @@ EXPORTS
 	_ZN20QGraphicsItemPrivate12resolveDepthEv @ 4662 NONAME
 	_ZN20QGraphicsItemPrivate12setPosHelperERK7QPointF @ 4663 NONAME
 	_ZN20QGraphicsItemPrivate13clearSubFocusEP13QGraphicsItem @ 4664 NONAME
-	_ZN20QGraphicsItemPrivate14setFocusHelperEN2Qt11FocusReasonEb @ 4665 NONAME
+	_ZN20QGraphicsItemPrivate14setFocusHelperEN2Qt11FocusReasonEb @ 4665 NONAME ABSENT
 	_ZN20QGraphicsItemPrivate15resetFocusProxyEv @ 4666 NONAME
 	_ZN20QGraphicsItemPrivate16setEnabledHelperEbbb @ 4667 NONAME
 	_ZN20QGraphicsItemPrivate16setVisibleHelperEbbb @ 4668 NONAME
@@ -7004,21 +7004,21 @@ EXPORTS
 	_ZN9QPolygonFC1ERK8QPolygon @ 7003 NONAME
 	_ZN9QPolygonFC2ERK6QRectF @ 7004 NONAME
 	_ZN9QPolygonFC2ERK8QPolygon @ 7005 NONAME
-	_ZN9QS60Style11qt_metacallEN11QMetaObject4CallEiPPv @ 7006 NONAME ABSENT
-	_ZN9QS60Style11qt_metacastEPKc @ 7007 NONAME ABSENT
+	_ZN9QS60Style11qt_metacallEN11QMetaObject4CallEiPPv @ 7006 NONAME
+	_ZN9QS60Style11qt_metacastEPKc @ 7007 NONAME
 	_ZN9QS60Style16setStylePropertyEPKcRK8QVariant @ 7008 NONAME ABSENT
-	_ZN9QS60Style16staticMetaObjectE @ 7009 NONAME DATA 16 ABSENT
-	_ZN9QS60Style19getStaticMetaObjectEv @ 7010 NONAME ABSENT
-	_ZN9QS60Style5eventEP6QEvent @ 7011 NONAME ABSENT
-	_ZN9QS60Style6polishEP12QApplication @ 7012 NONAME ABSENT
-	_ZN9QS60Style6polishEP7QWidget @ 7013 NONAME ABSENT
-	_ZN9QS60Style8unpolishEP12QApplication @ 7014 NONAME ABSENT
-	_ZN9QS60Style8unpolishEP7QWidget @ 7015 NONAME ABSENT
-	_ZN9QS60StyleC1Ev @ 7016 NONAME ABSENT
-	_ZN9QS60StyleC2Ev @ 7017 NONAME ABSENT
-	_ZN9QS60StyleD0Ev @ 7018 NONAME ABSENT
-	_ZN9QS60StyleD1Ev @ 7019 NONAME ABSENT
-	_ZN9QS60StyleD2Ev @ 7020 NONAME ABSENT
+	_ZN9QS60Style16staticMetaObjectE @ 7009 NONAME DATA 16
+	_ZN9QS60Style19getStaticMetaObjectEv @ 7010 NONAME
+	_ZN9QS60Style5eventEP6QEvent @ 7011 NONAME
+	_ZN9QS60Style6polishEP12QApplication @ 7012 NONAME
+	_ZN9QS60Style6polishEP7QWidget @ 7013 NONAME
+	_ZN9QS60Style8unpolishEP12QApplication @ 7014 NONAME
+	_ZN9QS60Style8unpolishEP7QWidget @ 7015 NONAME
+	_ZN9QS60StyleC1Ev @ 7016 NONAME
+	_ZN9QS60StyleC2Ev @ 7017 NONAME
+	_ZN9QS60StyleD0Ev @ 7018 NONAME
+	_ZN9QS60StyleD1Ev @ 7019 NONAME
+	_ZN9QS60StyleD2Ev @ 7020 NONAME
 	_ZN9QShortcut10setContextEN2Qt15ShortcutContextE @ 7021 NONAME
 	_ZN9QShortcut10setEnabledEb @ 7022 NONAME
 	_ZN9QShortcut11qt_metacallEN11QMetaObject4CallEiPPv @ 7023 NONAME
@@ -10441,17 +10441,17 @@ EXPORTS
 	_ZNK9QPolygonF13containsPointERK7QPointFN2Qt8FillRuleE @ 10440 NONAME
 	_ZNK9QPolygonF6unitedERKS_ @ 10441 NONAME
 	_ZNK9QPolygonF9toPolygonEv @ 10442 NONAME
-	_ZNK9QS60Style10metaObjectEv @ 10443 NONAME ABSENT
-	_ZNK9QS60Style11drawControlEN6QStyle14ControlElementEPK12QStyleOptionP8QPainterPK7QWidget @ 10444 NONAME ABSENT
-	_ZNK9QS60Style11pixelMetricEN6QStyle11PixelMetricEPK12QStyleOptionPK7QWidget @ 10445 NONAME ABSENT
-	_ZNK9QS60Style13drawPrimitiveEN6QStyle16PrimitiveElementEPK12QStyleOptionP8QPainterPK7QWidget @ 10446 NONAME ABSENT
+	_ZNK9QS60Style10metaObjectEv @ 10443 NONAME
+	_ZNK9QS60Style11drawControlEN6QStyle14ControlElementEPK12QStyleOptionP8QPainterPK7QWidget @ 10444 NONAME
+	_ZNK9QS60Style11pixelMetricEN6QStyle11PixelMetricEPK12QStyleOptionPK7QWidget @ 10445 NONAME
+	_ZNK9QS60Style13drawPrimitiveEN6QStyle16PrimitiveElementEPK12QStyleOptionP8QPainterPK7QWidget @ 10446 NONAME
 	_ZNK9QS60Style13stylePropertyEPKc @ 10447 NONAME ABSENT
-	_ZNK9QS60Style14subControlRectEN6QStyle14ComplexControlEPK19QStyleOptionComplexNS0_10SubControlEPK7QWidget @ 10448 NONAME ABSENT
-	_ZNK9QS60Style14subElementRectEN6QStyle10SubElementEPK12QStyleOptionPK7QWidget @ 10449 NONAME ABSENT
-	_ZNK9QS60Style16sizeFromContentsEN6QStyle12ContentsTypeEPK12QStyleOptionRK5QSizePK7QWidget @ 10450 NONAME ABSENT
-	_ZNK9QS60Style18drawComplexControlEN6QStyle14ComplexControlEPK19QStyleOptionComplexP8QPainterPK7QWidget @ 10451 NONAME ABSENT
-	_ZNK9QS60Style26standardIconImplementationEN6QStyle14StandardPixmapEPK12QStyleOptionPK7QWidget @ 10452 NONAME ABSENT
-	_ZNK9QS60Style9styleHintEN6QStyle9StyleHintEPK12QStyleOptionPK7QWidgetP16QStyleHintReturn @ 10453 NONAME ABSENT
+	_ZNK9QS60Style14subControlRectEN6QStyle14ComplexControlEPK19QStyleOptionComplexNS0_10SubControlEPK7QWidget @ 10448 NONAME
+	_ZNK9QS60Style14subElementRectEN6QStyle10SubElementEPK12QStyleOptionPK7QWidget @ 10449 NONAME
+	_ZNK9QS60Style16sizeFromContentsEN6QStyle12ContentsTypeEPK12QStyleOptionRK5QSizePK7QWidget @ 10450 NONAME
+	_ZNK9QS60Style18drawComplexControlEN6QStyle14ComplexControlEPK19QStyleOptionComplexP8QPainterPK7QWidget @ 10451 NONAME
+	_ZNK9QS60Style26standardIconImplementationEN6QStyle14StandardPixmapEPK12QStyleOptionPK7QWidget @ 10452 NONAME
+	_ZNK9QS60Style9styleHintEN6QStyle9StyleHintEPK12QStyleOptionPK7QWidgetP16QStyleHintReturn @ 10453 NONAME
 	_ZNK9QShortcut10autoRepeatEv @ 10454 NONAME
 	_ZNK9QShortcut10metaObjectEv @ 10455 NONAME
 	_ZNK9QShortcut2idEv @ 10456 NONAME
@@ -10873,7 +10873,7 @@ EXPORTS
 	_ZTI9QKeyEvent @ 10872 NONAME
 	_ZTI9QLineEdit @ 10873 NONAME
 	_ZTI9QListView @ 10874 NONAME
-	_ZTI9QS60Style @ 10875 NONAME ABSENT
+	_ZTI9QS60Style @ 10875 NONAME
 	_ZTI9QShortcut @ 10876 NONAME
 	_ZTI9QSizeGrip @ 10877 NONAME
 	_ZTI9QSplitter @ 10878 NONAME
@@ -11148,7 +11148,7 @@ EXPORTS
 	_ZTV9QKeyEvent @ 11147 NONAME
 	_ZTV9QLineEdit @ 11148 NONAME
 	_ZTV9QListView @ 11149 NONAME
-	_ZTV9QS60Style @ 11150 NONAME ABSENT
+	_ZTV9QS60Style @ 11150 NONAME
 	_ZTV9QShortcut @ 11151 NONAME
 	_ZTV9QSizeGrip @ 11152 NONAME
 	_ZTV9QSplitter @ 11153 NONAME
@@ -11648,12 +11648,12 @@ EXPORTS
 	_ZN24QImagePixmapCleanupHooks18enableCleanupHooksEP11QPixmapData @ 11647 NONAME
 	_ZN24QImagePixmapCleanupHooks18enableCleanupHooksERK6QImage @ 11648 NONAME
 	_ZN24QImagePixmapCleanupHooks18enableCleanupHooksERK7QPixmap @ 11649 NONAME
-	_ZN24QImagePixmapCleanupHooks24addPixmapDestructionHookEPFvP7QPixmapE @ 11650 NONAME
-	_ZN24QImagePixmapCleanupHooks25addPixmapModificationHookEPFvP7QPixmapE @ 11651 NONAME
-	_ZN24QImagePixmapCleanupHooks27removePixmapDestructionHookEPFvP7QPixmapE @ 11652 NONAME
-	_ZN24QImagePixmapCleanupHooks28removePixmapModificationHookEPFvP7QPixmapE @ 11653 NONAME
-	_ZN24QImagePixmapCleanupHooks29executePixmapDestructionHooksEP7QPixmap @ 11654 NONAME
-	_ZN24QImagePixmapCleanupHooks30executePixmapModificationHooksEP7QPixmap @ 11655 NONAME
+	_ZN24QImagePixmapCleanupHooks24addPixmapDestructionHookEPFvP7QPixmapE @ 11650 NONAME ABSENT
+	_ZN24QImagePixmapCleanupHooks25addPixmapModificationHookEPFvP7QPixmapE @ 11651 NONAME ABSENT
+	_ZN24QImagePixmapCleanupHooks27removePixmapDestructionHookEPFvP7QPixmapE @ 11652 NONAME ABSENT
+	_ZN24QImagePixmapCleanupHooks28removePixmapModificationHookEPFvP7QPixmapE @ 11653 NONAME ABSENT
+	_ZN24QImagePixmapCleanupHooks29executePixmapDestructionHooksEP7QPixmap @ 11654 NONAME ABSENT
+	_ZN24QImagePixmapCleanupHooks30executePixmapModificationHooksEP7QPixmap @ 11655 NONAME ABSENT
 	_ZN25QGraphicsDropShadowEffect13setBlurRadiusEf @ 11656 NONAME
 	_ZN25QGraphicsDropShadowEffect17blurRadiusChangedEf @ 11657 NONAME
 	_ZN25QGraphicsDropShadowEffect4drawEP8QPainter @ 11658 NONAME
@@ -11742,25 +11742,25 @@ EXPORTS
 	_ZNK11QVectorPath12addCacheDataEP14QPaintEngineExPvPFvS1_S2_E @ 11741 NONAME
 	_ZNK20QGraphicsItemPrivate20discardUpdateRequestEbbb @ 11742 NONAME
 	_ZN11QEglContext10extensionsEv @ 11743 NONAME 
-	_ZN11QEglContext10getDisplayEP12QPaintDevice @ 11744 NONAME 
+	_ZN11QEglContext10getDisplayEP12QPaintDevice @ 11744 NONAME ABSENT 
 	_ZN11QEglContext10waitClientEv @ 11745 NONAME 
 	_ZN11QEglContext10waitNativeEv @ 11746 NONAME 
 	_ZN11QEglContext11doneCurrentEv @ 11747 NONAME 
 	_ZN11QEglContext11errorStringEi @ 11748 NONAME 
 	_ZN11QEglContext11makeCurrentEi @ 11749 NONAME 
-	_ZN11QEglContext11openDisplayEP12QPaintDevice @ 11750 NONAME 
+	_ZN11QEglContext11openDisplayEP12QPaintDevice @ 11750 NONAME ABSENT
 	_ZN11QEglContext11swapBuffersEi @ 11751 NONAME 
 	_ZN11QEglContext12chooseConfigERK14QEglPropertiesN4QEgl16PixelFormatMatchE @ 11752 NONAME 
 	_ZN11QEglContext12hasExtensionEPKc @ 11753 NONAME 
 	_ZN11QEglContext13createContextEPS_PK14QEglProperties @ 11754 NONAME 
 	_ZN11QEglContext13createSurfaceEP12QPaintDevicePK14QEglProperties @ 11755 NONAME 
 	_ZN11QEglContext14currentContextEN4QEgl3APIE @ 11756 NONAME 
-	_ZN11QEglContext14defaultDisplayEP12QPaintDevice @ 11757 NONAME 
+	_ZN11QEglContext14defaultDisplayEP12QPaintDevice @ 11757 NONAME ABSENT
 	_ZN11QEglContext14destroySurfaceEi @ 11758 NONAME 
 	_ZN11QEglContext14dumpAllConfigsEv @ 11759 NONAME 
 	_ZN11QEglContext15lazyDoneCurrentEv @ 11760 NONAME 
 	_ZN11QEglContext17setCurrentContextEN4QEgl3APIEPS_ @ 11761 NONAME 
-	_ZN11QEglContext7destroyEv @ 11762 NONAME 
+	_ZN11QEglContext7destroyEv @ 11762 NONAME ABSENT
 	_ZN11QEglContextC1Ev @ 11763 NONAME 
 	_ZN11QEglContextC2Ev @ 11764 NONAME 
 	_ZN11QEglContextD1Ev @ 11765 NONAME 
@@ -11792,4 +11792,24 @@ EXPORTS
 	_ZN19QApplicationPrivate20symbianHandleCommandEPK13QSymbianEvent @ 11791 NONAME
 	_ZN19QApplicationPrivate21symbianProcessWsEventEPK13QSymbianEvent @ 11792 NONAME
 	_ZN19QApplicationPrivate21symbianResourceChangeEPK13QSymbianEvent @ 11793 NONAME
-
+	_ZN20QGraphicsItemPrivate19setParentItemHelperEP13QGraphicsItemPK8QVariantS4_ @ 11794 NONAME
+	_ZN20QGraphicsItemPrivate19updateAncestorFlagsEv @ 11795 NONAME
+	_ZN20QGraphicsItemPrivate41invalidateChildGraphicsEffectsRecursivelyENS_16InvalidateReasonE @ 11796 NONAME
+	_ZN20QGraphicsItemPrivate42invalidateParentGraphicsEffectsRecursivelyEv @ 11797 NONAME
+	_ZN20QGraphicsItemPrivate44updateChildWithGraphicsEffectFlagRecursivelyEv @ 11798 NONAME
+	_ZN24QImagePixmapCleanupHooks28addPixmapDataDestructionHookEPFvP11QPixmapDataE @ 11799 NONAME
+	_ZN24QImagePixmapCleanupHooks29addPixmapDataModificationHookEPFvP11QPixmapDataE @ 11800 NONAME
+	_ZN24QImagePixmapCleanupHooks31removePixmapDataDestructionHookEPFvP11QPixmapDataE @ 11801 NONAME
+	_ZN24QImagePixmapCleanupHooks32removePixmapDataModificationHookEPFvP11QPixmapDataE @ 11802 NONAME
+	_ZN24QImagePixmapCleanupHooks33executePixmapDataDestructionHooksEP11QPixmapData @ 11803 NONAME
+	_ZN24QImagePixmapCleanupHooks34executePixmapDataModificationHooksEP11QPixmapData @ 11804 NONAME
+	_ZN9QS60Style10timerEventEP11QTimerEvent @ 11805 NONAME
+	_ZN9QS60Style11eventFilterEP7QObjectP6QEvent @ 11806 NONAME
+	_ZN13QFontDatabase25removeAllApplicationFontsEv @ 11807 NONAME
+	_ZN11QEglContext7displayEv @ 11808 NONAME
+    _ZN20QGraphicsItemPrivate10resetWidthEv @ 11809 NONAME
+    _ZN20QGraphicsItemPrivate11resetHeightEv @ 11810 NONAME
+    _ZN20QGraphicsItemPrivate8setWidthEf @ 11811 NONAME
+    _ZN20QGraphicsItemPrivate9setHeightEf @ 11812 NONAME
+    _ZNK20QGraphicsItemPrivate5widthEv @ 11813 NONAME
+    _ZNK20QGraphicsItemPrivate6heightEv @ 11814 NONAME

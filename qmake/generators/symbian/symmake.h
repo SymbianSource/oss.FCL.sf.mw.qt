@@ -49,9 +49,9 @@ QT_BEGIN_NAMESPACE
 
 #define BLD_INF_FILENAME "bld.inf"
 #define MAKEFILE_DEPENDENCY_SEPARATOR " \\\n\t"
-
 #define QT_EXTRA_INCLUDE_DIR "tmp"
 #define MAKE_CACHE_NAME ".make.cache"
+#define SYMBIAN_TEST_CONFIG "symbian_test"
 
 class SymbianMakefileGenerator : public MakefileGenerator
 {
@@ -85,7 +85,7 @@ protected:
 		
     void removeSpecialCharacters(QString& str);
     QString fixPathForMmp(const QString& origPath, const QDir& parentDir);
-    QString canonizePath(const QString& origPath);
+    QString absolutizePath(const QString& origPath);
 
     virtual bool writeMakefile(QTextStream &t);
     void generatePkgFile(const QString &iconFile, DeploymentList &depList);
@@ -108,8 +108,10 @@ protected:
                                    QString &checkString);
 
     void writeHeader(QTextStream &t);
-    void writeExportPart(QTextStream &t);
-    void writeBldInfContent(QTextStream& t, bool addDeploymentExtension, const QString &iconFile, DeploymentList &depList);
+    void writeBldInfContent(QTextStream& t,
+                            bool addDeploymentExtension,
+                            const QString &iconFile,
+                            DeploymentList &depList);
 
     static bool removeDuplicatedStrings(QStringList& stringList);
 
@@ -129,11 +131,16 @@ protected:
 
     void writeCustomDefFile();
 
-    void writeRegRssFile(QStringList &useritems);
+    void writeRegRssFile(QMap<QString, QStringList> &useritems);
+    void writeRegRssList(QTextStream &t, QStringList &userList,
+                         const QString &listTag,
+                         const QString &listItem);
     void writeRssFile(QString &numberOfIcons, QString &iconfile);
     void writeLocFile(QStringList &symbianLangCodes);
     void writeSymbianLocFile(QStringList &symbianLangCodes);
-    void readRssRules(QString &numberOfIcons, QString &iconFile, QStringList &userRssRules);
+    void readRssRules(QString &numberOfIcons,
+                      QString &iconFile,
+                      QMap<QString, QStringList> &userRssRules);
 
     QStringList symbianLangCodesFromTsFiles();
     void fillQt2S60LangMapTable();

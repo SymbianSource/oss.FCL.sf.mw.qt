@@ -80,13 +80,19 @@
 #define q_vertexTypeEnum GL_FIXED
 #endif //QT_OPENGL_ES_1_CL
 
-#ifdef QT_OPENGL_ES
+#if defined(QT_OPENGL_ES) || defined(QT_OPENGL_ES_2)
 QT_BEGIN_INCLUDE_NAMESPACE
+
 #if defined(QT_OPENGL_ES_2)
-#include <EGL/egl.h>
-#else
-#include <GLES/egl.h>
+#   include <GLES2/gl2.h>
 #endif
+
+#if defined(QT_GLES_EGL)
+#   include <GLES/egl.h>
+#else
+#   include <EGL/egl.h>
+#endif
+
 QT_END_INCLUDE_NAMESPACE
 #endif
 
@@ -179,7 +185,9 @@ public:
 #if defined(Q_WS_X11) && defined(QT_OPENGL_ES)
                        , eglSurfaceWindowId(0)
 #endif
-        {}
+    {
+        isGLWidget = 1;
+    }
 
     ~QGLWidgetPrivate() {}
 
@@ -522,7 +530,7 @@ public:
     QSize bindCompressedTexturePVR(const char *buf, int len);
 };
 
-class QGLTextureCache {
+class Q_AUTOTEST_EXPORT QGLTextureCache {
 public:
     QGLTextureCache();
     ~QGLTextureCache();
@@ -538,12 +546,9 @@ public:
 
     static QGLTextureCache *instance();
     static void deleteIfEmpty();
-    static void imageCleanupHook(qint64 cacheKey);
-    static void cleanupTextures(QPixmap* pixmap);
-#ifdef Q_WS_X11
-    // X11 needs to catch pixmap data destruction to delete EGL/GLX pixmap surfaces
-    static void cleanupPixmapSurfaces(QPixmap* pixmap);
-#endif
+    static void cleanupTexturesForCacheKey(qint64 cacheKey);
+    static void cleanupTexturesForPixampData(QPixmapData* pixmap);
+    static void cleanupBeforePixmapDestruction(QPixmapData* pixmap);
 
 private:
     QCache<qint64, QGLTexture> m_cache;
@@ -573,7 +578,7 @@ inline GLenum qt_gl_preferredTextureTarget()
 }
 
 // One resource per group of shared contexts.
-class Q_AUTOTEST_EXPORT QGLContextResource
+class Q_OPENGL_EXPORT QGLContextResource
 {
 public:
     typedef void (*FreeFunc)(void *);

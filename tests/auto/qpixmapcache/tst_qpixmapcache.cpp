@@ -487,7 +487,9 @@ void tst_QPixmapCache::pixmapKey()
 // The following function is implemented in qpixmapcache.cpp in GUI but export for 
 // auto test only with marco Q_AUTOTEST_EXPORT
 
+//QT_BEGIN_NAMESPACE
 //extern int q_QPixmapCache_keyHashSize();
+//QT_END_NAMESPACE
 
 void tst_QPixmapCache::noLeak()
 {

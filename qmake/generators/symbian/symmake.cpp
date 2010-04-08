@@ -51,6 +51,9 @@
 #include <qxmlstream.h>
 #include <QSettings>
 
+// Included from tools/shared
+#include <symbian/epocroot.h>
+
 #define RESOURCE_DIRECTORY_MMP "/resource/apps"
 #define RESOURCE_DIRECTORY_RESOURCE "\\\\resource\\\\apps\\\\"
 #define REGISTRATION_RESOURCE_DIRECTORY_HW "/private/10003a3f/import/apps"
@@ -62,12 +65,18 @@
 #define BLD_INF_TAG_MMPFILES "prj_mmpfiles"
 #define BLD_INF_TAG_TESTMMPFILES "prj_testmmpfiles"
 #define BLD_INF_TAG_EXTENSIONS "prj_extensions"
-#define BLD_INF_TAG_EXPORTS "prj_exports"
+#define BLD_INF_TAG_TESTEXTENSIONS "prj_testextensions"
 
 #define RSS_RULES "RSS_RULES"
 #define RSS_RULES_BASE "RSS_RULES."
 #define RSS_TAG_NBROFICONS "number_of_icons"
 #define RSS_TAG_ICONFILE "icon_file"
+#define RSS_TAG_HEADER "header"
+#define RSS_TAG_SERVICE_LIST "service_list"
+#define RSS_TAG_FILE_OWNERSHIP_LIST "file_ownership_list"
+#define RSS_TAG_DATATYPE_LIST "datatype_list"
+#define RSS_TAG_FOOTER "footer"
+#define RSS_TAG_DEFAULT "default_rules" // Same as just giving rules without tag
 
 #define MMP_TARGET "TARGET"
 #define MMP_TARGETTYPE "TARGETTYPE"
@@ -89,7 +98,11 @@
 #define MMP_END_RESOURCE "END"
 
 #define SIS_TARGET "sis"
+#define INSTALLER_SIS_TARGET "installer_sis"
+#define ROM_STUB_SIS_TARGET "stub_sis"
 #define OK_SIS_TARGET "ok_sis"
+#define OK_INSTALLER_SIS_TARGET "ok_installer_sis"
+#define OK_ROM_STUB_SIS_TARGET "ok_stub_sis"
 #define FAIL_SIS_NOPKG_TARGET "fail_sis_nopkg"
 #define FAIL_SIS_NOCACHE_TARGET "fail_sis_nocache"
 
@@ -104,11 +117,13 @@ QString SymbianMakefileGenerator::fixPathForMmp(const QString& origPath, const Q
 {
     static QString epocRootStr;
     if (epocRootStr.isEmpty()) {
-        QFileInfo efi(epocRoot());
-        epocRootStr = efi.canonicalFilePath();
-        if (epocRootStr.isEmpty()) {
+        epocRootStr = epocRoot();
+        QFileInfo efi(epocRootStr);
+        if (!efi.exists() || epocRootStr.isEmpty()) {
             fprintf(stderr, "Unable to resolve epocRoot '%s' to real dir on current drive, defaulting to '/' for mmp paths\n", qPrintable(epocRoot()));
             epocRootStr = "/";
+        } else {
+            epocRootStr = efi.absoluteFilePath();
         }
         if (!epocRootStr.endsWith("/"))
             epocRootStr += "/";
@@ -132,52 +147,25 @@ QString SymbianMakefileGenerator::fixPathForMmp(const QString& origPath, const Q
     return resultPath;
 }
 
-QString SymbianMakefileGenerator::canonizePath(const QString& origPath)
+QString SymbianMakefileGenerator::absolutizePath(const QString& origPath)
 {
-    // Since current path gets appended almost always anyway, use it as default
-    // for nonexisting paths.
-    static QString defaultPath;
-    if (defaultPath.isEmpty()) {
-        QFileInfo fi(".");
-        defaultPath = fi.canonicalFilePath();
-    }
-
     // Prepend epocroot to any paths beginning with "/epoc32/"
     QString resultPath = QDir::fromNativeSeparators(origPath);
-    QString tempPath(resultPath);
-    bool isEpoc = false;
-    if (resultPath.startsWith("/epoc32/", Qt::CaseInsensitive)) {
-        isEpoc = true;
+    if (resultPath.startsWith("/epoc32/", Qt::CaseInsensitive))
         resultPath = QDir::fromNativeSeparators(epocRoot()) + resultPath.mid(1);
-    }
 
     QFileInfo fi(fileInfo(resultPath));
-    if(fi.isDir()) {
-        if (isEpoc)
-            resultPath = fi.absoluteFilePath();//canonicalFilePath();
-        else
-            resultPath = fi.canonicalFilePath();            
+
+    // Since origPath can be something given in HEADERS, we need to check if we are dealing
+    // with a file or a directory. In case the origPath doesn't yet exist, isFile() returns
+    // false and we default to assuming it is a dir.
+    if (fi.isFile()) {
+        resultPath = fi.absolutePath();
     } else {
-        if (isEpoc)
-            resultPath = fi.absolutePath();//canonicalPath();
-        else
-            resultPath = fi.canonicalPath();
-    }
-    //some fix for the not existed EPOC32\include folder
-    if (isEpoc) {
-        int index = resultPath.lastIndexOf("/epoc32/"); 
-        QString tmpRes = resultPath.mid(index);
-        if (tmpRes != tempPath) {
-            //we have the problems for not existed include directory
-            //change the path
-            resultPath.replace(tmpRes, tempPath);
-            }
+        resultPath = fi.absoluteFilePath();
     }
 
     resultPath = QDir::cleanPath(resultPath);
-
-    if (resultPath.isEmpty())
-        resultPath = defaultPath;
 
     return resultPath;
 }
@@ -220,7 +208,7 @@ bool SymbianMakefileGenerator::writeMakefile(QTextStream &t)
 
     QString numberOfIcons;
     QString iconFile;
-    QStringList userRssRules;
+    QMap<QString, QStringList> userRssRules;
     readRssRules(numberOfIcons, iconFile, userRssRules);
 
     // Get the application translations and convert to symbian OS lang code, i.e. decical number
@@ -322,25 +310,58 @@ void SymbianMakefileGenerator::generatePkgFile(const QString &iconFile, Deployme
         generatePrint(fileInfo(pkgFile.fileName()).absoluteFilePath());
     }
     generatedFiles << pkgFile.fileName();
+    QTextStream t(&pkgFile);
+
+    QString installerSisHeader = project->values("DEPLOYMENT.installer_header").join("\n");
+    if (installerSisHeader.isEmpty())
+        installerSisHeader = "0xA000D7CE"; // Use default self-signable UID if not defined
+
+    QString wrapperStreamBuffer;
+    QTextStream tw(&wrapperStreamBuffer);
+
+    QString dateStr = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     // Header info
-    QTextStream t(&pkgFile);
-    t << QString("; %1 generated by qmake at %2").arg(pkgFilename).arg(QDateTime::currentDateTime().toString(Qt::ISODate))  << endl;
-    t << "; This file is generated by qmake and should not be modified by the user" << endl;
-    t << ";" << endl << endl;
+    QString wrapperPkgFilename = QString("%1_installer.%2")
+                                .arg(fixedTarget)
+                                .arg("pkg");
+    QString headerComment = "; %1 generated by qmake at %2\n"
+        "; This file is generated by qmake and should not be modified by the user\n"
+        ";\n\n";
+    t << headerComment.arg(pkgFilename).arg(dateStr);
+    tw << headerComment.arg(wrapperPkgFilename).arg(dateStr);
 
     // Construct QStringList from pkg_prerules since we need search it before printed to file
+    // Note: Though there can't be more than one language or header line, use stringlists
+    // in case user wants comments to go with the rules.
     QStringList rawPkgPreRules;
+    QStringList languageRules;
+    QStringList headerRules;
     foreach(QString deploymentItem, project->values("DEPLOYMENT")) {
         foreach(QString pkgrulesItem, project->values(deploymentItem + ".pkg_prerules")) {
             QStringList pkgrulesValue = project->values(pkgrulesItem);
             // If there is no stringlist defined for a rule, use rule name directly
             // This is convenience for defining single line mmp statements
             if (pkgrulesValue.isEmpty()) {
-                rawPkgPreRules << pkgrulesItem;
+                if (pkgrulesItem.startsWith("&"))
+                    languageRules << pkgrulesItem;
+                else if (pkgrulesItem.startsWith("#"))
+                    headerRules << pkgrulesItem;
+                else
+                    rawPkgPreRules << pkgrulesItem;
             } else {
-                foreach(QString pkgrule, pkgrulesValue) {
-                    rawPkgPreRules << pkgrule;
+                if (containsStartWithItem('&', pkgrulesValue)) {
+                    foreach(QString pkgrule, pkgrulesValue) {
+                        languageRules << pkgrule;
+                    }
+                } else if (containsStartWithItem('#', pkgrulesValue)) {
+                    foreach(QString pkgrule, pkgrulesValue) {
+                        headerRules << pkgrule;
+                    }
+                } else {
+                    foreach(QString pkgrule, pkgrulesValue) {
+                        rawPkgPreRules << pkgrule;
+                    }
                 }
             }
         }
@@ -348,46 +369,65 @@ void SymbianMakefileGenerator::generatePkgFile(const QString &iconFile, Deployme
 
     // Apply some defaults if specific data does not exist in PKG pre-rules
 
-    if (!containsStartWithItem('&', rawPkgPreRules)) {
+    if (languageRules.isEmpty()) {
         // language, (*** hardcoded to english atm, should be parsed from TRANSLATIONS)
-        t << "; Language" << endl;
-        t << "&EN" << endl << endl;
-    } else {
+        languageRules << "; Language\n&EN\n\n";
+    } else if (headerRules.isEmpty()) {
         // In case user defines langs, he must take care also about SIS header
-        if (!containsStartWithItem('#', rawPkgPreRules))
-            fprintf(stderr, "Warning: If language is defined with DEPLOYMENT pkg_prerules, also the SIS header must be defined\n");
+        fprintf(stderr, "Warning: If language is defined with DEPLOYMENT pkg_prerules, also the SIS header must be defined\n");
     }
+
+    t << languageRules.join("\n") << endl;
+    tw << languageRules.join("\n") << endl;
 
     // name of application, UID and version
     QString applicationVersion = project->first("VERSION").isEmpty() ? "1,0,0" : project->first("VERSION").replace('.', ',');
+    QString sisHeader = "; SIS header: name, uid, version\n#{\"%1\"},(%2),%3\n\n";
+    QString visualTarget = escapeFilePath(fileFixify(project->first("TARGET")));
+    visualTarget = removePathSeparators(visualTarget);
+    QString wrapperTarget = visualTarget + " installer";
 
-    if (!containsStartWithItem('#', rawPkgPreRules)) {
-        QString visualTarget = escapeFilePath(fileFixify(project->first("TARGET")));
-        visualTarget = removePathSeparators(visualTarget);
-
-        t << "; SIS header: name, uid, version" << endl;
-        t << QString("#{\"%1\"},(%2),%3").arg(visualTarget).arg(uid3).arg(applicationVersion) << endl << endl;
+    if (installerSisHeader.startsWith("0x", Qt::CaseInsensitive)) {
+        tw << sisHeader.arg(wrapperTarget).arg(installerSisHeader).arg(applicationVersion);
+    } else {
+        tw << installerSisHeader << endl;
     }
 
+    if (headerRules.isEmpty())
+        t << sisHeader.arg(visualTarget).arg(uid3).arg(applicationVersion);
+    else
+        t << headerRules.join("\n") << endl;
+
     // Localized vendor name
+    QString vendorName;
     if (!containsStartWithItem('%', rawPkgPreRules)) {
-        t << "; Localised Vendor name" << endl;
-        t << "%{\"Vendor\"}" << endl << endl;
+        vendorName += "; Localised Vendor name\n%{\"Vendor\"}\n\n";
     }
 
     // Unique vendor name
     if (!containsStartWithItem(':', rawPkgPreRules)) {
-        t << "; Unique Vendor name" << endl;
-        t << ":\"Vendor\"" << endl << endl;
+        vendorName += "; Unique Vendor name\n:\"Vendor\"\n\n";
     }
+
+    t << vendorName;
+    tw << vendorName;
 
     // PKG pre-rules - these are added before actual file installations i.e. SIS package body
     if (rawPkgPreRules.size()) {
-        t << "; Manual PKG pre-rules from PRO files" << endl;
+        QString comment = "\n; Manual PKG pre-rules from PRO files\n";
+        t << comment;
+        tw << comment;
+
         foreach(QString item, rawPkgPreRules) {
+            // Only regular pkg file should have package dependencies or pkg header if that is
+            // defined using prerules.
+            if (!item.startsWith("(") && !item.startsWith("#")) {
+                tw << item << endl;
+            }
             t << item << endl;
         }
         t << endl;
+        tw << endl;
     }
 
     // Begin Manufacturer block
@@ -409,7 +449,6 @@ void SymbianMakefileGenerator::generatePkgFile(const QString &iconFile, Deployme
     // Find location of builds
     QString epocReleasePath = QString("%1epoc32/release/$(PLATFORM)/$(TARGET)")
                               .arg(epocRoot());
-
 
     if (targetType == TypeExe) {
         // deploy .exe file
@@ -447,14 +486,29 @@ void SymbianMakefileGenerator::generatePkgFile(const QString &iconFile, Deployme
     // deploy any additional DEPLOYMENT  files
     QString remoteTestPath;
     remoteTestPath = QString("!:\\private\\%1").arg(privateDirUid);
+    QString zDir = epocRoot() + QLatin1String("epoc32/data/z");
 
     initProjectDeploySymbian(project, depList, remoteTestPath, true, "$(PLATFORM)", "$(TARGET)", generatedDirs, generatedFiles);
     if (depList.size())
         t << "; DEPLOYMENT" << endl;
     for (int i = 0; i < depList.size(); ++i)  {
-        t << QString("\"%1\"    - \"%2\"")
-             .arg(QString(depList.at(i).from).replace('\\','/'))
-             .arg(depList.at(i).to) << endl;
+        QString from = depList.at(i).from;
+        QString to = depList.at(i).to;
+
+        // Deploy anything not already deployed from under epoc32 instead from under
+        // \epoc32\data\z\ to enable using pkg file without rebuilding
+        // the project, which can be useful for some binary only distributions.
+        if (!from.contains(QLatin1String("epoc32"), Qt::CaseInsensitive)) {
+            from = to;
+            if (from.size() > 1 && from.at(1) == QLatin1Char(':'))
+                from = from.mid(2);
+            from.prepend(zDir);
+        } else {
+            if (from.size() > 1 && from.at(1) == QLatin1Char(':'))
+                from = from.mid(2);
+        }
+
+        t << QString("\"%1\"    - \"%2\"").arg(from.replace('\\','/')).arg(to) << endl;
     }
     t << endl;
 
@@ -498,6 +552,30 @@ void SymbianMakefileGenerator::generatePkgFile(const QString &iconFile, Deployme
           << "\"" << fileInfo(manufacturerFailNoteFile).absoluteFilePath() << "\""
           << " - \"\", FILETEXT, TEXTEXIT" << endl
           << "ENDIF ; MANUFACTURER" << endl;
+    }
+
+    // Write wrapper pkg
+    if (!installerSisHeader.isEmpty()) {
+        QFile wrapperPkgFile(wrapperPkgFilename);
+        if (!wrapperPkgFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            PRINT_FILE_CREATE_ERROR(wrapperPkgFilename);
+            return;
+        }
+
+        generatedFiles << wrapperPkgFile.fileName();
+        QTextStream twf(&wrapperPkgFile);
+
+        twf << wrapperStreamBuffer << endl;
+
+        // Wrapped files deployment
+        QString currentPath = qmake_getpwd();
+        QString sisName = QString("%1.sis").arg(fixedTarget);
+        twf << "\"" << currentPath << "/" << sisName << "\" - \"c:\\adm\\" << sisName << "\"" << endl;
+
+        QString bootStrapPath = QLibraryInfo::location(QLibraryInfo::PrefixPath);
+        bootStrapPath.append("/smartinstaller.sis");
+        QFileInfo fi(fileInfo(bootStrapPath));
+        twf << "@\"" << fi.absoluteFilePath() << "\",(0x2002CCCD)" << endl;
     }
 }
 
@@ -675,7 +753,7 @@ void SymbianMakefileGenerator::initMmpVariables()
     srcpaths << project->values("UI_DIR");
 
     QDir current = QDir::current();
-    QString canonizedCurrent = canonizePath(".");
+    QString absolutizedCurrent = absolutizePath(".");
 
     for (int j = 0; j < srcpaths.size(); ++j) {
         QFileInfo fi(fileInfo(srcpaths.at(j)));
@@ -683,10 +761,10 @@ void SymbianMakefileGenerator::initMmpVariables()
         if (fi.suffix().startsWith("c")) {
             if (fi.filePath().length() > fi.fileName().length()) {
                 appendIfnotExist(srcincpaths, fi.path());
-                sources[canonizePath(fi.path())] += fi.fileName();
+                sources[absolutizePath(fi.path())] += fi.fileName();
             } else {
-                sources[canonizedCurrent] += fi.fileName();
-                appendIfnotExist(srcincpaths, canonizedCurrent);
+                sources[absolutizedCurrent] += fi.fileName();
+                appendIfnotExist(srcincpaths, absolutizedCurrent);
             }
         }
     }
@@ -700,7 +778,7 @@ void SymbianMakefileGenerator::initMmpVariables()
     incpaths << project->values("UI_DIR");
 
     for (int j = 0; j < incpaths.size(); ++j) {
-        QString includepath = canonizePath(incpaths.at(j));
+        QString includepath = absolutizePath(incpaths.at(j));
         appendIfnotExist(sysincspaths, includepath);
         appendAbldTempDirs(sysincspaths, includepath);
     }
@@ -742,15 +820,13 @@ void SymbianMakefileGenerator::initMmpVariables()
     QStringList restrictedMmpKeywords;
     bool inResourceBlock = false;
 
-    overridableMmpKeywords << QLatin1String(MMP_TARGETTYPE);
+    overridableMmpKeywords << QLatin1String(MMP_TARGETTYPE) << QLatin1String(MMP_EPOCHEAPSIZE);
     restrictableMmpKeywords << QLatin1String(MMP_TARGET) << QLatin1String(MMP_SECUREID)
-       << QLatin1String(MMP_OPTION_CW) << QLatin1String(MMP_OPTION_ARMCC)
-       << QLatin1String(MMP_OPTION_GCCE) << QLatin1String(MMP_LINKEROPTION_CW)
-       << QLatin1String(MMP_LINKEROPTION_ARMCC) << QLatin1String(MMP_LINKEROPTION_GCCE)
+       << QLatin1String(MMP_LINKEROPTION_CW) << QLatin1String(MMP_LINKEROPTION_ARMCC)
+       << QLatin1String(MMP_LINKEROPTION_GCCE)
        << QLatin1String(MMP_CAPABILITY) << QLatin1String(MMP_EPOCALLOWDLLDATA)
-       << QLatin1String(MMP_EPOCHEAPSIZE) << QLatin1String(MMP_EPOCSTACKSIZE)
-       << QLatin1String(MMP_UID) << QLatin1String(MMP_VENDORID)
-       << QLatin1String(MMP_VERSION);
+       << QLatin1String(MMP_EPOCSTACKSIZE) << QLatin1String(MMP_UID)
+       << QLatin1String(MMP_VENDORID) << QLatin1String(MMP_VERSION);
 
     foreach (QString item, project->values("MMP_RULES")) {
         if (project->values(item).isEmpty()) {
@@ -924,6 +1000,7 @@ void SymbianMakefileGenerator::addMacro(QTextStream& t, const QString& value)
 void SymbianMakefileGenerator::writeMmpFileTargetPart(QTextStream& t)
 {
     bool skipTargetType = overriddenMmpKeywords.contains(MMP_TARGETTYPE);
+    bool skipEpocHeapSize = overriddenMmpKeywords.contains(MMP_EPOCHEAPSIZE);
 
     if (targetType == TypeExe) {
         t << MMP_TARGET "\t\t" << fixedTarget << ".exe" << endl;
@@ -975,7 +1052,7 @@ void SymbianMakefileGenerator::writeMmpFileTargetPart(QTextStream& t)
 
     if (0 != project->first("TARGET.EPOCSTACKSIZE").size())
         t << MMP_EPOCSTACKSIZE "\t\t" << project->first("TARGET.EPOCSTACKSIZE") << endl;
-    if (0 != project->values("TARGET.EPOCHEAPSIZE").size())
+    if (!skipEpocHeapSize && 0 != project->values("TARGET.EPOCHEAPSIZE").size())
         t << MMP_EPOCHEAPSIZE "\t\t" << project->values("TARGET.EPOCHEAPSIZE").join(" ") << endl;
     if (0 != project->values("TARGET.EPOCALLOWDLLDATA").size())
         t << MMP_EPOCALLOWDLLDATA << endl;
@@ -1203,6 +1280,16 @@ void SymbianMakefileGenerator::writeMmpFileCompilerOptionPart(QTextStream& t)
         t << MMP_OPTION_CW " " << cw <<  endl;
     if (!armcc.isEmpty())
         t << MMP_OPTION_ARMCC " " << armcc <<  endl;
+
+    foreach(QString armccVersion, project->values("VERSION_FLAGS.ARMCC")) {
+        QStringList currentValues = project->values("QMAKE_CXXFLAGS." + armccVersion);
+        if (currentValues.size()) {
+            t << "#if defined(" << armccVersion << ")" << endl;
+            t << MMP_OPTION_ARMCC " " << currentValues.join(" ") <<  endl;
+            t << "#endif" << endl;
+        }
+    }
+
     if (!gcce.isEmpty())
         t << MMP_OPTION_GCCE " " << gcce <<  endl;
 
@@ -1315,6 +1402,10 @@ void SymbianMakefileGenerator::writeBldInfContent(QTextStream &t, bool addDeploy
             fixedItem = item;
         }
 
+        QString condition;
+        if (!project->isEmpty(item + ".condition"))
+            condition = project->first(item + ".condition");
+
         QFileInfo subdir(fileInfo(fixedItem));
         QString relativePath = directory.relativeFilePath(fixedItem);
         QString subdirFileName = subdir.completeBaseName();
@@ -1343,9 +1434,16 @@ void SymbianMakefileGenerator::writeBldInfContent(QTextStream &t, bool addDeploy
         bldinfDefine = bldinfDefine.toUpper();
         removeSpecialCharacters(bldinfDefine);
 
+        if (!condition.isEmpty())
+            t << "#if defined(" << condition << ")" << endl;
+
         t << "#ifndef " << bldinfDefine << endl;
-        t << "\t#include \"" << QDir::toNativeSeparators(bldinfFilename) << "\"" << endl;
-        t << "#endif // " << bldinfDefine << endl;
+        t << "\t#include \"" << bldinfFilename << "\"" << endl;
+        t << "#endif" << endl;
+
+        if (!condition.isEmpty())
+            t << "#endif" << endl;
+
     }
 
     // Add supported project platforms
@@ -1363,7 +1461,7 @@ void SymbianMakefileGenerator::writeBldInfContent(QTextStream &t, bool addDeploy
     // Add project mmps and old style extension makefiles
 
     QString mmpTag;
-    if (project->isActiveConfig("symbian_test"))
+    if (project->isActiveConfig(SYMBIAN_TEST_CONFIG))
         mmpTag = QLatin1String(BLD_INF_TAG_TESTMMPFILES);
     else
         mmpTag = QLatin1String(BLD_INF_TAG_MMPFILES);
@@ -1386,16 +1484,22 @@ void SymbianMakefileGenerator::writeBldInfContent(QTextStream &t, bool addDeploy
         t << item << endl;
     userBldInfRules.remove(mmpTag);
 
-    t << endl << BLD_INF_TAG_EXTENSIONS << endl << endl;
+    QString extensionTag;
+    if (project->isActiveConfig(SYMBIAN_TEST_CONFIG))
+        extensionTag = QLatin1String(BLD_INF_TAG_TESTEXTENSIONS);
+    else
+        extensionTag = QLatin1String(BLD_INF_TAG_EXTENSIONS);
+
+    t << endl << extensionTag << endl << endl;
 
     // Generate extension rules
 
     writeBldInfExtensionRulesPart(t, iconFile);
 
-    userItems = userBldInfRules.value(BLD_INF_TAG_EXTENSIONS);
+    userItems = userBldInfRules.value(extensionTag);
     foreach(QString item, userItems)
         t << item << endl;
-    userBldInfRules.remove(BLD_INF_TAG_EXTENSIONS);
+    userBldInfRules.remove(extensionTag);
 
     // Add rest of the user defined content
 
@@ -1405,80 +1509,9 @@ void SymbianMakefileGenerator::writeBldInfContent(QTextStream &t, bool addDeploy
         foreach(QString item, userItems)
             t << item << endl;
     }
-    if (project->values("CONFIG").contains("headerexport", Qt::CaseInsensitive)) {
-        writeExportPart(t);
-    }
 }
 
-void SymbianMakefileGenerator::writeExportPart(QTextStream &t)
-{
-    QDir currentDir = QDir::current();
-    t << "prj_exports" << endl;
-
-    foreach(QString install, project->values("INSTALLS")) {
-        QString installDir = project->first(install + ".path");
-
-        // Export macros are the recommended way, but might not be used
-        // in all cases (such as Qt headers). We handle it either way,
-        // macros or not. 
-        bool useLayerMacro = false;
-        if (installDir.startsWith("MW_LAYER_") ||
-            installDir.startsWith("APP_LAYER_") ||
-            installDir.startsWith("APP_LAYER_")) {
-            useLayerMacro = true;
-        } else {
-#ifdef Q_OS_WIN
-            // If we are running on Windows, and the export target starts
-            // with a drive letter, we need to remove it, the build tools
-            // cannot handle drives in export paths
-
-            if (installDir.length() > 2 && installDir[1] == ':') {
-                installDir.remove(0, 2);
-            }
-#endif
-            installDir.replace("\\", "/");
-            if (!installDir.endsWith("/")) {
-                installDir.append("/");
-            }
-        }
-
-        foreach(QString target, project->values(install + ".files")) {
-            // Handle glob targets (only in the current directory)
-            if (target.contains("*") || target.contains("?")) {
-                QDir globber = QDir::current();
-                globber.setNameFilters(QStringList(target));
-                foreach(QString globbedTarget, globber.entryList()) {
-                    if (useLayerMacro) {
-                        QFileInfo globbedInfo(globbedTarget);
-                        t << globbedTarget << " " << installDir <<
-                            "(" << globbedInfo.fileName() << ")" << endl;
-                    } else {
-                        t << globbedTarget << " " << installDir << 
-                            globbedTarget << endl;
-                    }
-                }
-            } else {
-                target = currentDir.relativeFilePath(target);
-                QFileInfo targetInfo(target);
-
-                // Not possible to export whole directories, extension makefile needed for this
-                // Note that this check requires the file to be exported to exist in the qmake phase!
-                if (targetInfo.isFile()) {
-                    if (useLayerMacro) {
-                        t << target << " " << installDir <<
-                            "(" << targetInfo.fileName() << ")" << endl;
-                    } else {
-                        t << target << " " << installDir <<
-                            targetInfo.fileName() << endl;
-                    }
-                }
-            }
-        }
-    }
-    t << endl;
-}
-
-void SymbianMakefileGenerator::writeRegRssFile(QStringList &userItems)
+void SymbianMakefileGenerator::writeRegRssFile(QMap<QString, QStringList> &userItems)
 {
     QString filename(fixedTarget);
     filename.append("_reg.rss");
@@ -1498,6 +1531,8 @@ void SymbianMakefileGenerator::writeRegRssFile(QStringList &userItems)
         t << endl;
         t << "#include <" << fixedTarget << ".rsg>" << endl;
         t << "#include <appinfo.rh>" << endl;
+        foreach(QString item, userItems[RSS_TAG_HEADER])
+            t << item << endl;
         t << endl;
         t << "UID2 KUidAppRegistrationResourceFile" << endl;
         t << "UID3 " << uid3 << endl << endl;
@@ -1505,13 +1540,48 @@ void SymbianMakefileGenerator::writeRegRssFile(QStringList &userItems)
         t << "\t{" << endl;
         t << "\tapp_file=\"" << fixedTarget << "\";" << endl;
         t << "\tlocalisable_resource_file=\"" RESOURCE_DIRECTORY_RESOURCE << fixedTarget << "\";" << endl;
+
+        writeRegRssList(t, userItems[RSS_TAG_SERVICE_LIST],
+                        QLatin1String(RSS_TAG_SERVICE_LIST),
+                        QLatin1String("SERVICE_INFO"));
+        writeRegRssList(t, userItems[RSS_TAG_FILE_OWNERSHIP_LIST],
+                        QLatin1String(RSS_TAG_FILE_OWNERSHIP_LIST),
+                        QLatin1String("FILE_OWNERSHIP_INFO"));
+        writeRegRssList(t, userItems[RSS_TAG_DATATYPE_LIST],
+                        QLatin1String(RSS_TAG_DATATYPE_LIST),
+                        QLatin1String("DATATYPE"));
         t << endl;
 
-        foreach(QString item, userItems)
-            t << "\t" << item << endl;
+        foreach(QString item, userItems[RSS_TAG_DEFAULT])
+            t << "\t" << item.replace("\n","\n\t") << endl;
         t << "\t}" << endl;
+
+        foreach(QString item, userItems[RSS_TAG_FOOTER])
+            t << item << endl;
     } else {
         PRINT_FILE_CREATE_ERROR(filename)
+    }
+}
+
+void SymbianMakefileGenerator::writeRegRssList(QTextStream &t,
+                                               QStringList &userList,
+                                               const QString &listTag,
+                                               const QString &listItem)
+{
+    int itemCount = userList.count();
+    if (itemCount) {
+        t << "\t" << listTag << " ="<< endl;
+        t << "\t\t{" << endl;
+        foreach(QString item, userList) {
+            t << "\t\t" << listItem << endl;
+            t << "\t\t\t{" << endl;
+            t << "\t\t\t" << item.replace("\n","\n\t\t\t") << endl;
+            t << "\t\t\t}";
+            if (--itemCount)
+                t << ",";
+            t << endl;
+        }
+        t << "\t\t}; "<< endl;
     }
 }
 
@@ -1728,7 +1798,9 @@ void SymbianMakefileGenerator::writeSymbianLocFile(QStringList &symbianLangCodes
     }
 }
 
-void SymbianMakefileGenerator::readRssRules(QString &numberOfIcons, QString &iconFile, QStringList &userRssRules)
+void SymbianMakefileGenerator::readRssRules(QString &numberOfIcons,
+                                            QString &iconFile, QMap<QString,
+                                            QStringList> &userRssRules)
 {
     for (QMap<QString, QStringList>::iterator it = project->variables().begin(); it != project->variables().end(); ++it) {
         if (it.key().startsWith(RSS_RULES_BASE)) {
@@ -1740,14 +1812,16 @@ void SymbianMakefileGenerator::readRssRules(QString &numberOfIcons, QString &ico
             QStringList newValues;
             QStringList values = it.value();
             foreach(QString item, values) {
-                // If there is no stringlist defined for a rule, use rule name directly
+                // If there is no stringlist defined for a rule, use rule value directly
                 // This is convenience for defining single line statements
                 if (project->values(item).isEmpty()) {
                     newValues << item;
                 } else {
+                    QStringList itemList;
                     foreach(QString itemRow, project->values(item)) {
-                        newValues << itemRow;
+                        itemList << itemRow;
                     }
+                    newValues << itemList.join("\n");
                 }
             }
             // Verify thet there is exactly one value in RSS_TAG_NBROFICONS
@@ -1768,6 +1842,14 @@ void SymbianMakefileGenerator::readRssRules(QString &numberOfIcons, QString &ico
                             RSS_RULES_BASE, RSS_TAG_ICONFILE);
                     continue;
                 }
+            } else if (newKey == RSS_TAG_HEADER
+                       || newKey == RSS_TAG_SERVICE_LIST
+                       || newKey == RSS_TAG_FILE_OWNERSHIP_LIST
+                       || newKey == RSS_TAG_DATATYPE_LIST
+                       || newKey == RSS_TAG_FOOTER
+                       || newKey == RSS_TAG_DEFAULT) {
+                userRssRules[newKey] = newValues;
+                continue;
             } else {
                 fprintf(stderr, "Warning: Unsupported key:'%s%s'\n",
                         RSS_RULES_BASE, newKey.toLatin1().constData());
@@ -1776,15 +1858,17 @@ void SymbianMakefileGenerator::readRssRules(QString &numberOfIcons, QString &ico
         }
     }
 
+    QStringList newValues;
     foreach(QString item, project->values(RSS_RULES)) {
-        // If there is no stringlist defined for a rule, use rule name directly
-        // This is convenience for defining single line mmp statements
+        // If there is no stringlist defined for a rule, use rule value directly
+        // This is convenience for defining single line statements
         if (project->values(item).isEmpty()) {
-            userRssRules << item;
+            newValues << item;
         } else {
-            userRssRules << project->values(item);
+            newValues << project->values(item);
         }
     }
+    userRssRules[RSS_TAG_DEFAULT] << newValues;
 
     // Validate that either both RSS_TAG_NBROFICONS and RSS_TAG_ICONFILE keys exist
     // or neither of them exist
@@ -2098,7 +2182,7 @@ void SymbianMakefileGenerator::writeSisTargets(QTextStream &t)
     t << endl;
 
     t << SIS_TARGET ":" << endl;
-    QString siscommand = QString("\t$(if $(wildcard %1_template.%2),$(if $(wildcard %3)," \
+    QString siscommand = QString::fromLatin1("\t$(if $(wildcard %1_template.%2),$(if $(wildcard %3)," \
                                   "$(MAKE) -s -f $(MAKEFILE) %4," \
                                   "$(if $(QT_SIS_TARGET),$(MAKE) -s -f $(MAKEFILE) %4," \
                                   "$(MAKE) -s -f $(MAKEFILE) %5))," \
@@ -2114,15 +2198,65 @@ void SymbianMakefileGenerator::writeSisTargets(QTextStream &t)
 
     t << OK_SIS_TARGET ":" << endl;
 
-    QString pkgcommand = QString("\tcreatepackage.bat $(QT_SIS_OPTIONS) %1_template.%2 $(QT_SIS_TARGET) " \
+    QString pkgcommand = QString::fromLatin1("\tcreatepackage.bat $(QT_SIS_OPTIONS) %1_template.%2 $(QT_SIS_TARGET) " \
                                  "$(QT_SIS_CERTIFICATE) $(QT_SIS_KEY) $(QT_SIS_PASSPHRASE)")
                           .arg(fixedTarget)
                           .arg("pkg");
     t << pkgcommand << endl;
     t << endl;
 
+    QString sisName = fixedTarget;
+    sisName += ".sis";
+
+    t << sisName << ":" << endl;
+    t << "\t$(MAKE) -s -f $(MAKEFILE) " SIS_TARGET << endl << endl;
+
+    t << ROM_STUB_SIS_TARGET ":" << endl;
+    QString stubsiscommand = QString::fromLatin1("\t$(if $(wildcard %1_template.%2),$(if $(wildcard %3)," \
+                                  "$(MAKE) -s -f $(MAKEFILE) %4," \
+                                  "$(if $(QT_SIS_TARGET),$(MAKE) -s -f $(MAKEFILE) %4," \
+                                  "$(MAKE) -s -f $(MAKEFILE) %5))," \
+                                  "$(MAKE) -s -f $(MAKEFILE) %6)")
+                          .arg(fixedTarget)
+                          .arg("pkg")
+                          .arg(MAKE_CACHE_NAME)
+                          .arg(OK_ROM_STUB_SIS_TARGET)
+                          .arg(FAIL_SIS_NOCACHE_TARGET)
+                          .arg(FAIL_SIS_NOPKG_TARGET);
+    t << stubsiscommand << endl;
+    t << endl;
+
+    t << OK_ROM_STUB_SIS_TARGET ":" << endl;
+
+    QString stubpkgcommand = QString::fromLatin1("\tcreatepackage.bat -s $(QT_SIS_OPTIONS) %1_template.%2 $(QT_SIS_TARGET) " \
+                                 "$(QT_SIS_CERTIFICATE) $(QT_SIS_KEY) $(QT_SIS_PASSPHRASE)")
+                          .arg(fixedTarget)
+                          .arg("pkg");
+    t << stubpkgcommand << endl;
+    t << endl;
+
+    t << INSTALLER_SIS_TARGET ": " << sisName << endl;
+    siscommand = QString::fromLatin1("\t$(if $(wildcard %1_installer.%2)," \
+                                  "$(MAKE) -s -f $(MAKEFILE) %3," \
+                                  "$(MAKE) -s -f $(MAKEFILE) %4)")
+                          .arg(fixedTarget)
+                          .arg("pkg")
+                          .arg(OK_INSTALLER_SIS_TARGET)
+                          .arg(FAIL_SIS_NOPKG_TARGET);
+    t << siscommand << endl;
+    t << endl;
+
+    t << OK_INSTALLER_SIS_TARGET ": " << endl;
+
+    pkgcommand = QString::fromLatin1("\tcreatepackage.bat $(QT_SIS_OPTIONS) %1_installer.%2 - " \
+                         "$(QT_SIS_CERTIFICATE) $(QT_SIS_KEY) $(QT_SIS_PASSPHRASE)")
+                  .arg(fixedTarget)
+                  .arg("pkg");
+    t << pkgcommand << endl;
+    t << endl;
+
     t << FAIL_SIS_NOPKG_TARGET ":" << endl;
-    t << "\t$(error PKG file does not exist, 'SIS' target is only supported for executables or projects with DEPLOYMENT statement)" << endl;
+    t << "\t$(error PKG file does not exist, '" SIS_TARGET "' and '" INSTALLER_SIS_TARGET "' target are only supported for executables or projects with DEPLOYMENT statement)" << endl;
     t << endl;
 
     t << FAIL_SIS_NOCACHE_TARGET ":" << endl;
@@ -2194,7 +2328,7 @@ void SymbianMakefileGenerator::generateExecutionTargets(QTextStream& t, const QS
             t << "\t-call " << epocRoot() << "epoc32/release/winscw/udeb/" << fixedTarget << ".exe " << "$(QT_RUN_OPTIONS)" << endl;
         }
         t << "runonphone: sis" << endl;
-        t << "\trunonphone $(QT_RUN_ON_PHONE_OPTIONS) --sis " << fixedTarget << "_$(QT_SIS_TARGET).sis " << fixedTarget << ".exe " << "$(QT_RUN_OPTIONS)" << endl;
+        t << "\trunonphone $(QT_RUN_ON_PHONE_OPTIONS) --sis " << fixedTarget << ".sis " << fixedTarget << ".exe " << "$(QT_RUN_OPTIONS)" << endl;
         t << endl;
     }
 }

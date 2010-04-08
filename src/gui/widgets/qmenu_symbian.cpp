@@ -256,6 +256,14 @@ void qt_symbian_show_submenu( CEikMenuPane* menuPane, int id)
 {
     SymbianMenuItem* menu = qt_symbian_find_menu(id, symbianMenus);
     if (menu) {
+        // Normally first AddMenuItemL call for menuPane will create the item array.
+        // However if we don't have any items, we still need the item array. Otherwise
+        // menupane will crash. That's why we create item array here manually, and
+        // AddMenuItemL will then use the existing array.
+        CEikMenuPane::CItemArray* itemArray = q_check_ptr(new CEikMenuPane::CItemArray);
+        menuPane->SetItemArray(itemArray);
+        menuPane->SetItemArrayOwnedExternally(EFalse);
+
         for (int i = 0; i < menu->children.count(); ++i)
             QT_TRAP_THROWING(menuPane->AddMenuItemL(menu->children.at(i)->menuItemData));
     }
@@ -314,6 +322,14 @@ void QMenuBarPrivate::symbianDestroyMenuBar()
     if (symbian_menubar)
         delete symbian_menubar;
     symbian_menubar = 0;
+}
+
+void QMenuBarPrivate::reparentMenuBar(QWidget *oldParent, QWidget *newParent)
+{
+    if (menubars()->contains(oldParent)) {
+        QMenuBarPrivate *object = menubars()->take(oldParent);
+        menubars()->insert(newParent, object);
+    }
 }
 
 QMenuBarPrivate::QSymbianMenuBarPrivate::QSymbianMenuBarPrivate(QMenuBarPrivate *menubar)

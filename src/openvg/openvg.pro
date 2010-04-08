@@ -33,6 +33,8 @@ contains(QT_CONFIG, egl) {
         qwindowsurface_vgegl.cpp
 }
 
+symbian: DEFINES += QVG_RECREATE_ON_SIZE_CHANGE QVG_SCISSOR_CLIP 
+
 include(../qbase.pri)
 
 unix:QMAKE_PKGCONFIG_REQUIRES = QtCore QtGui
@@ -41,13 +43,11 @@ symbian:TARGET.UID3 = 0x2001E62F
 !isEmpty(QMAKE_INCDIR_OPENVG): INCLUDEPATH += $$QMAKE_INCDIR_OPENVG
 !isEmpty(QMAKE_LIBDIR_OPENVG): LIBS_PRIVATE += -L$$QMAKE_LIBDIR_OPENVG
 !isEmpty(QMAKE_LIBS_OPENVG): LIBS_PRIVATE += $$QMAKE_LIBS_OPENVG
-symbian:!isEmpty(QMAKE_LIBS_OPENVG): LIBS += $$QMAKE_LIBS_OPENVG
 
 contains(QT_CONFIG, egl) {
     !isEmpty(QMAKE_INCDIR_EGL): INCLUDEPATH += $$QMAKE_INCDIR_EGL
     !isEmpty(QMAKE_LIBDIR_EGL): LIBS_PRIVATE += -L$$QMAKE_LIBDIR_EGL
     !isEmpty(QMAKE_LIBS_EGL): LIBS_PRIVATE += $$QMAKE_LIBS_EGL
-    symbian:!isEmpty(QMAKE_LIBS_EGL): LIBS += $$QMAKE_LIBS_EGL
 }
 
 contains(QT_CONFIG, openvg_on_opengl) {

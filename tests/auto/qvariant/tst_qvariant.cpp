@@ -1968,6 +1968,10 @@ void tst_QVariant::operator_eq_eq_data()
 
         QTest::newRow("HashSecondLarger") << QVariant(hash1) << QVariant(hash2) << false;
     }
+
+    QTest::newRow( "UserType" ) << QVariant(QVariant::UserType) << QVariant(QVariant::UserType) << true;
+    QVariant mUserType(QVariant::UserType);
+    QTest::newRow( "Shared UserType" ) << mUserType << mUserType << true;
 }
 
 void tst_QVariant::operator_eq_eq()
@@ -3200,7 +3204,10 @@ struct MyPrimitive
         return x == o.x && y == o.y;
     }
 };
+
+QT_BEGIN_NAMESPACE
 Q_DECLARE_TYPEINFO(MyPrimitive, Q_PRIMITIVE_TYPE);
+QT_END_NAMESPACE
 
 struct MyData
 {
@@ -3239,7 +3246,9 @@ struct MyMovable
 int MyMovable::count  = 0;
 
 
+QT_BEGIN_NAMESPACE
 Q_DECLARE_TYPEINFO(MyMovable, Q_MOVABLE_TYPE);
+QT_END_NAMESPACE
 
 Q_DECLARE_METATYPE(QList<QSize>)
 Q_DECLARE_METATYPE(MyPrimitive)

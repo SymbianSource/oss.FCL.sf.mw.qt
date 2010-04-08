@@ -89,6 +89,9 @@
 QT_BEGIN_NAMESPACE
 
 //#define QT_GL_NO_SCISSOR_TEST
+#if defined(Q_WS_WIN)
+extern Q_GUI_EXPORT bool qt_cleartype_enabled;
+#endif
 
 extern QImage qt_imageForBrush(int brushStyle, bool invert);
 
@@ -558,6 +561,12 @@ void QGL2PaintEngineExPrivate::resetGLState()
     glStencilMask(0xff);
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     glStencilFunc(GL_ALWAYS, 0, 0xff);
+    glDisableVertexAttribArray(QT_TEXTURE_COORDS_ATTR);
+    glDisableVertexAttribArray(QT_VERTEX_COORDS_ATTR);
+    glDisableVertexAttribArray(QT_OPACITY_ATTR);
+#ifndef QT_OPENGL_ES_2
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // color may have been changed by glVertexAttrib()
+#endif
 }
 
 void QGL2PaintEngineEx::endNativePainting()
@@ -1225,14 +1234,14 @@ void QGL2PaintEngineEx::drawTextItem(const QPointF &p, const QTextItem &textItem
                                             ? QFontEngineGlyphCache::Type(ti.fontEngine->glyphFormat)
                                             : d->glyphCacheType;
 
-    if (txtype > QTransform::TxTranslate)
-        glyphType = QFontEngineGlyphCache::Raster_A8;
 
-    if (glyphType == QFontEngineGlyphCache::Raster_RGBMask
-        && state()->composition_mode != QPainter::CompositionMode_Source
-        && state()->composition_mode != QPainter::CompositionMode_SourceOver)
-    {
-        drawCached = false;
+    if (glyphType == QFontEngineGlyphCache::Raster_RGBMask) {
+        if (d->device->alphaRequested() || txtype > QTransform::TxTranslate
+            || (state()->composition_mode != QPainter::CompositionMode_Source
+            && state()->composition_mode != QPainter::CompositionMode_SourceOver))
+        {
+            glyphType = QFontEngineGlyphCache::Raster_A8;
+        }
     }
 
     if (drawCached) {
@@ -1549,7 +1558,6 @@ bool QGL2PaintEngineEx::begin(QPaintDevice *pdev)
 
 #if !defined(QT_OPENGL_ES_2)
 #if defined(Q_WS_WIN)
-    extern Q_GUI_EXPORT bool qt_cleartype_enabled;
     if (qt_cleartype_enabled)
 #endif
         d->glyphCacheType = QFontEngineGlyphCache::Raster_RGBMask;
@@ -1589,6 +1597,7 @@ bool QGL2PaintEngineEx::end()
 
     delete d->shaderManager;
     d->shaderManager = 0;
+    d->currentBrush = QBrush();
 
 #ifdef QT_OPENGL_CACHE_AS_VBOS
     if (!d->unusedVBOSToClean.isEmpty()) {

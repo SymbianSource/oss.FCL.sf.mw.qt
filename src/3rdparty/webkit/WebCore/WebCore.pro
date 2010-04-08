@@ -6,9 +6,12 @@ symbian: {
     TARGET.EPOCALLOWDLLDATA=1
     TARGET.EPOCHEAPSIZE = 0x20000 0x2000000 // Min 128kB, Max 32MB
     TARGET.CAPABILITY = All -Tcb
-    TARGET.UID3 = 0x200267C2
-
-    webkitlibs.sources = QtWebKit.dll
+    isEmpty(QT_LIBINFIX) {
+        TARGET.UID3 = 0x200267C2
+    } else {
+        TARGET.UID3 = 0xE00267C2
+    }
+    webkitlibs.sources = QtWebKit$${QT_LIBINFIX}.dll
     webkitlibs.path = /sys/bin
     vendorinfo = \
         "; Localised Vendor name" \
@@ -26,9 +29,9 @@ symbian: {
 
     # RO text (code) section in qtwebkit.dll exceeds allocated space for gcce udeb target.
     # Move RW-section base address to start from 0xE00000 instead of the toolchain default 0x400000.
-    MMP_RULES += "LINKEROPTION  armcc --rw-base 0xE00000"
     MMP_RULES += ALWAYS_BUILD_AS_ARM
     QMAKE_CXXFLAGS.ARMCC += -OTime -O3
+    QMAKE_LFLAGS.ARMCC += --rw-base 0xE00000
 }
 
 include($$PWD/../WebKit.pri)
@@ -162,6 +165,10 @@ contains(DEFINES, ENABLE_SINGLE_THREADED=1) {
     !contains(DEFINES, ENABLE_SVG_USE=.): DEFINES += ENABLE_SVG_USE=1
 } else {
     DEFINES += ENABLE_SVG_FONTS=0 ENABLE_SVG_FOREIGN_OBJECT=0 ENABLE_SVG_ANIMATION=0 ENABLE_SVG_AS_IMAGE=0 ENABLE_SVG_USE=0
+}
+
+mameo5|symbian|embedded {
+    DEFINES += ENABLE_FAST_MOBILE_SCROLLING=1
 }
 
 # HTML5 ruby support

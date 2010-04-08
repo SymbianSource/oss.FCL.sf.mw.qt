@@ -60,13 +60,8 @@
 QT_BEGIN_NAMESPACE
 
 const int MAX_NON_CUSTOM_PIXELMETRICS = 92;
-const int CUSTOMVALUESCOUNT = 4;
-enum {
-    PM_Custom_FrameCornerWidth = MAX_NON_CUSTOM_PIXELMETRICS,
-    PM_Custom_FrameCornerHeight,
-    PM_Custom_BoldLineWidth,
-    PM_Custom_ThinLineWidth
-    };
+const int CUSTOMVALUESCOUNT = 5;
+
 const int MAX_PIXELMETRICS = MAX_NON_CUSTOM_PIXELMETRICS + CUSTOMVALUESCOUNT;
 
 typedef struct {
@@ -131,6 +126,7 @@ public:
         SP_QgnGrafBarFrameSideL,
         SP_QgnGrafBarFrameSideR,
         SP_QgnGrafBarProgress,
+        SP_QgnGrafOrgBgGrid,
         SP_QgnGrafScrollArrowDown,
         SP_QgnGrafScrollArrowLeft,
         SP_QgnGrafScrollArrowRight,
@@ -415,7 +411,7 @@ public:
         SE_TabBarTabWestActive,
         SE_TabBarTabWestInactive,
         SE_ListHighlight,
-        SE_OptionsMenu,
+        SE_PopupBackground,
         SE_SettingsList,
         SE_TableItem,
         SE_TableHeaderItem,
@@ -424,10 +420,11 @@ public:
         SE_ToolBarButton,
         SE_ToolBarButtonPressed,
         SE_PanelBackground,
-        SE_ScrollBarHandlePressedHorizontal, //only for 5.0+
+        SE_ScrollBarHandlePressedHorizontal,
         SE_ScrollBarHandlePressedVertical,
         SE_ButtonInactive,
         SE_Editor,
+        SE_DropArea
     };
 
     enum SkinFrameElements {
@@ -435,7 +432,7 @@ public:
         SF_ButtonPressed,
         SF_FrameLineEdit,
         SF_ListHighlight,
-        SF_OptionsMenu,
+        SF_PopupBackground,
         SF_SettingsList,
         SF_TableItem,
         SF_TableHeaderItem,
@@ -540,7 +537,7 @@ public:
 
     //Checks that the current brush is transparent or has BrushStyle NoBrush,
     //so that theme graphic background can be drawn.
-    static bool canDrawThemeBackground(const QBrush &backgroundBrush);
+    static bool canDrawThemeBackground(const QBrush &backgroundBrush, const QWidget *widget);
 
     static int currentAnimationFrame(QS60StyleEnums::SkinParts part);
 #ifdef Q_WS_S60
@@ -594,6 +591,7 @@ private:
     QPalette m_originalPalette;
 
     QPointer<QFocusFrame> m_focusFrame;
+    static qint64 m_webPaletteKey;
 
 #ifdef Q_WS_S60
     //list of progress bars having animation running
