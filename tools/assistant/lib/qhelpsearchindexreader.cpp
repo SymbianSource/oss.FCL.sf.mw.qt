@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -43,8 +43,7 @@
 
 QT_BEGIN_NAMESPACE
 
-namespace qt {
-    namespace fulltextsearch {
+namespace fulltextsearch {
 
 QHelpSearchIndexReader::QHelpSearchIndexReader()
     : QThread()
@@ -100,7 +99,6 @@ QList<QHelpSearchEngine::SearchHit> QHelpSearchIndexReader::hits(int start,
 }
 
 
-    }   // namespace fulltextsearch
-}   // namespace qt
+}   // namespace fulltextsearch
 
 QT_END_NAMESPACE

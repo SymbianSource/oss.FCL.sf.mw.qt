@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -117,7 +117,7 @@ public:
         if (parentWidget->parentWidget())
             parentWidget = parentWidget->parentWidget();
         setParent(parentWidget, Qt::Window | Qt::Tool);
-	setAttribute(Qt::WA_DeleteOnClose, true);
+        setAttribute(Qt::WA_DeleteOnClose, true);
         setAttribute(Qt::WA_X11NetWmWindowTypeMenu, true);
         setWindowTitle(p->windowTitle());
         setEnabled(p->isEnabled());
@@ -1226,7 +1226,7 @@ void QMenu::initStyleOption(QStyleOptionMenuItem *option, const QAction *action)
     else if (action->isSeparator())
         option->menuItemType = QStyleOptionMenuItem::Separator;
     else if (d->defaultAction == action)
-	    option->menuItemType = QStyleOptionMenuItem::DefaultItem;
+        option->menuItemType = QStyleOptionMenuItem::DefaultItem;
     else
         option->menuItemType = QStyleOptionMenuItem::Normal;
     if (action->isIconVisibleInMenu())
@@ -1588,10 +1588,9 @@ QAction *QMenu::insertSeparator(QAction *before)
 }
 
 /*!
-  This will set the default action to \a act. The default action may
-  have a visual queue depending on the current QStyle. A default
-  action is usually meant to indicate what will defaultly happen on a
-  drop, as shown in a context menu.
+  This sets the default action to \a act. The default action may have
+  a visual cue, depending on the current QStyle. A default action
+  usually indicates what will happen by default when a drop occurs.
 
   \sa defaultAction()
 */
@@ -1720,7 +1719,14 @@ bool QMenu::isEmpty() const
 void QMenu::clear()
 {
     QList<QAction*> acts = actions();
+
     for(int i = 0; i < acts.size(); i++) {
+#ifdef QT_SOFTKEYS_ENABLED
+        Q_D(QMenu);
+        // Lets not touch to our internal softkey actions
+        if(acts[i] == d->selectAction || acts[i] == d->cancelAction)
+            continue;
+#endif
         removeAction(acts[i]);
         if (acts[i]->parent() == this && acts[i]->d_func()->widgets.isEmpty())
             delete acts[i];
@@ -2409,6 +2415,13 @@ QMenu::event(QEvent *e)
         }
         return true;
 #endif
+#ifdef QT_SOFTKEYS_ENABLED
+    case QEvent::LanguageChange: {
+        d->selectAction->setText(QSoftKeyManager::standardSoftKeyText(QSoftKeyManager::SelectSoftKey));
+        d->cancelAction->setText(QSoftKeyManager::standardSoftKeyText(QSoftKeyManager::CancelSoftKey));
+        }
+        break;
+#endif
     default:
         break;
     }
@@ -2920,7 +2933,7 @@ void QMenu::actionEvent(QActionEvent *e)
 #endif
     if (isVisible()) {
         d->updateActionRects();
-	resize(sizeHint());
+        resize(sizeHint());
         update();
     }
 }

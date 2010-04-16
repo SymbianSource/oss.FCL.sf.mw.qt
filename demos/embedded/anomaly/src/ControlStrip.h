@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -58,6 +58,7 @@ signals:
     void menuClicked();
     void backClicked();
     void forwardClicked();
+    void closeClicked ();
 
 protected:
     void paintEvent(QPaintEvent *event);
@@ -67,6 +68,7 @@ private:
     QPixmap menuPixmap;
     QPixmap backPixmap;
     QPixmap forwardPixmap;
+    QPixmap closePixmap;
 };
 
 #endif // CONTROLSTRIP_H

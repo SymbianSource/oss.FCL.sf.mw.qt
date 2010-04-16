@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -47,6 +47,7 @@
 #include <QtGui/QCheckBox>
 #include <QtGui/QLineEdit>
 #include <QtGui/QMenu>
+#include <QtCore/QLocale>
 
 QT_BEGIN_NAMESPACE
 
@@ -92,15 +93,23 @@ QtCursorDatabase::QtCursorDatabase()
                         QApplication::UnicodeUTF8), QIcon(QLatin1String(":/trolltech/qtpropertybrowser/images/cursor-busy.png")));
 }
 
+void QtCursorDatabase::clear()
+{
+    m_cursorNames.clear();
+    m_cursorIcons.clear();
+    m_valueToCursorShape.clear();
+    m_cursorShapeToValue.clear();
+}
+
 void QtCursorDatabase::appendCursor(Qt::CursorShape shape, const QString &name, const QIcon &icon)
 {
     if (m_cursorShapeToValue.contains(shape))
         return;
-    int value = m_cursorNames.count();
+    const int value = m_cursorNames.count();
     m_cursorNames.append(name);
-    m_cursorIcons[value] = icon;
-    m_valueToCursorShape[value] = shape;
-    m_cursorShapeToValue[shape] = value;
+    m_cursorIcons.insert(value, icon);
+    m_valueToCursorShape.insert(value, shape);
+    m_cursorShapeToValue.insert(shape, value);
 }
 
 QStringList QtCursorDatabase::cursorShapeNames() const
@@ -208,6 +217,26 @@ QString QtPropertyBrowserUtils::fontValueText(const QFont &f)
                                   .arg(f.pointSize());
 }
 
+QString QtPropertyBrowserUtils::dateFormat()
+{
+    QLocale loc;
+    return loc.dateFormat(QLocale::ShortFormat);
+}
+
+QString QtPropertyBrowserUtils::timeFormat()
+{
+    QLocale loc;
+    // ShortFormat is missing seconds on UNIX.
+    return loc.timeFormat(QLocale::LongFormat);    
+}
+
+QString QtPropertyBrowserUtils::dateTimeFormat()
+{
+    QString format = dateFormat();
+    format += QLatin1Char(' ');
+    format += timeFormat();
+    return format;
+}
 
 QtBoolEdit::QtBoolEdit(QWidget *parent) :
     QWidget(parent),

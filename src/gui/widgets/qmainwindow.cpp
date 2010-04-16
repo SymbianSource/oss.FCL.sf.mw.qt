@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -119,8 +119,6 @@ void QMainWindowPrivate::init()
     q->setAttribute(Qt::WA_Hover);
 #ifdef QT_SOFTKEYS_ENABLED
     menuBarAction = QSoftKeyManager::createAction(QSoftKeyManager::MenuSoftKey, q);
-    menuBarAction->setObjectName(QLatin1String("_q_menuSoftKeyAction"));
-    menuBarAction->setVisible(false);
 #endif
 }
 
@@ -1427,6 +1425,11 @@ bool QMainWindow::event(QEvent *event)
                d->hasOldCursor = testAttribute(Qt::WA_SetCursor);
            }
            break;
+#endif
+#ifdef QT_SOFTKEYS_ENABLED
+    case QEvent::LanguageChange:
+        d->menuBarAction->setText(QSoftKeyManager::standardSoftKeyText(QSoftKeyManager::MenuSoftKey));
+        break;
 #endif
         default:
             break;

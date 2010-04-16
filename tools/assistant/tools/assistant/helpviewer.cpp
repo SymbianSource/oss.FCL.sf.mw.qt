@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -141,17 +141,19 @@ QNetworkReply *HelpNetworkAccessManager::createRequest(Operation /*op*/,
     if (mimeType.endsWith(QLatin1String(".svg"))
         || mimeType.endsWith(QLatin1String(".svgz"))) {
             mimeType = QLatin1String("image/svg+xml");
-    }
-    else if (mimeType.endsWith(QLatin1String(".css"))) {
+    } else if (mimeType.endsWith(QLatin1String(".css"))) {
         mimeType = QLatin1String("text/css");
-    }
-    else if (mimeType.endsWith(QLatin1String(".js"))) {
+    } else if (mimeType.endsWith(QLatin1String(".js"))) {
         mimeType = QLatin1String("text/javascript");
+    } else if (mimeType.endsWith(QLatin1String(".txt"))) {
+        mimeType = QLatin1String("text/plain");
     } else {
         mimeType = QLatin1String("text/html");
     }
 
-    return new HelpNetworkReply(request, helpEngine->fileData(url), mimeType);
+    const QByteArray &data = helpEngine->findFile(url).isValid()
+        ? helpEngine->fileData(url) : QByteArray("File not found!");
+    return new HelpNetworkReply(request, data, mimeType);
 }
 
 class HelpPage : public QWebPage

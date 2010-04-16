@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -93,15 +93,14 @@ EGLSurface QEglContext::createSurface(QPaintDevice *device, const QEglProperties
     return surf;
 }
 
-EGLDisplay QEglContext::getDisplay(QPaintDevice *device)
+EGLNativeDisplayType QEglContext::nativeDisplay()
 {
-    Q_UNUSED(device);
     Display *xdpy = QX11Info::display();
     if (!xdpy) {
         qWarning("QEglContext::getDisplay(): X11 display is not open");
-        return EGL_NO_DISPLAY;
+        return EGLNativeDisplayType(EGL_DEFAULT_DISPLAY);
     }
-    return eglGetDisplay(EGLNativeDisplayType(xdpy));
+    return EGLNativeDisplayType(xdpy);
 }
 
 static int countBits(unsigned long mask)

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -137,7 +137,9 @@ protected:
     void resizeEvent(QResizeEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
+#ifndef QT_NO_WHEELEVENT
     void wheelEvent(QWheelEvent *event);
+#endif
     void focusInEvent(QFocusEvent *event);
     void focusOutEvent(QFocusEvent *event);
     void contextMenuEvent(QContextMenuEvent *event);

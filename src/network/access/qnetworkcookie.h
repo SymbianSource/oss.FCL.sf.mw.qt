@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -114,7 +114,7 @@ Q_NETWORK_EXPORT QDebug operator<<(QDebug, const QNetworkCookie &);
 QT_END_NAMESPACE
 
 // ### Qt5 remove this include
-#include "qnetworkcookiejar.h"
+#include <QtNetwork/QNetworkCookieJar>
 
 Q_DECLARE_METATYPE(QNetworkCookie)
 Q_DECLARE_METATYPE(QList<QNetworkCookie>)

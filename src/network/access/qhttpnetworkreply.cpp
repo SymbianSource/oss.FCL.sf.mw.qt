@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -179,7 +179,17 @@ qint64 QHttpNetworkReply::bytesAvailableNextBlock() const
 QByteArray QHttpNetworkReply::readAny()
 {
     Q_D(QHttpNetworkReply);
+    // we'll take the last buffer, so schedule another read from http
+    if (d->downstreamLimited && d->responseData.bufferCount() == 1)
+        d->connection->d_func()->readMoreLater(this);
     return d->responseData.read();
+}
+
+void QHttpNetworkReply::setDownstreamLimited(bool dsl)
+{
+    Q_D(QHttpNetworkReply);
+    d->downstreamLimited = dsl;
+    d->connection->d_func()->readMoreLater(this);
 }
 
 bool QHttpNetworkReply::isFinished() const
@@ -201,7 +211,7 @@ QHttpNetworkReplyPrivate::QHttpNetworkReplyPrivate(const QUrl &newUrl)
       forceConnectionCloseEnabled(false),
       currentChunkSize(0), currentChunkRead(0), connection(0), initInflate(false),
       autoDecompress(false), responseData(), requestIsPrepared(false)
-      ,pipeliningUsed(false)
+      ,pipeliningUsed(false), downstreamLimited(false)
 {
 }
 
@@ -220,6 +230,7 @@ void QHttpNetworkReplyPrivate::clear()
     currentChunkRead = 0;
     connectionCloseEnabled = true;
     connection = 0;
+    connectionChannel = 0;
 #ifndef QT_NO_COMPRESS
     if (initInflate)
         inflateEnd(&inflateStrm);
@@ -413,13 +424,26 @@ int QHttpNetworkReplyPrivate::gunzipBodyPartially(QByteArray &compressed, QByteA
 
 qint64 QHttpNetworkReplyPrivate::readStatus(QAbstractSocket *socket)
 {
+    if (fragment.isEmpty()) {
+        // reserve bytes for the status line. This is better than always append() which reallocs the byte array
+        fragment.reserve(32);
+    }
+
     qint64 bytes = 0;
     char c;
+    qint64 haveRead = 0;
 
-    while (socket->bytesAvailable()) {
+    do {
+        haveRead = socket->read(&c, 1);
+        if (haveRead == -1)
+            return -1; // unexpected EOF
+        else if (haveRead == 0)
+            break; // read more later
+
+        bytes++;
+
         // allow both CRLF & LF (only) line endings
-        if (socket->peek(&c, 1) == 1 && c == '\n') {
-            bytes += socket->read(&c, 1); // read the "n"
+        if (c == '\n') {
             // remove the CR at the end
             if (fragment.endsWith('\r')) {
                 fragment.truncate(fragment.length()-1);
@@ -432,11 +456,6 @@ qint64 QHttpNetworkReplyPrivate::readStatus(QAbstractSocket *socket)
             }
             break;
         } else {
-            c = 0;
-            int haveRead = socket->read(&c, 1);
-            if (haveRead == -1)
-                return -1;
-            bytes += haveRead;
             fragment.append(c);
         }
 
@@ -446,8 +465,7 @@ qint64 QHttpNetworkReplyPrivate::readStatus(QAbstractSocket *socket)
             fragment.clear();
             return -1;
         }
-
-    }
+    } while (haveRead == 1);
 
     return bytes;
 }
@@ -490,20 +508,41 @@ bool QHttpNetworkReplyPrivate::parseStatus(const QByteArray &status)
 
 qint64 QHttpNetworkReplyPrivate::readHeader(QAbstractSocket *socket)
 {
+    if (fragment.isEmpty()) {
+        // according to http://dev.opera.com/articles/view/mama-http-headers/ the average size of the header
+        // block is 381 bytes.
+        // reserve bytes. This is better than always append() which reallocs the byte array.
+        fragment.reserve(512);
+    }
+
     qint64 bytes = 0;
     char c = 0;
     bool allHeaders = false;
-    while (!allHeaders && socket->bytesAvailable()) {
-        if (socket->peek(&c, 1) == 1 && c == '\n') {
-            // check for possible header endings. As per HTTP rfc,
-            // the header endings will be marked by CRLFCRLF. But
-            // we will allow CRLFLF, LFLF & CRLFCRLF
-            if (fragment.endsWith("\n\r") || fragment.endsWith('\n'))
-                allHeaders = true;
+    qint64 haveRead = 0;
+    do {
+        haveRead = socket->read(&c, 1);
+        if (haveRead == 0) {
+            // read more later
+            break;
+        } else if (haveRead == -1) {
+            // connection broke down
+            return -1;
+        } else {
+            fragment.append(c);
+            bytes++;
+
+            if (c == '\n') {
+                // check for possible header endings. As per HTTP rfc,
+                // the header endings will be marked by CRLFCRLF. But
+                // we will allow CRLFCRLF, CRLFLF, LFLF
+                if (fragment.endsWith("\r\n\r\n")
+                    || fragment.endsWith("\r\n\n")
+                    || fragment.endsWith("\n\n"))
+                    allHeaders = true;
+            }
         }
-        bytes += socket->read(&c, 1);
-        fragment.append(c);
-    }
+    } while (!allHeaders && haveRead > 0);
+
     // we received all headers now parse them
     if (allHeaders) {
         parseHeader(fragment);
@@ -765,9 +804,15 @@ void QHttpNetworkReplyPrivate::eraseData()
 QSslConfiguration QHttpNetworkReply::sslConfiguration() const
 {
     Q_D(const QHttpNetworkReply);
-    if (d->connection)
-        return d->connection->d_func()->sslConfiguration(*this);
-    return QSslConfiguration();
+
+    if (!d->connectionChannel)
+        return QSslConfiguration();
+
+    QSslSocket *sslSocket = qobject_cast<QSslSocket*>(d->connectionChannel->socket);
+    if (!sslSocket)
+        return QSslConfiguration();
+
+    return sslSocket->sslConfiguration();
 }
 
 void QHttpNetworkReply::setSslConfiguration(const QSslConfiguration &config)

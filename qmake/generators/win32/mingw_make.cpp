@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -164,13 +164,13 @@ bool MingwMakefileGenerator::writeMakefile(QTextStream &t)
     return false;
  }
 
-void createLdObjectScriptFile(const QString &fileName, const QStringList &objList)
+ void MingwMakefileGenerator::createLdObjectScriptFile(const QString &fileName, const QStringList &objList)
 {
     QString filePath = Option::output_dir + QDir::separator() + fileName;
     QFile file(filePath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         if (Option::mkfile::listgen) {
-            // TODO generatePrint(fileInfo(file.fileName()).absoluteFilePath());
+            generatePrint(QFileInfo(file.fileName()).absoluteFilePath());
         }
         QTextStream t(&file);
         t << "INPUT(" << endl;
@@ -186,13 +186,13 @@ void createLdObjectScriptFile(const QString &fileName, const QStringList &objLis
     }
 }
 
-void createArObjectScriptFile(const QString &fileName, const QString &target, const QStringList &objList)
+void MingwMakefileGenerator::createArObjectScriptFile(const QString &fileName, const QString &target, const QStringList &objList)
 {
     QString filePath = Option::output_dir + QDir::separator() + fileName;
     QFile file(filePath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         if (Option::mkfile::listgen) {
-            // TODO generatePrint(file.fileName()).absoluteFilePath());
+            generatePrint(QFileInfo(file.fileName()).absoluteFilePath());
         }
         QTextStream t(&file);
         t << "CREATE " << target << endl;

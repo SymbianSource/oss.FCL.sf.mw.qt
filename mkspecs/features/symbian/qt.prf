@@ -2,7 +2,7 @@ contains(DEFINES, QT_MAKEDLL)|contains(DEFINES, QT_DLL) {
     CONFIG *= epocallowdlldata
 }
 
-CONFIG += qtmain stl
+CONFIG += qtmain
 
 load(qt)
 
@@ -28,18 +28,24 @@ contains(CONFIG, qt):!contains(TARGET.UID3, 0x2001E61C):!contains(TARGET.UID3, 0
     default_deployment.pkg_prerules += \
         "; Default dependency to Qt libraries" \
         "(0x2001E61C), $${QT_MAJOR_VERSION}, $${QT_MINOR_VERSION}, $${QT_PATCH_VERSION},  {\"Qt\"}"
+
+    # Projects linking to webkit need dependency to webkit
+    contains(QT, webkit): {
+        default_deployment.pkg_prerules += \
+            "; Dependency to Qt Webkit" \
+            "(0x200267C2), $${QT_MAJOR_VERSION}, $${QT_MINOR_VERSION}, $${QT_PATCH_VERSION},  {\"QtWebKit\"}"
+    }
 }
 
 isEmpty(TARGET.EPOCSTACKSIZE):TARGET.EPOCSTACKSIZE = 0x14000
 isEmpty(TARGET.EPOCHEAPSIZE):TARGET.EPOCHEAPSIZE = 0x020000 0x800000
 
-INCLUDEPATH += $$MW_LAYER_SYSTEMINCLUDE
-for(QTLIB, $$list($$lower($$unique(QT)))) {
-    unset(qlib)
-    isEqual(QTLIB, phonon):qlib = phonon
-    else:qlib = qt$$QTLIB
-    INCLUDEPATH += $$MW_LAYER_PUBLIC_EXPORT_PATH($$qlib)
-}
+INCLUDEPATH += $$APP_LAYER_SYSTEMINCLUDE
 
 #QTP: add userinclude 
 MMP_RULES+="USERINCLUDE  ."
+
+my_custom_rule = "$${LITERAL_HASH}if defined(ARMCC) && !defined(ARMCC_2_2) && !defined(ARMCC_3_1)"\
+"OPTION ARMCC --import_all_vtbl" \
+"$${LITERAL_HASH}endif"
+MMP_RULES += my_custom_rule

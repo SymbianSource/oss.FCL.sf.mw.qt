@@ -8,10 +8,13 @@ TEMPLATE = subdirs
            compiler \
            compilerwarnings \
            linguist \
+           maketestselftest \
            moc \
            uic \
-           uic3 \
-           guiapplauncher	   
+           guiapplauncher \
+           #atwrapper \     # These tests need significant updating,
+           #uiloader \      # they have hardcoded machine names etc.
+
 Q3SUBDIRS += \
            q3accel \
            q3action \
@@ -64,6 +67,9 @@ Q3SUBDIRS += \
            q3frame \
            q3uridrag \
            q3widgetstack
+
+!cross_compile:Q3SUBDIRS += \
+           uic3
 
 SUBDIRS += \
 #           exceptionsafety_objects \ shouldn't enable it
@@ -130,6 +136,7 @@ SUBDIRS += \
            qdoublevalidator \
            qdrag \
            qerrormessage \
+           qevent \
            qeventloop \
            qexplicitlyshareddatapointer \
            qfile \
@@ -346,7 +353,7 @@ SUBDIRS += \
            qtextblock \
            qtextboundaryfinder \
            qtextbrowser \
-           qtextcodec \
+           #qtextcodec \
            qtextcursor \
            qtextdocument \
            qtextdocumentfragment \
@@ -440,17 +447,16 @@ SUBDIRS += \
            qplugin \
            qpluginloader \
            qscrollbar \
-           qsharedmemory \
            qsidebar \
            qsizegrip \
            qsqldriver \
-           qsystemsemaphore \
            qtconcurrentfilter \
            qtconcurrentiteratekernel \
            qtconcurrentmap \
            qtconcurrentrun \
            qtconcurrentthreadengine \
            qthreadpool \
+           qtipc \
            qtokenautomaton \
            qtouchevent \
            qwidget_window \
@@ -478,7 +484,8 @@ embedded:!wince* {
 }
 
 symbian {
-    SUBDIRS += qsoftkeymanager
+    SUBDIRS += qsoftkeymanager \
+               qs60mainapplication
 }
 
 # Enable the tests specific to QtXmlPatterns. If you add a test, remember to
@@ -513,15 +520,16 @@ SUBDIRS += checkxmlfiles                \
            xmlpatternsdiagnosticsts     \
            xmlpatternsschema            \
            xmlpatternsschemats          \
+           xmlpatternssdk               \
            xmlpatternsvalidator         \
            xmlpatternsview              \
            xmlpatternsxqts              \
            xmlpatternsxslts
 
-xmlpatternsdiagnosticsts.depends = xmlpatternsxqts
-xmlpatternsview.depends = xmlpatternsxqts
-xmlpatternsxslts.depends = xmlpatternsxqts
-xmlpatternsschemats.depends = xmlpatternsxqts
+xmlpatternsdiagnosticsts.depends = xmlpatternssdk
+xmlpatternsview.depends = xmlpatternssdk
+xmlpatternsxslts.depends = xmlpatternssdk
+xmlpatternsschemats.depends = xmlpatternssdk
 }
 
 unix:!embedded:contains(QT_CONFIG, dbus):SUBDIRS += \
@@ -563,3 +571,29 @@ contains(QT_CONFIG, webkit): SUBDIRS += \
            qwebhistory
 
 contains(QT_CONFIG, declarative): SUBDIRS += declarative
+
+# Following tests depends on private API
+!contains(QT_CONFIG, private_tests): SUBDIRS -= \
+           qcssparser \
+           qgraphicssceneindex \
+           qhttpnetworkconnection \
+           qhttpnetworkreply \
+           qnativesocketengine \
+           qnetworkreply \
+           qpathclipper \
+           qsocketnotifier \
+           qsocks5socketengine \
+           qstylesheetstyle \
+           qtextpiecetable \
+           xmlpatternsdiagnosticsts \
+           xmlpatternsview \
+           xmlpatternsxqts \
+           xmlpatternsxslts
+
+
+############### make check recursively for testcases ##################
+check.CONFIG = recursive
+check.recurse = $$SUBDIRS
+check.recurse_target = check
+QMAKE_EXTRA_TARGETS += check
+###########################################################

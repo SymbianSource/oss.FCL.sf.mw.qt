@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -86,6 +86,7 @@ static const unsigned char gz_magic[2] = {0x1f, 0x8b}; // gzip magic header
 QT_BEGIN_NAMESPACE
 
 class QHttpNetworkConnection;
+class QHttpNetworkConnectionChannel;
 class QHttpNetworkRequest;
 class QHttpNetworkConnectionPrivate;
 class QHttpNetworkReplyPrivate;
@@ -125,6 +126,7 @@ public:
     qint64 bytesAvailable() const;
     qint64 bytesAvailableNextBlock() const;
     QByteArray readAny();
+    void setDownstreamLimited(bool t);
 
     bool isFinished() const;
 
@@ -217,6 +219,7 @@ public:
     qint64 currentChunkSize;
     qint64 currentChunkRead;
     QPointer<QHttpNetworkConnection> connection;
+    QPointer<QHttpNetworkConnectionChannel> connectionChannel;
     bool initInflate;
     bool streamEnd;
 #ifndef QT_NO_COMPRESS
@@ -229,6 +232,7 @@ public:
     bool requestIsPrepared;
 
     bool pipeliningUsed;
+    bool downstreamLimited;
 };
 
 

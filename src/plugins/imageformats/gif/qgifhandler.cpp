@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -54,6 +54,10 @@ QT_BEGIN_NAMESPACE
 
 #define Q_TRANSPARENT 0x00ffffff
 
+// avoid going through QImage::scanLine() which calls detach
+#define FAST_SCAN_LINE(bits, bpl, y) (bits + (y) * bpl)
+
+
 /*
   Incremental image decoder for GIF image format.
 
@@ -67,7 +71,8 @@ public:
     ~QGIFFormat();
 
     int decode(QImage *image, const uchar* buffer, int length,
-               int *nextFrameDelay, int *loopCount, QSize *nextSize);
+               int *nextFrameDelay, int *loopCount);
+    static void scan(QIODevice *device, QVector<QSize> *imageSizes, int *loopCount);
 
     bool newFrame;
     bool partialNewFrame;
@@ -135,7 +140,7 @@ private:
     int frame;
     bool out_of_bounds;
     bool digress;
-    void nextY(QImage *image);
+    void nextY(unsigned char *bits, int bpl);
     void disposePrevious(QImage *image);
 };
 
@@ -225,12 +230,16 @@ void QGIFFormat::disposePrevious(QImage *image)
     Returns the number of bytes consumed.
 */
 int QGIFFormat::decode(QImage *image, const uchar *buffer, int length,
-                       int *nextFrameDelay, int *loopCount, QSize *nextSize)
+                       int *nextFrameDelay, int *loopCount)
 {
     // We are required to state that
     //    "The Graphics Interchange Format(c) is the Copyright property of
     //    CompuServe Incorporated. GIF(sm) is a Service Mark property of
     //    CompuServe Incorporated."
+
+    image->detach();
+    int bpl = image->bytesPerLine();
+    unsigned char *bits = image->bits();
 
 #define LM(l, m) (((m)<<8)|l)
     digress = false;
@@ -335,11 +344,9 @@ int QGIFFormat::decode(QImage *image, const uchar *buffer, int length,
                 QImage::Format format = trans_index >= 0 ? QImage::Format_ARGB32 : QImage::Format_RGB32;
                 if (image->isNull()) {
                     (*image) = QImage(swidth, sheight, format);
-                    memset(image->bits(), 0, image->byteCount());
-
-                    // ### size of the upcoming frame, should rather
-                    // be known before decoding it.
-                    *nextSize = QSize(swidth, sheight);
+                    bpl = image->bytesPerLine();
+                    bits = image->bits();
+                    memset(bits, 0, image->byteCount());
                 }
 
                 disposePrevious(image);
@@ -393,11 +400,13 @@ int QGIFFormat::decode(QImage *image, const uchar *buffer, int length,
                         backingstore = QImage(qMax(backingstore.width(), w),
                                               qMax(backingstore.height(), h),
                                               QImage::Format_RGB32);
-                        memset(image->bits(), 0, image->byteCount());
+                        memset(bits, 0, image->byteCount());
                     }
+                    const int dest_bpl = backingstore.bytesPerLine();
+                    unsigned char *dest_data = backingstore.bits();
                     for (int ln=0; ln<h; ln++) {
-                        memcpy(backingstore.scanLine(ln),
-                               image->scanLine(t+ln)+l, w*sizeof(QRgb));
+                        memcpy(FAST_SCAN_LINE(dest_data, dest_bpl, ln),
+                               FAST_SCAN_LINE(bits, bpl, t+ln) + l, w*sizeof(QRgb));
                     }
                 }
 
@@ -470,14 +479,14 @@ int QGIFFormat::decode(QImage *image, const uchar *buffer, int length,
                     if (needfirst) {
                         firstcode=oldcode=code;
                         if (!out_of_bounds && image->height() > y && firstcode!=trans_index)
-                            ((QRgb*)image->scanLine(y))[x] = color(firstcode);
+                            ((QRgb*)FAST_SCAN_LINE(bits, bpl, y))[x] = color(firstcode);
                         x++;
                         if (x>=swidth) out_of_bounds = true;
                         needfirst=false;
                         if (x>=left+width) {
                             x=left;
                             out_of_bounds = left>=swidth || y>=sheight;
-                            nextY(image);
+                            nextY(bits, bpl);
                         }
                     } else {
                         incode=code;
@@ -515,7 +524,7 @@ int QGIFFormat::decode(QImage *image, const uchar *buffer, int length,
                         const QRgb *map = lcmap ? localcmap : globalcmap;
                         QRgb *line = 0;
                         if (!out_of_bounds && h > y)
-                            line = (QRgb*)image->scanLine(y);
+                            line = (QRgb*)FAST_SCAN_LINE(bits, bpl, y);
                         while (sp>stack) {
                             const uchar index = *(--sp);
                             if (!out_of_bounds && h > y && index!=trans_index) {
@@ -529,9 +538,9 @@ int QGIFFormat::decode(QImage *image, const uchar *buffer, int length,
                             if (x>=left+width) {
                                 x=left;
                                 out_of_bounds = left>=swidth || y>=sheight;
-                                nextY(image);
+                                nextY(bits, bpl);
                                 if (!out_of_bounds && h > y)
-                                    line = (QRgb*)image->scanLine(y);
+                                    line = (QRgb*)FAST_SCAN_LINE(bits, bpl, y);
                             }
                         }
                     }
@@ -633,6 +642,273 @@ int QGIFFormat::decode(QImage *image, const uchar *buffer, int length,
     return initial-length;
 }
 
+/*!
+   Scans through the data stream defined by \a device and returns the image
+   sizes found in the stream in the \a imageSizes vector.
+*/
+void QGIFFormat::scan(QIODevice *device, QVector<QSize> *imageSizes, int *loopCount)
+{
+    if (!device)
+        return;
+
+    qint64 oldPos = device->pos();
+    if (!device->seek(0))
+        return;
+
+    int colorCount = 0;
+    int localColorCount = 0;
+    int globalColorCount = 0;
+    int colorReadCount = 0;
+    bool localColormap = false;
+    bool globalColormap = false;
+    int count = 0;
+    int blockSize = 0;
+    int imageWidth = 0;
+    int imageHeight = 0;
+    bool done = false;
+    uchar hold[16];
+    State state = Header;
+
+    const int readBufferSize = 40960; // 40k read buffer
+    QByteArray readBuffer(device->read(readBufferSize));
+
+    if (readBuffer.isEmpty()) {
+        device->seek(oldPos);
+        return;
+    }
+
+    // This is a specialized version of the state machine from decode(),
+    // which doesn't do any image decoding or mallocing, and has an
+    // optimized way of skipping SkipBlocks, ImageDataBlocks and
+    // Global/LocalColorMaps.
+
+    while (!readBuffer.isEmpty()) {
+        int length = readBuffer.size();
+        const uchar *buffer = (const uchar *) readBuffer.constData();
+        while (!done && length) {
+            length--;
+            uchar ch = *buffer++;
+            switch (state) {
+            case Header:
+                hold[count++] = ch;
+                if (count == 6) {
+                    state = LogicalScreenDescriptor;
+                    count = 0;
+                }
+                break;
+            case LogicalScreenDescriptor:
+                hold[count++] = ch;
+                if (count == 7) {
+                    imageWidth = LM(hold[0], hold[1]);
+                    imageHeight = LM(hold[2], hold[3]);
+                    globalColormap = !!(hold[4] & 0x80);
+                    globalColorCount = 2 << (hold[4] & 0x7);
+                    count = 0;
+                    colorCount = globalColorCount;
+                    if (globalColormap) {
+                        int colorTableSize = 3 * globalColorCount;
+                        if (length >= colorTableSize) {
+                            // skip the global color table in one go
+                            length -= colorTableSize;
+                            buffer += colorTableSize;
+                            state = Introducer;
+                        } else {
+                            colorReadCount = 0;
+                            state = GlobalColorMap;
+                        }
+                    } else {
+                        state=Introducer;
+                    }
+                }
+                break;
+            case GlobalColorMap:
+            case LocalColorMap:
+                hold[count++] = ch;
+                if (count == 3) {
+                    if (++colorReadCount >= colorCount) {
+                        if (state == LocalColorMap)
+                            state = TableImageLZWSize;
+                        else
+                            state = Introducer;
+                    }
+                    count = 0;
+                }
+                break;
+            case Introducer:
+                hold[count++] = ch;
+                switch (ch) {
+                case 0x2c:
+                    state = ImageDescriptor;
+                    break;
+                case 0x21:
+                    state = ExtensionLabel;
+                    break;
+                case 0x3b:
+                    state = Done;
+                    break;
+                default:
+                    done = true;
+                    state = Error;
+                }
+                break;
+            case ImageDescriptor:
+                hold[count++] = ch;
+                if (count == 10) {
+                    int newLeft = LM(hold[1], hold[2]);
+                    int newTop = LM(hold[3], hold[4]);
+                    int newWidth = LM(hold[5], hold[6]);
+                    int newHeight = LM(hold[7], hold[8]);
+
+                    if (imageWidth/10 > qMax(newWidth,200))
+                        imageWidth = -1;
+                    if (imageHeight/10 > qMax(newHeight,200))
+                        imageHeight = -1;
+
+                    if (imageWidth <= 0)
+                        imageWidth = newLeft + newWidth;
+                    if (imageHeight <= 0)
+                        imageHeight = newTop + newHeight;
+
+                    *imageSizes << QSize(imageWidth, imageHeight);
+
+                    localColormap = !!(hold[9] & 0x80);
+                    localColorCount = localColormap ? (2 << (hold[9] & 0x7)) : 0;
+                    if (localColorCount)
+                        colorCount = localColorCount;
+                    else
+                        colorCount = globalColorCount;
+
+                    count = 0;
+                    if (localColormap) {
+                        int colorTableSize = 3 * localColorCount;
+                        if (length >= colorTableSize) {
+                            // skip the local color table in one go
+                            length -= colorTableSize;
+                            buffer += colorTableSize;
+                            state = TableImageLZWSize;
+                        } else {
+                            colorReadCount = 0;
+                            state = LocalColorMap;
+                        }
+                    } else {
+                        state = TableImageLZWSize;
+                    }
+                }
+                break;
+            case TableImageLZWSize:
+                if (ch > max_lzw_bits)
+                    state = Error;
+                else
+                    state = ImageDataBlockSize;
+                count = 0;
+                break;
+            case ImageDataBlockSize:
+                blockSize = ch;
+                if (blockSize) {
+                    if (length >= blockSize) {
+                        // we can skip the block in one go
+                        length -= blockSize;
+                        buffer += blockSize;
+                        count = 0;
+                    } else {
+                        state = ImageDataBlock;
+                    }
+                } else {
+                    state = Introducer;
+                }
+                break;
+            case ImageDataBlock:
+                ++count;
+                if (count == blockSize) {
+                    count = 0;
+                    state = ImageDataBlockSize;
+                }
+                break;
+            case ExtensionLabel:
+                switch (ch) {
+                case 0xf9:
+                    state = GraphicControlExtension;
+                    break;
+                case 0xff:
+                    state = ApplicationExtension;
+                    break;
+                default:
+                    state = SkipBlockSize;
+                }
+                count = 0;
+                break;
+            case ApplicationExtension:
+                if (count < 11)
+                    hold[count] = ch;
+                ++count;
+                if (count == hold[0] + 1) {
+                    if (qstrncmp((char*)(hold+1), "NETSCAPE", 8) == 0)
+                        state=NetscapeExtensionBlockSize;
+                    else
+                        state=SkipBlockSize;
+                    count = 0;
+                }
+                break;
+            case GraphicControlExtension:
+                if (count < 5)
+                    hold[count] = ch;
+                ++count;
+                if (count == hold[0] + 1) {
+                    count = 0;
+                    state = SkipBlockSize;
+                }
+                break;
+            case NetscapeExtensionBlockSize:
+                blockSize = ch;
+                count = 0;
+                if (blockSize)
+                    state = NetscapeExtensionBlock;
+                else
+                    state = Introducer;
+                break;
+            case NetscapeExtensionBlock:
+                if (count < 3)
+                    hold[count] = ch;
+                count++;
+                if (count == blockSize) {
+                    *loopCount = LM(hold[1], hold[2]);
+                    state = SkipBlockSize;
+                }
+                break;
+            case SkipBlockSize:
+                blockSize = ch;
+                count = 0;
+                if (blockSize) {
+                    if (length >= blockSize) {
+                        // we can skip the block in one go
+                        length -= blockSize;
+                        buffer += blockSize;
+                    } else {
+                        state = SkipBlock;
+                    }
+                } else {
+                    state = Introducer;
+                }
+                break;
+            case SkipBlock:
+                ++count;
+                if (count == blockSize)
+                    state = SkipBlockSize;
+                break;
+            case Done:
+                done = true;
+                break;
+            case Error:
+                device->seek(oldPos);
+                return;
+            }
+        }
+        readBuffer = device->read(readBufferSize);
+    }
+    device->seek(oldPos);
+    return;
+}
+
 void QGIFFormat::fillRect(QImage *image, int col, int row, int w, int h, QRgb color)
 {
     if (w>0) {
@@ -644,7 +920,7 @@ void QGIFFormat::fillRect(QImage *image, int col, int row, int w, int h, QRgb co
     }
 }
 
-void QGIFFormat::nextY(QImage *image)
+void QGIFFormat::nextY(unsigned char *bits, int bpl)
 {
     int my;
     switch (interlace) {
@@ -660,7 +936,7 @@ void QGIFFormat::nextY(QImage *image)
         // Don't dup with transparency
         if (trans_index < 0) {
             for (i=1; i<=my; i++) {
-                memcpy(image->scanLine(y+i)+left*sizeof(QRgb), image->scanLine(y)+left*sizeof(QRgb),
+                memcpy(FAST_SCAN_LINE(bits, bpl, y+i)+left*sizeof(QRgb), FAST_SCAN_LINE(bits, bpl, y)+left*sizeof(QRgb),
                        (right-left+1)*sizeof(QRgb));
             }
         }
@@ -689,7 +965,7 @@ void QGIFFormat::nextY(QImage *image)
         // Don't dup with transparency
         if (trans_index < 0) {
             for (i=1; i<=my; i++) {
-                memcpy(image->scanLine(y+i)+left*sizeof(QRgb), image->scanLine(y)+left*sizeof(QRgb),
+                memcpy(FAST_SCAN_LINE(bits, bpl, y+i)+left*sizeof(QRgb), FAST_SCAN_LINE(bits, bpl, y)+left*sizeof(QRgb),
                        (right-left+1)*sizeof(QRgb));
             }
         }
@@ -713,7 +989,7 @@ void QGIFFormat::nextY(QImage *image)
         // Don't dup with transparency
         if (trans_index < 0) {
             for (i=1; i<=my; i++) {
-                memcpy(image->scanLine(y+i)+left*sizeof(QRgb), image->scanLine(y)+left*sizeof(QRgb),
+                memcpy(FAST_SCAN_LINE(bits, bpl, y+i)+left*sizeof(QRgb), FAST_SCAN_LINE(bits, bpl, y)+left*sizeof(QRgb),
                        (right-left+1)*sizeof(QRgb));
             }
         }
@@ -751,9 +1027,9 @@ QGifHandler::QGifHandler()
 {
     gifFormat = new QGIFFormat;
     nextDelay = 0;
-    loopCnt = 0;
+    loopCnt = 1;
     frameNumber = -1;
-    nextSize = QSize();
+    scanIsCached = false;
 }
 
 QGifHandler::~QGifHandler()
@@ -775,7 +1051,7 @@ bool QGifHandler::imageIsComing() const
         }
 
         int decoded = gifFormat->decode(&lastImage, (const uchar *)buffer.constData(), buffer.size(),
-                                        &nextDelay, &loopCnt, &nextSize);
+                                        &nextDelay, &loopCnt);
         if (decoded == -1)
             break;
         buffer.remove(0, decoded);
@@ -819,7 +1095,7 @@ bool QGifHandler::read(QImage *image)
         }
 
         int decoded = gifFormat->decode(&lastImage, (const uchar *)buffer.constData(), buffer.size(),
-                                        &nextDelay, &loopCnt, &nextSize);
+                                        &nextDelay, &loopCnt);
         if (decoded == -1)
             break;
         buffer.remove(0, decoded);
@@ -850,8 +1126,18 @@ bool QGifHandler::supportsOption(ImageOption option) const
 QVariant QGifHandler::option(ImageOption option) const
 {
     if (option == Size) {
-        if (imageIsComing())
-            return nextSize;
+        if (!scanIsCached) {
+            QGIFFormat::scan(device(), &imageSizes, &loopCnt);
+            scanIsCached = true;
+        }
+        // before the first frame is read, or we have an empty data stream
+        if (frameNumber == -1)
+            return (imageSizes.count() > 0) ? QVariant(imageSizes.at(0)) : QVariant();
+        // after the last frame has been read, the next size is undefined
+        if (frameNumber >= imageSizes.count() - 1)
+            return QVariant();
+        // and the last case: the size of the next frame
+        return imageSizes.at(frameNumber + 1);
     } else if (option == Animation) {
         return true;
     }
@@ -871,11 +1157,19 @@ int QGifHandler::nextImageDelay() const
 
 int QGifHandler::imageCount() const
 {
-    return 0; // Don't know
+    if (!scanIsCached) {
+        QGIFFormat::scan(device(), &imageSizes, &loopCnt);
+        scanIsCached = true;
+    }
+    return imageSizes.count();
 }
 
 int QGifHandler::loopCount() const
 {
+    if (!scanIsCached) {
+        QGIFFormat::scan(device(), &imageSizes, &loopCnt);
+        scanIsCached = true;
+    }
     return loopCnt-1; // In GIF, loop count is iteration count, so subtract one
 }
 

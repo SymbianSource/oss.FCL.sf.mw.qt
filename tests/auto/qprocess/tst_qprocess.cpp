@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -1652,7 +1652,7 @@ void tst_QProcess::failToStart()
     QSignalSpy finishedSpy(&process, SIGNAL(finished(int)));
     QSignalSpy finishedSpy2(&process, SIGNAL(finished(int, QProcess::ExitStatus)));
 
-// Mac OS X and HP-UX have a really low defualt process limit (~100), so spawning
+// Mac OS X and HP-UX have a really low default process limit (~100), so spawning
 // to many processes here will cause test failures later on.
 #if defined Q_OS_HPUX
    const int attempts = 15;

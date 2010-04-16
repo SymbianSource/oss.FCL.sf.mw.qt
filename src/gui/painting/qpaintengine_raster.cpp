@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -99,10 +99,6 @@
 #  include <malloc.h>
 #endif
 #include <limits.h>
-
-#if defined(QT_NO_FPU) || (_MSC_VER >= 1300 && _MSC_VER < 1400)
-#  define FLOATING_POINT_BUGGY_OR_NO_FPU
-#endif
 
 QT_BEGIN_NAMESPACE
 
@@ -475,8 +471,10 @@ bool QRasterPaintEngine::begin(QPaintDevice *device)
     QRasterPaintEngineState *s = state();
     ensureOutlineMapper();
     d->outlineMapper->m_clip_rect = d->deviceRect.adjusted(-10, -10, 10, 10);
+
+    // This is the upp
     QRect bounds(-QT_RASTER_COORD_LIMIT, -QT_RASTER_COORD_LIMIT,
-                 2*QT_RASTER_COORD_LIMIT, 2*QT_RASTER_COORD_LIMIT);
+                 QT_RASTER_COORD_LIMIT*2 - 1, QT_RASTER_COORD_LIMIT * 2 - 1);
     d->outlineMapper->m_clip_rect = bounds.intersected(d->outlineMapper->m_clip_rect);
 
 
@@ -3079,6 +3077,8 @@ void QRasterPaintEngine::drawGlyphsS60(const QPointF &p, const QTextItemInt &ti)
     QVarLengthArray<glyph_t> glyphs;
     QTransform matrix = s->matrix;
     matrix.translate(p.x(), p.y());
+    if (matrix.type() == QTransform::TxScale)
+        fe->setFontScale(matrix.m11());
     ti.fontEngine->getGlyphPositions(ti.glyphs, matrix, ti.flags, glyphs, positions);
 
     const QFixed aliasDelta = QFixed::fromReal(aliasedCoordinateDelta);
@@ -3094,6 +3094,9 @@ void QRasterPaintEngine::drawGlyphsS60(const QPointF &p, const QTextItemInt &ti)
 
         alphaPenBlt(glyphBitmapBytes, glyphBitmapSize.iWidth, 8, x, y, glyphBitmapSize.iWidth, glyphBitmapSize.iHeight);
     }
+
+    if (matrix.type() == QTransform::TxScale)
+        fe->setFontScale(1.0);
 
     return;
 }
@@ -3267,7 +3270,9 @@ void QRasterPaintEngine::drawTextItem(const QPointF &p, const QTextItem &textIte
     }
 
 #elif defined (Q_OS_SYMBIAN) && defined(QT_NO_FREETYPE) // Q_WS_WIN || Q_WS_MAC
-    if (s->matrix.type() <= QTransform::TxTranslate) {
+    if (s->matrix.type() <= QTransform::TxTranslate
+        || (s->matrix.type() == QTransform::TxScale
+                && (qFuzzyCompare(s->matrix.m11(), s->matrix.m22())))) {
         drawGlyphsS60(p, ti);
         return;
     }
@@ -3670,9 +3675,6 @@ void QRasterPaintEngine::drawEllipse(const QRectF &rect)
     if (((qpen_style(s->lastPen) == Qt::SolidLine && s->flags.fast_pen)
          || (qpen_style(s->lastPen) == Qt::NoPen && !s->flags.antialiased))
         && qMax(rect.width(), rect.height()) < QT_RASTER_COORD_LIMIT
-#ifdef FLOATING_POINT_BUGGY_OR_NO_FPU
-        && qMax(rect.width(), rect.height()) < 128 // integer math breakdown
-#endif
         && s->matrix.type() <= QTransform::TxScale) // no shear
     {
         ensureBrush();
@@ -6045,15 +6047,9 @@ static void drawEllipse_midpoint_i(const QRect &rect, const QRect &clip,
                                    ProcessSpans pen_func, ProcessSpans brush_func,
                                    QSpanData *pen_data, QSpanData *brush_data)
 {
-#ifdef FLOATING_POINT_BUGGY_OR_NO_FPU // no fpu, so use fixed point
-    const QFixed a = QFixed(rect.width()) >> 1;
-    const QFixed b = QFixed(rect.height()) >> 1;
-    QFixed d = b*b - (a*a*b) + ((a*a) >> 2);
-#else
     const qreal a = qreal(rect.width()) / 2;
     const qreal b = qreal(rect.height()) / 2;
     qreal d = b*b - (a*a*b) + 0.25*a*a;
-#endif
 
     int x = 0;
     int y = (rect.height() + 1) / 2;
@@ -6076,12 +6072,7 @@ static void drawEllipse_midpoint_i(const QRect &rect, const QRect &clip,
                       pen_func, brush_func, pen_data, brush_data);
 
     // region 2
-#ifdef FLOATING_POINT_BUGGY_OR_NO_FPU
-    d = b*b*(x + (QFixed(1) >> 1))*(x + (QFixed(1) >> 1))
-        + a*a*((y - 1)*(y - 1) - b*b);
-#else
     d = b*b*(x + 0.5)*(x + 0.5) + a*a*((y - 1)*(y - 1) - b*b);
-#endif
     const int miny = rect.height() & 0x1;
     while (y > miny) {
         if (d < 0) { // select SE

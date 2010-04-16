@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -62,12 +62,6 @@ EGLSurface QEglContext::createSurface(QPaintDevice *device, const QEglProperties
     Q_UNUSED(device);
     Q_UNUSED(properties);
     return EGL_NO_SURFACE;
-}
-
-EGLDisplay QEglContext::getDisplay(QPaintDevice *device)
-{
-    Q_UNUSED(device);
-    return eglGetDisplay(EGLNativeDisplayType(EGL_DEFAULT_DISPLAY));
 }
 
 static QScreen *screenForDevice(QPaintDevice *device)

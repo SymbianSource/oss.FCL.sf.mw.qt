@@ -30,10 +30,11 @@ isEmpty(QT_BUILD_PARTS) { #defaults
        QT_BUILD_PARTS -= qmake
        QT_BUILD_PARTS = qmake $$QT_BUILD_PARTS
    }
+   symbian {
+      #QTP: build libs only by default
+      QT_BUILD_PARTS = libs
+   }
 }
-
-#QTP: build libs only. We don't need the others
-QT_BUILD_PARTS = libs
 
 #process the projects
 for(PROJECT, $$list($$lower($$unique(QT_BUILD_PARTS)))) {

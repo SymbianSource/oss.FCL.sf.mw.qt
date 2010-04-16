@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -64,9 +64,8 @@ QT_BEGIN_NAMESPACE
 struct Entry;
 struct PosEntry;
 
-namespace qt {
-    namespace fulltextsearch {
-        namespace std {
+namespace fulltextsearch {
+namespace std {
 
 class Reader
 {
@@ -127,9 +126,8 @@ private:
     Reader m_reader;
 };
 
-        }   // namespace std
-    }   // namespace fulltextsearch
-}   // namespace qt
+}   // namespace std
+}   // namespace fulltextsearch
 
 QT_END_NAMESPACE
 

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -114,6 +114,14 @@ void qt_bitmapblit32_sse2(QRasterBuffer *rasterBuffer, int x, int y,
 void qt_bitmapblit16_sse2(QRasterBuffer *rasterBuffer, int x, int y,
                           quint32 color,
                           const uchar *src, int width, int height, int stride);
+void qt_blend_argb32_on_argb32_sse2(uchar *destPixels, int dbpl,
+                                    const uchar *srcPixels, int sbpl,
+                                    int w, int h,
+                                    int const_alpha);
+void qt_blend_rgb32_on_rgb32_sse2(uchar *destPixels, int dbpl,
+                                 const uchar *srcPixels, int sbpl,
+                                 int w, int h,
+                                 int const_alpha);
 #endif // QT_HAVE_SSE2
 
 #ifdef QT_HAVE_IWMMXT

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -332,7 +332,7 @@ private:
     void removeModel(int pos);
     void moveModel(int oldPos, int newPos); // newPos is *before* removing at oldPos
     void putMessageItem(int pos, MessageItem *m);
-    void appendMessageItem(MessageItem *m);
+    void appendMessageItems(const QList<MessageItem *> &m);
     void removeMultiMessageItem(int pos);
     void incrementFinishedCount() { ++m_finishedCount; }
     void decrementFinishedCount() { --m_finishedCount; }

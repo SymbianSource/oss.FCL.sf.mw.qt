@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -349,7 +349,9 @@ extern "C" {
             // since we accepted the drag enter event, the widget expects
             // future drage move events.
             // ### check if we need to treat this like the drag enter event.
-            nsActions = QT_PREPEND_NAMESPACE(qt_mac_mapDropAction)(qDEEvent.dropAction());
+            nsActions = NSDragOperationNone;
+            // Save as ignored in the answer rect.
+            qDMEvent.setDropAction(Qt::IgnoreAction);
         } else {
             nsActions = QT_PREPEND_NAMESPACE(qt_mac_mapDropAction)(qDMEvent.dropAction());
         }
@@ -357,7 +359,6 @@ extern "C" {
         return nsActions;
     }
  }
-
 - (NSDragOperation)draggingUpdated:(id < NSDraggingInfo >)sender
 {
     NSPoint windowPoint = [sender draggingLocation];
@@ -402,13 +403,15 @@ extern "C" {
     qDMEvent.setDropAction(QT_PREPEND_NAMESPACE(qt_mac_dnd_answer_rec).lastAction);
     qDMEvent.accept();
     QApplication::sendEvent(qwidget, &qDMEvent);
-    qt_mac_copy_answer_rect(qDMEvent);
 
     NSDragOperation operation = qt_mac_mapDropAction(qDMEvent.dropAction());
     if (!qDMEvent.isAccepted() || qDMEvent.dropAction() == Qt::IgnoreAction) {
         // ignore this event (we will still receive further notifications)
         operation = NSDragOperationNone;
+        // Save as ignored in the answer rect.
+        qDMEvent.setDropAction(Qt::IgnoreAction);
     }
+    qt_mac_copy_answer_rect(qDMEvent);
     return operation;
 }
 
@@ -505,15 +508,23 @@ extern "C" {
     } else {
         [self setNeedsDisplay:YES];
     }
+
+    // Make sure the opengl context is updated on resize.
+    if (qwidgetprivate->isGLWidget) {
+        qwidgetprivate->needWindowChange = true;
+        QEvent event(QEvent::MacGLWindowChange);
+        qApp->sendEvent(qwidget, &event);
+    }
 }
 
 - (void)drawRect:(NSRect)aRect
 {
     if (QApplicationPrivate::graphicsSystem() != 0) {
-        if (QWidgetBackingStore *bs = qwidgetprivate->maybeBackingStore())
-            bs->markDirty(qwidget->rect(), qwidget);
-        qwidgetprivate->syncBackingStore(qwidget->rect());
-        return;
+        if (QWidgetBackingStore *bs = qwidgetprivate->maybeBackingStore()) {
+            // Drawing is handled on the window level
+            // See qcocoasharedwindowmethods_mac_p.
+            return;
+        }
     }
     CGContextRef cg = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
     qwidgetprivate->hd = cg;
@@ -634,6 +645,8 @@ extern "C" {
 
 - (void)mouseEntered:(NSEvent *)event
 {
+    if (qwidgetprivate->data.in_destructor)
+        return;
     QEvent enterEvent(QEvent::Enter);
     NSPoint windowPoint = [event locationInWindow];
     NSPoint globalPoint = [[event window] convertBaseToScreen:windowPoint];
@@ -815,6 +828,7 @@ extern "C" {
         deltaZ = qBound(-120, int([theEvent deltaZ] * 10000), 120);
     }
 
+#ifndef QT_NO_WHEELEVENT
     if (deltaX != 0) {
         QWheelEvent qwe(qlocal, qglobal, deltaX, buttons, keyMods, Qt::Horizontal);
         qt_sendSpontaneousEvent(widgetToGetMouse, &qwe);
@@ -855,6 +869,8 @@ extern "C" {
             wheelOK = qwe2.isAccepted();
         }
     }
+#endif //QT_NO_WHEELEVENT
+
     if (!wheelOK) {
         return [super scrollWheel:theEvent];
     }
@@ -1391,7 +1407,7 @@ Qt::DropAction QDragManager::drag(QDrag *o)
 
     // setup the data
     QMacPasteboard dragBoard((CFStringRef) NSDragPboard, QMacPasteboardMime::MIME_DND);
-    dragPrivate()->data->setData(QLatin1String("application/x-qt-mime-type-name"), QByteArray());
+    dragPrivate()->data->setData(QLatin1String("application/x-qt-mime-type-name"), QByteArray("dummy"));
     dragBoard.setMimeData(dragPrivate()->data);
 
     // create the image

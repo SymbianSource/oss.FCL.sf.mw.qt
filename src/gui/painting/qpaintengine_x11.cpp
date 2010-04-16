@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -1989,6 +1989,9 @@ void QX11PaintEngine::drawPixmap(const QRectF &r, const QPixmap &px, const QRect
         }
         XFillRectangle(d->dpy, d->hd, d->gc, x, y, sw, sh);
         restore_clip = true;
+    } else if (mono_dst && !mono_src) {
+        QBitmap bitmap(pixmap);
+        XCopyArea(d->dpy, bitmap.handle(), d->hd, d->gc, sx, sy, sw, sh, x, y);
     } else {
         XCopyArea(d->dpy, pixmap.handle(), d->hd, d->gc, sx, sy, sw, sh, x, y);
     }

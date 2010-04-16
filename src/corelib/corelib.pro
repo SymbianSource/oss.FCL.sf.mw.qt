@@ -37,6 +37,19 @@ symbian: {
     MMP_RULES *= UNPAGED
     LIBS += -lflogger
 
-    #QTP:add log of the warning message directly to the file. It is disabled by default
-    #DEFINES += QT_WARNING_FILE_OUTPUT
+    # Partial upgrade SIS file
+    vendorinfo = \
+        "&EN" \
+        "; Localised Vendor name" \
+        "%{\"Nokia, Qt\"}" \
+        " " \
+        "; Unique Vendor name" \
+        ":\"Nokia, Qt\"" \
+        " "
+    pu_header = "; Partial upgrade package for testing QtCore changes without reinstalling everything" \
+                "$${LITERAL_HASH}{\"Qt corelib\"}, (0x2001E61C), $${QT_MAJOR_VERSION},$${QT_MINOR_VERSION},$${QT_PATCH_VERSION}, TYPE=PU"
+    partial_upgrade.pkg_prerules = pu_header vendorinfo
+    partial_upgrade.sources = qtcore.dll
+    partial_upgrade.path = c:/sys/bin
+    DEPLOYMENT = partial_upgrade $$DEPLOYMENT
 }

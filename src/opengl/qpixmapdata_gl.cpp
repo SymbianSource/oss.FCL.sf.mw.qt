@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -234,6 +234,11 @@ QSize QGLPixmapGLPaintDevice::size() const
     return data->size();
 }
 
+bool QGLPixmapGLPaintDevice::alphaRequested() const
+{
+    return data->m_hasAlpha;
+}
+
 void QGLPixmapGLPaintDevice::setPixmapData(QGLPixmapData* d)
 {
     data = d;
@@ -341,7 +346,7 @@ void QGLPixmapData::ensureCreated() const
 
     if (!m_source.isNull()) {
         if (external_format == GL_RGB) {
-            const QImage tx = m_source.convertToFormat(QImage::Format_RGB888);
+            const QImage tx = m_source.convertToFormat(QImage::Format_RGB888).mirrored(false, true);
 
             glBindTexture(target, m_texture.id);
             glTexSubImage2D(target, 0, 0, 0, w, h, external_format,

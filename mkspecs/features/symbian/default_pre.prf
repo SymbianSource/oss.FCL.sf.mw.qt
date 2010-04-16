@@ -1,2 +1,2 @@
-# :QTP: stl by default on
+CONFIG = stl_off $$CONFIG
 load(default_pre)

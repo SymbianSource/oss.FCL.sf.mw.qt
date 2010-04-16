@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -111,14 +111,16 @@ public:
     virtual QSize size() const {return fbo->size();}
     virtual QGLContext* context() const;
     virtual QGLFormat format() const {return fboFormat;}
+    virtual bool alphaRequested() const { return reqAlpha; }
 
     void setFBO(QGLFramebufferObject* f,
                 QGLFramebufferObject::Attachment attachment);
 
 private:
-    bool wasBound;
     QGLFramebufferObject* fbo;
     QGLFormat fboFormat;
+    bool wasBound;
+    bool reqAlpha;
 };
 
 class QGLFramebufferObjectPrivate

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -60,9 +60,8 @@
 
 QT_BEGIN_NAMESPACE
 
-namespace qt {
-    namespace fulltextsearch {
-        namespace clucene {
+namespace fulltextsearch {
+namespace clucene {
 
 class QHelpSearchIndexReaderClucene : public QHelpSearchIndexReader
 {
@@ -84,9 +83,8 @@ private:
         const QList<QHelpSearchQuery> &queryList);
 };
 
-        }   // namespace clucene
-    }   // namespace fulltextsearch
-}   // namespace qt
+}   // namespace clucene
+}   // namespace fulltextsearch
 
 QT_END_NAMESPACE
 

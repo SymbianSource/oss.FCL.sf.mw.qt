@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -68,6 +68,7 @@
 #include "qx11info_x11.h"
 #include <private/qdrawhelper_p.h>
 #include <private/qimage_p.h>
+#include <private/qimagepixmapcleanuphooks_p.h>
 
 #include <stdlib.h>
 
@@ -1228,6 +1229,12 @@ void QX11PixmapData::fill(const QColor &fillColor)
 
 QX11PixmapData::~QX11PixmapData()
 {
+    // Cleanup hooks have to be called before the handles are freed
+    if (is_cached) {
+        QImagePixmapCleanupHooks::executePixmapDataDestructionHooks(this);
+        is_cached = false;
+    }
+
     release();
 }
 
@@ -1236,8 +1243,13 @@ void QX11PixmapData::release()
     delete pengine;
     pengine = 0;
 
-    if (!X11)
+    if (!X11) {
+#ifndef QT_NO_DEBUG
+        qWarning("~QX11PixmapData(): QPixmap objects must be destroyed before the QApplication"
+                 " object, otherwise the native pixmap object will be leaked.");
+#endif
         return;
+    }
 
     if (x11_mask) {
 #ifndef QT_NO_XRENDER
@@ -1932,6 +1944,8 @@ QPixmap QX11PixmapData::transformed(const QTransform &transform,
         x11Data->hd = (Qt::HANDLE)XCreatePixmap(X11->display,
                                                 RootWindow(X11->display, xinfo.screen()),
                                                 w, h, d);
+        x11Data->setSerialNumber(++qt_pixmap_serial);
+
 #ifndef QT_NO_XRENDER
         if (X11->use_xrender) {
             XRenderPictFormat *format = x11Data->d == 32

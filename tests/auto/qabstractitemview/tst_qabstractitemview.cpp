@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -1213,14 +1213,14 @@ void tst_QAbstractItemView::task250754_fontChange()
     tree.setModel(m);
 
     w.show();
-    w.resize(150,150);
+    w.resize(150,240);
     QTest::qWait(30);
     QFont font = tree.font();
-    font.setPointSize(5);
+    font.setPixelSize(10);
     tree.setFont(font);
     QTRY_VERIFY(!tree.verticalScrollBar()->isVisible());
 
-    font.setPointSize(45);
+    font.setPixelSize(60);
     tree.setFont(font);
     //now with the huge items, the scrollbar must be visible
     QTRY_VERIFY(tree.verticalScrollBar()->isVisible());
@@ -1444,7 +1444,10 @@ void tst_QAbstractItemView::QTBUG6407_extendedSelection()
     for(int i = 0; i < 50; ++i)
         view.addItem(QString::number(i));
 
-    view.resize(200,200);
+    QFont font = view.font();
+    font.setPixelSize(10);
+    view.setFont(font);
+    view.resize(200,240);
 
     view.show();
     QApplication::setActiveWindow(&view);

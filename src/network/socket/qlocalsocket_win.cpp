@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -108,6 +108,20 @@ QLocalSocketPrivate::QLocalSocketPrivate() : QIODevicePrivate(),
        pipeClosed(false),
        state(QLocalSocket::UnconnectedState)
 {
+}
+
+QLocalSocketPrivate::~QLocalSocketPrivate()
+{
+    destroyPipeHandles();
+    CloseHandle(overlapped.hEvent);
+}
+
+void QLocalSocketPrivate::destroyPipeHandles()
+{
+    if (handle != INVALID_HANDLE_VALUE) {
+        DisconnectNamedPipe(handle);
+        CloseHandle(handle);
+    }
 }
 
 void QLocalSocket::connectToServer(const QString &name, OpenMode openMode)
@@ -388,8 +402,7 @@ void QLocalSocket::close()
     d->readSequenceStarted = false;
     d->pendingReadyRead = false;
     d->pipeClosed = false;
-    DisconnectNamedPipe(d->handle);
-    CloseHandle(d->handle);
+    d->destroyPipeHandles();
     d->handle = INVALID_HANDLE_VALUE;
     ResetEvent(d->overlapped.hEvent);
     d->state = UnconnectedState;
@@ -524,7 +537,10 @@ bool QLocalSocket::waitForDisconnected(int msecs)
 bool QLocalSocket::isValid() const
 {
     Q_D(const QLocalSocket);
-    return (d->handle != INVALID_HANDLE_VALUE);
+    if (d->handle == INVALID_HANDLE_VALUE)
+        return false;
+
+    return PeekNamedPipe(d->handle, NULL, 0, NULL, NULL, NULL);
 }
 
 bool QLocalSocket::waitForReadyRead(int msecs)

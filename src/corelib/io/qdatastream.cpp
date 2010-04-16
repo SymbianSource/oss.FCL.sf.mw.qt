@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -155,6 +155,12 @@ QT_BEGIN_NAMESPACE
     \c{char *}; writeBytes() writes a quint32 containing the length of the
     data, followed by the data. Note that any encoding/decoding of
     the data (apart from the length quint32) must be done by you.
+
+    \section1 Reading and writing Qt collection classes
+
+    The Qt container classes can also be serialized to a QDataStream.
+    These include QList, QLinkedList, QVector, QSet, QHash, and QMap.
+    The stream operators are declared as non-members of the classes.
 
     \target Serializing Qt Classes
     \section1 Reading and writing other Qt classes.
@@ -592,15 +598,17 @@ void QDataStream::setByteOrder(ByteOrder bo)
     recommend that you do; see \l{Versioning} in the Detailed
     Description.
 
-    In order to accommodate new functionality, the datastream
-    serialization format of some Qt classes has changed in some
-    versions of Qt. If you want to read data that was created by an
-    earlier version of Qt, or write data that can be read by a
-    program that was compiled with an earlier version of Qt, use this
-    function to modify the serialization format used by QDataStream.
+    To accommodate new functionality, the datastream serialization
+    format of some Qt classes has changed in some versions of Qt. If
+    you want to read data that was created by an earlier version of
+    Qt, or write data that can be read by a program that was compiled
+    with an earlier version of Qt, use this function to modify the
+    serialization format used by QDataStream.
 
     \table
     \header \i Qt Version       \i QDataStream Version
+    \row \i Qt 4.6                  \i 12
+    \row \i Qt 4.5                  \i 11
     \row \i Qt 4.4                  \i 10
     \row \i Qt 4.3                  \i 9
     \row \i Qt 4.2                  \i 8

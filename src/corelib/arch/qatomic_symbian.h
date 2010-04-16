@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -42,7 +42,7 @@
 #ifndef QATOMIC_SYMBIAN_H
 #define QATOMIC_SYMBIAN_H
 
-#include <qglobal.h>
+#include <QtCore/qglobal.h>
 #include <e32std.h>
 
 QT_BEGIN_HEADER

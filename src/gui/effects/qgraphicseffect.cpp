@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -374,13 +374,18 @@ QGraphicsEffectSourcePrivate::~QGraphicsEffectSourcePrivate()
     invalidateCache();
 }
 
+void QGraphicsEffectSourcePrivate::setCachedOffset(const QPoint &offset)
+{
+    m_cachedOffset = offset;
+}
+
 void QGraphicsEffectSourcePrivate::invalidateCache(InvalidateReason reason) const
 {
     if (m_cachedMode != QGraphicsEffect::PadToEffectiveBoundingRect
         && (reason == EffectRectChanged
-            || reason == TransformChanged
-               && m_cachedSystem == Qt::LogicalCoordinates))
+            || (reason == TransformChanged && m_cachedSystem == Qt::LogicalCoordinates))) {
         return;
+    }
 
     QPixmapCache::remove(m_cacheKey);
 }
@@ -694,12 +699,17 @@ void QGraphicsColorizeEffect::draw(QPainter *painter)
     if (sourceIsPixmap()) {
         // No point in drawing in device coordinates (pixmap will be scaled anyways).
         const QPixmap pixmap = sourcePixmap(Qt::LogicalCoordinates, &offset, NoPad);
-        d->filter->draw(painter, offset, pixmap);
+        if (!pixmap.isNull())
+            d->filter->draw(painter, offset, pixmap);
+
         return;
     }
 
     // Draw pixmap in deviceCoordinates to avoid pixmap scaling.
     const QPixmap pixmap = sourcePixmap(Qt::DeviceCoordinates, &offset);
+    if (pixmap.isNull())
+        return;
+
     QTransform restoreTransform = painter->worldTransform();
     painter->setWorldTransform(QTransform());
     d->filter->draw(painter, offset, pixmap);
@@ -716,7 +726,8 @@ void QGraphicsColorizeEffect::draw(QPainter *painter)
     elements. The level of detail can be modified using the setBlurRadius()
     function. Use setBlurHints() to choose the blur hints.
 
-    By default, the blur radius is 5 pixels.
+    By default, the blur radius is 5 pixels. The blur radius is specified in
+    device coordinates.
 
     \img graphicseffect-blur.png
 
@@ -771,6 +782,9 @@ QGraphicsBlurEffect::~QGraphicsBlurEffect()
     radius results in a more blurred appearance.
 
     By default, the blur radius is 5 pixels.
+
+    The radius is given in device coordinates, meaning it is
+    unaffected by scale.
 */
 qreal QGraphicsBlurEffect::blurRadius() const
 {
@@ -853,9 +867,11 @@ void QGraphicsBlurEffect::draw(QPainter *painter)
     if (painter->paintEngine()->type() == QPaintEngine::OpenGL2)
         mode = NoPad;
 
-    // Draw pixmap in device coordinates to avoid pixmap scaling.
     QPoint offset;
     QPixmap pixmap = sourcePixmap(Qt::LogicalCoordinates, &offset, mode);
+    if (pixmap.isNull())
+        return;
+
     d->filter->draw(painter, offset, pixmap);
 }
 
@@ -872,7 +888,8 @@ void QGraphicsBlurEffect::draw(QPainter *painter)
 
     By default, the drop shadow is a semi-transparent dark gray
     (QColor(63, 63, 63, 180)) shadow, blurred with a radius of 1 at an offset
-    of 8 pixels towards the lower right.
+    of 8 pixels towards the lower right. The drop shadow offset is specified
+    in device coordinates.
 
     \img graphicseffect-drop-shadow.png
 
@@ -900,6 +917,9 @@ QGraphicsDropShadowEffect::~QGraphicsDropShadowEffect()
     \brief the shadow offset in pixels.
 
     By default, the offset is 8 pixels towards the lower right.
+
+    The offset is given in device coordinates, which means it is
+    unaffected by scale.
 
     \sa xOffset(), yOffset(), blurRadius(), color()
 */
@@ -1042,6 +1062,9 @@ void QGraphicsDropShadowEffect::draw(QPainter *painter)
     // Draw pixmap in device coordinates to avoid pixmap scaling.
     QPoint offset;
     const QPixmap pixmap = sourcePixmap(Qt::DeviceCoordinates, &offset, mode);
+    if (pixmap.isNull())
+        return;
+
     QTransform restoreTransform = painter->worldTransform();
     painter->setWorldTransform(QTransform());
     d->filter->draw(painter, offset, pixmap);

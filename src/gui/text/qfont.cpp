@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -629,8 +629,9 @@ QFontEngineData::~QFontEngineData()
 
     Returns the name of the font within the underlying window system.
 
-    Only on X11 when Qt was built without FontConfig support the XLFD (X Logical Font Description)
-    is returned; otherwise an empty string.
+    On X11, this function will return an empty string if Qt is built with
+    FontConfig support; otherwise the XLFD (X Logical Font Description) is
+    returned.
 
     Using the return value of this function is usually \e not \e
     portable.
@@ -1614,7 +1615,11 @@ bool QFont::operator==(const QFont &f) const
                 && f.d->overline  == d->overline
                 && f.d->strikeOut == d->strikeOut
                 && f.d->kerning == d->kerning
-                && f.d->capital == d->capital));
+                && f.d->capital == d->capital
+                && f.d->letterSpacingIsAbsolute == d->letterSpacingIsAbsolute
+                && f.d->letterSpacing == d->letterSpacing
+                && f.d->wordSpacing == d->wordSpacing
+            ));
 }
 
 
@@ -1647,6 +1652,10 @@ bool QFont::operator<(const QFont &f) const
     if (r1.addStyle != r2.addStyle) return r1.addStyle < r2.addStyle;
 #endif // Q_WS_X11
     if (f.d->capital != d->capital) return f.d->capital < d->capital;
+
+    if (f.d->letterSpacingIsAbsolute != d->letterSpacingIsAbsolute) return f.d->letterSpacingIsAbsolute < d->letterSpacingIsAbsolute;
+    if (f.d->letterSpacing != d->letterSpacing) return f.d->letterSpacing < d->letterSpacing;
+    if (f.d->wordSpacing != d->wordSpacing) return f.d->wordSpacing < d->wordSpacing;
 
     int f1attrs = (f.d->underline << 3) + (f.d->overline << 2) + (f.d->strikeOut<<1) + f.d->kerning;
     int f2attrs = (d->underline << 3) + (d->overline << 2) + (d->strikeOut<<1) + d->kerning;
@@ -1780,7 +1789,7 @@ Q_GLOBAL_STATIC(QFontSubst, globalFontSubst)
 static void initFontSubst()
 {
     // default substitutions
-    static const char *initTbl[] = {
+    static const char * const initTbl[] = {
 
 #if defined(Q_WS_X11)
         "arial",        "helvetica",
@@ -1811,7 +1820,6 @@ static void initFontSubst()
         list.append(QString::fromLatin1(initTbl[i+1]));
     }
 }
-
 
 /*!
     Returns the first family name to be used whenever \a familyName is

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -154,6 +154,9 @@
     used in non-GUI threads, to avoid freezing the user interface.
     See the \l network/fortuneclient and \l network/blockingfortuneclient
     examples for an overview of both approaches.
+
+    \note We discourage the use of the blocking functions together
+    with signals. One of the two possibilities should be used.
 
     QAbstractSocket can be used with QTextStream and QDataStream's
     stream operators (operator<<() and operator>>()). There is one
@@ -520,13 +523,13 @@ bool QAbstractSocketPrivate::initSocketLayer(QAbstractSocket::NetworkLayerProtoc
     Q_Q(QAbstractSocket);
 #if defined (QABSTRACTSOCKET_DEBUG)
     QString typeStr;
-    if (q->socketType() == QAbstractSocket::TcpSocket) typeStr = "TcpSocket";
-    else if (q->socketType() == QAbstractSocket::UdpSocket) typeStr = "UdpSocket";
-    else typeStr = "UnknownSocketType";
+    if (q->socketType() == QAbstractSocket::TcpSocket) typeStr = QLatin1String("TcpSocket");
+    else if (q->socketType() == QAbstractSocket::UdpSocket) typeStr = QLatin1String("UdpSocket");
+    else typeStr = QLatin1String("UnknownSocketType");
     QString protocolStr;
-    if (protocol == QAbstractSocket::IPv4Protocol) protocolStr = "IPv4Protocol";
-    else if (protocol == QAbstractSocket::IPv6Protocol) protocolStr = "IPv6Protocol";
-    else protocolStr = "UnknownNetworkLayerProtocol";
+    if (protocol == QAbstractSocket::IPv4Protocol) protocolStr = QLatin1String("IPv4Protocol");
+    else if (protocol == QAbstractSocket::IPv6Protocol) protocolStr = QLatin1String("IPv6Protocol");
+    else protocolStr = QLatin1String("UnknownNetworkLayerProtocol");
 #endif
 
     resetSocketLayer();
@@ -873,15 +876,19 @@ void QAbstractSocketPrivate::_q_startConnecting(const QHostInfo &hostInfo)
     if (state != QAbstractSocket::HostLookupState)
         return;
 
+    if (hostLookupId != -1 && hostLookupId != hostInfo.lookupId()) {
+        qWarning("QAbstractSocketPrivate::_q_startConnecting() received hostInfo for wrong lookup ID %d expected %d", hostInfo.lookupId(), hostLookupId);
+    }
+
     addresses = hostInfo.addresses();
 
 #if defined(QABSTRACTSOCKET_DEBUG)
-    QString s = "{";
+    QString s = QLatin1String("{");
     for (int i = 0; i < addresses.count(); ++i) {
-        if (i != 0) s += ", ";
+        if (i != 0) s += QLatin1String(", ");
         s += addresses.at(i).toString();
     }
-    s += '}';
+    s += QLatin1Char('}');
     qDebug("QAbstractSocketPrivate::_q_startConnecting(hostInfo == %s)", s.toLatin1().constData());
 #endif
 
@@ -1678,8 +1685,11 @@ static int qt_timeout_value(int msecs, int elapsed)
 
     If msecs is -1, this function will not time out.
 
-    Note: This function may wait slightly longer than \a msecs,
+    \note This function may wait slightly longer than \a msecs,
     depending on the time it takes to complete the host lookup.
+
+    \note Multiple calls to this functions do not accumulate the time.
+    If the function times out, the connecting process will be aborted.
 
     \sa connectToHost(), connected()
 */
@@ -1718,7 +1728,7 @@ bool QAbstractSocket::waitForConnected(int msecs)
         d->_q_startConnecting(QHostInfo::fromName(d->hostName));
     }
     if (state() == UnconnectedState)
-        return false;
+        return false; // connect not im progress anymore!
 
     bool timedOut = true;
 #if defined (QABSTRACTSOCKET_DEBUG)

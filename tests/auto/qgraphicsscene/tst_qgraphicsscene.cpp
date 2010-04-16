@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -244,6 +244,7 @@ private slots:
 #endif
     void render_data();
     void render();
+    void renderItemsWithNegativeWidthOrHeight();
     void contextMenuEvent();
     void contextMenuEvent_ItemIgnoresTransformations();
     void update();
@@ -270,6 +271,7 @@ private slots:
     void initialFocus_data();
     void initialFocus();
     void polishItems();
+    void polishItems2();
     void isActive();
     void siblingIndexAlwaysValid();
 
@@ -2749,6 +2751,41 @@ void tst_QGraphicsScene::render()
     }
 }
 
+void tst_QGraphicsScene::renderItemsWithNegativeWidthOrHeight()
+{
+    QGraphicsScene scene(0, 0, 150, 150);
+
+    // Add item with negative width.
+    QGraphicsRectItem *item1 = new QGraphicsRectItem(0, 0, -150, 50);
+    item1->setBrush(Qt::red);
+    item1->setPos(150, 50);
+    scene.addItem(item1);
+
+    // Add item with negative height.
+    QGraphicsRectItem *item2 = new QGraphicsRectItem(0, 0, 50, -150);
+    item2->setBrush(Qt::blue);
+    item2->setPos(50, 150);
+    scene.addItem(item2);
+
+    QGraphicsView view(&scene);
+    view.setFrameStyle(QFrame::NoFrame);
+    view.resize(150, 150);
+    view.show();
+    QCOMPARE(view.viewport()->size(), QSize(150, 150));
+
+    QImage expected(view.viewport()->size(), QImage::Format_RGB32);
+    view.viewport()->render(&expected);
+
+    // Make sure the scene background is the same as the viewport background.
+    scene.setBackgroundBrush(view.viewport()->palette().brush(view.viewport()->backgroundRole()));
+    QImage actual(150, 150, QImage::Format_RGB32);
+    QPainter painter(&actual);
+    scene.render(&painter);
+    painter.end();
+
+    QCOMPARE(actual, expected);
+}
+
 void tst_QGraphicsScene::contextMenuEvent()
 {
     QGraphicsScene scene;
@@ -2805,14 +2842,14 @@ void tst_QGraphicsScene::contextMenuEvent_ItemIgnoresTransformations()
 
     {
         QPoint pos(50, 50);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(event.isAccepted());
     }
     {
         QPoint pos(150, 150);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(!event.isAccepted());
@@ -2820,14 +2857,14 @@ void tst_QGraphicsScene::contextMenuEvent_ItemIgnoresTransformations()
     view.scale(1.5, 1.5);
     {
         QPoint pos(25, 25);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(event.isAccepted());
     }
     {
         QPoint pos(55, 55);
-        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.mapToGlobal(pos));
+        QContextMenuEvent event(QContextMenuEvent::Keyboard, pos, view.viewport()->mapToGlobal(pos));
         event.ignore();
         QApplication::sendEvent(view.viewport(), &event);
         QVERIFY(!event.isAccepted());
@@ -3942,14 +3979,23 @@ void tst_QGraphicsScene::initialFocus()
 class PolishItem : public QGraphicsTextItem
 {
 public:
-    PolishItem(QGraphicsItem *parent = 0) : QGraphicsTextItem(parent) { }
+    PolishItem(QGraphicsItem *parent = 0)
+        : QGraphicsTextItem(parent), polished(false), deleteChildrenInPolish(true), addChildrenInPolish(false) { }
 
+    bool polished;
+    bool deleteChildrenInPolish;
+    bool addChildrenInPolish;
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value)
     {
         if (change == ItemVisibleChange) {
-            if (value.toBool())
+            polished = true;
+            if (deleteChildrenInPolish)
                 qDeleteAll(childItems());
+            if (addChildrenInPolish) {
+                for (int i = 0; i < 10; ++i)
+                    new PolishItem(this);
+            }
         }
         return QGraphicsItem::itemChange(change, value);
     }
@@ -3964,6 +4010,35 @@ void tst_QGraphicsScene::polishItems()
     Q_UNUSED(child)
     // test that QGraphicsScenePrivate::_q_polishItems() doesn't crash
     QMetaObject::invokeMethod(&scene,"_q_polishItems");
+}
+
+void tst_QGraphicsScene::polishItems2()
+{
+    QGraphicsScene scene;
+    PolishItem *item = new PolishItem;
+    item->addChildrenInPolish = true;
+    item->deleteChildrenInPolish = true;
+    // These children should be deleted in the polish.
+    for (int i = 0; i < 20; ++i)
+        new PolishItem(item);
+    scene.addItem(item);
+
+    // Wait for the polish event to be delivered.
+    QVERIFY(!item->polished);
+    QApplication::sendPostedEvents(&scene, QEvent::MetaCall);
+    QVERIFY(item->polished);
+
+    // We deleted the children we added above, but we also
+    // added 10 new children. These should be polished in the next
+    // event loop iteration.
+    QList<QGraphicsItem *> children = item->childItems();
+    QCOMPARE(children.count(), 10);
+    foreach (QGraphicsItem *child, children)
+        QVERIFY(!static_cast<PolishItem *>(child)->polished);
+
+    QApplication::sendPostedEvents(&scene, QEvent::MetaCall);
+    foreach (QGraphicsItem *child, children)
+        QVERIFY(static_cast<PolishItem *>(child)->polished);
 }
 
 void tst_QGraphicsScene::isActive()

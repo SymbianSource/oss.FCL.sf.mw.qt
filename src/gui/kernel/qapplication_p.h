@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -84,6 +84,7 @@ class QInputContext;
 class QObject;
 class QWidget;
 class QSocketNotifier;
+class QGestureManager;
 
 extern bool qt_is_gui_used;
 #ifndef QT_NO_CLIPBOARD
@@ -426,7 +427,9 @@ public:
     static int  cursor_flash_time;
     static int  mouse_double_click_time;
     static int  keyboard_input_time;
+#ifndef QT_NO_WHEELEVENT
     static int  wheel_scroll_lines;
+#endif
 
     static bool animate_ui;
     static bool animate_menu;
@@ -500,15 +503,16 @@ public:
     static TUint resolveS60ScanCode(TInt scanCode, TUint keysym);
     QSet<WId> nativeWindows;
 
-    int symbianProcessWsEvent(const TWsEvent *event);
-    int symbianHandleCommand(int command);
-    int symbianResourceChange(int type);
+    int symbianProcessWsEvent(const QSymbianEvent *symbianEvent);
+    int symbianHandleCommand(const QSymbianEvent *symbianEvent);
+    int symbianResourceChange(const QSymbianEvent *symbianEvent);
 
 #endif
 #if defined(Q_WS_WIN) || defined(Q_WS_X11) || defined (Q_WS_QWS)
     void sendSyntheticEnterLeave(QWidget *widget);
 #endif
 
+    QGestureManager *gestureManager;
     QWidget *gestureWidget;
 
     QMap<int, QWeakPointer<QWidget> > widgetForTouchPointId;

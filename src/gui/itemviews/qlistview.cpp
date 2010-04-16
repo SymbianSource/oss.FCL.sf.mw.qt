@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -2160,7 +2160,7 @@ void QListModeViewBase::scrollContentsBy(int dx, int dy, bool scrollElasticBand)
     } else {
         if (flowPositions.isEmpty())
             return;
-        const int max = flowPositions.count() - 1;
+        const int max = scrollValueMap.count() - 1;
         if (vertical && flow() == QListView::TopToBottom && dy != 0) {
             int currentValue = qBound(0, verticalValue, max);
             int previousValue = qBound(0, currentValue + dy, max);
@@ -2621,6 +2621,13 @@ bool QIconModeViewBase::filterDropEvent(QDropEvent *e)
     const QSize contents = contentsSize;
     QPoint offset(horizontalOffset(), verticalOffset());
     QPoint end = e->pos() + offset;
+    if (qq->acceptDrops()) {
+        const Qt::ItemFlags dropableFlags = Qt::ItemIsDropEnabled|Qt::ItemIsEnabled;
+        const QVector<QModelIndex> &dropIndices = intersectingSet(QRect(end, QSize(1, 1)));
+        foreach (const QModelIndex &index, dropIndices)
+            if ((index.flags() & dropableFlags) == dropableFlags)
+                return false;
+    }
     QPoint start = dd->pressedPosition;
     QPoint delta = (dd->movement == QListView::Snap ? snapToGrid(end) - snapToGrid(start) : end - start);
     QList<QModelIndex> indexes = dd->selectionModel->selectedIndexes();

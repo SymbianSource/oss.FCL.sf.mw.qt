@@ -35,10 +35,8 @@ symbian: {
     qtlibraries.pkg_postrules += qts60plugindeployment
 
     sqlitedeployment = \
-        "; Deploy sqlite onto phone that does not have it (this should be replaced with embedded sis file when available)" \
-        "IF NOT package(0x2002533b) " \
-        "\"$${EPOCROOT}epoc32/release/$(PLATFORM)/$(TARGET)/sqlite3.dll\" - \"c:\\sys\\bin\\sqlite3.dll\"" \
-        "ENDIF"
+        "; Deploy sqlite onto phone that does not have it already" \
+        "@\"$$PWD/sqlite3.sis\", (0x2002af5f)"
     qtlibraries.pkg_postrules += sqlitedeployment
 
     qtlibraries.path = c:/sys/bin
@@ -54,7 +52,7 @@ symbian: {
 
     qtlibraries.pkg_prerules = vendorinfo
     qtlibraries.pkg_prerules += "; Dependencies of Qt libraries"
-    
+
     # Comment the following dependencies out because it is not needed in MCL
     
     #qtlibraries.pkg_prerules += "(0x20013851), 1, 5, 1, {\"PIPS Installer\"}"
@@ -64,6 +62,7 @@ symbian: {
     #contains(CONFIG, stl) {
     #    qtlibraries.pkg_prerules += "(0x2000F866), 1, 0, 0, {\"Standard C++ Library Common\"}"
     #}
+    #qtlibraries.pkg_prerules += "(0x2002af5f), 0, 5, 0, {\"sqlite3\"}"
 
     !contains(QT_CONFIG, no-jpeg): imageformats_plugins.sources += qjpeg.dll
     !contains(QT_CONFIG, no-gif):  imageformats_plugins.sources += qgif.dll
@@ -82,7 +81,17 @@ symbian: {
         DEPLOYMENT += phonon_backend_plugins
     }
 
-    DEPLOYMENT += qtresources qtlibraries imageformats_plugins codecs_plugins graphicssystems_plugins
+    contains(QT_CONFIG, audio-backend) {
+        qaudio_backend_plugins.sources += qaudio.dll
+        qaudio_backend_plugins.path = c:$$QT_PLUGINS_BASE_DIR/audio
+        DEPLOYMENT += qaudio_backend_plugins
+    }
+
+    # Support backup & restore for Qt libraries
+    qtbackup.sources = backup_registration.xml
+    qtbackup.path = c:/private/10202D56/import/packages/$$replace(TARGET.UID3, 0x,)
+
+    DEPLOYMENT += qtresources qtlibraries qtbackup imageformats_plugins codecs_plugins graphicssystems_plugins
 
     contains(QT_CONFIG, svg): {
        qtlibraries.sources += QtSvg.dll
@@ -108,18 +117,18 @@ symbian: {
         qtlibraries.sources += QtDeclarative.dll
     }
 
-    contains(QT_CONFIG, webkit): {
-        qtlibraries.sources += QtWebKit.dll
-    }
-
     graphicssystems_plugins.path = c:$$QT_PLUGINS_BASE_DIR/graphicssystems
     contains(QT_CONFIG, openvg) {
         qtlibraries.sources += QtOpenVG.dll
         graphicssystems_plugins.sources += qvggraphicssystem.dll
     }
 
-    #BLD_INF_RULES.prj_exports += "qt.iby $$CORE_MW_LAYER_IBY_EXPORT_PATH(qt.iby)"
-    #:QTP:QTPROD-220: Qt Examples should be exported to tools-layer
-    #BLD_INF_RULES.prj_exports += "qtdemoapps.iby $$CUSTOMER_VARIANT_APP_LAYER_IBY_EXPORT_PATH(qtdemoapps.iby)"
+    contains(QT_CONFIG, multimedia) {
+        qtlibraries.sources += QtMultimedia.dll
+    }
+
+    BLD_INF_RULES.prj_exports += "qt.iby $$CORE_MW_LAYER_IBY_EXPORT_PATH(qt.iby)"
+    #:QTP:QTPROD-220: Qt Examples should be exported to ROFS3
+    BLD_INF_RULES.prj_exports += "qtdemoapps.iby $$CUSTOMER_VARIANT_APP_LAYER_IBY_EXPORT_PATH(qtdemoapps.iby)"
 }
 

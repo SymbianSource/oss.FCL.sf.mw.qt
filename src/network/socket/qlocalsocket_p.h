@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -128,10 +128,8 @@ public:
     void _q_stateChanged(QAbstractSocket::SocketState newState);
     void _q_error(QAbstractSocket::SocketError newError);
 #elif defined(Q_OS_WIN)
-    ~QLocalSocketPrivate() {
-	CloseHandle(overlapped.hEvent);
-    }
-
+    ~QLocalSocketPrivate();
+    void destroyPipeHandles();
     void setErrorString(const QString &function);
     void _q_notified();
     void _q_canWrite();

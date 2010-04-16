@@ -114,13 +114,13 @@ data=\epoc32\data\Z\private\10003a3f\import\Apps\anomaly_reg.rsc   \private\1000
 
 // Benchmark apps
 
-S60_APP_EXE(tst_bench_containers-associative)
-S60_APP_RESOURCE(tst_bench_containers-associative)
-data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_containers-associative_reg.rsc   \private\10003a3f\import\apps\tst_bench_containers-associative_reg.rsc
+S60_APP_EXE(tst_bench_containers_associative)
+S60_APP_RESOURCE(tst_bench_containers_associative)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_containers_associative_reg.rsc   \private\10003a3f\import\apps\tst_bench_containers_associative_reg.rsc
 
-S60_APP_EXE(tst_bench_containers-sequential)
-S60_APP_RESOURCE(tst_bench_containers-sequential)
-data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_containers-sequential_reg.rsc   \private\10003a3f\import\apps\tst_bench_containers-sequential_reg.rsc
+S60_APP_EXE(tst_bench_containers_sequential)
+S60_APP_RESOURCE(tst_bench_containers_sequential)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_containers_sequential_reg.rsc   \private\10003a3f\import\apps\tst_bench_containers_sequential_reg.rsc
 
 S60_APP_EXE(tst_bench_qanimation)
 S60_APP_RESOURCE(tst_bench_qanimation)
@@ -154,9 +154,9 @@ S60_APP_EXE(tst_bench_qpainter)
 S60_APP_RESOURCE(tst_bench_qpainter)
 data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qpainter_reg.rsc   \private\10003a3f\import\apps\tst_bench_qpainter_reg.rsc
 
-S60_APP_EXE(tst_bench_qtestlib-simple)
-S60_APP_RESOURCE(tst_bench_qtestlib-simple)
-data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qtestlib-simple_reg.rsc   \private\10003a3f\import\apps\tst_bench_qtestlib-simple_reg.rsc
+S60_APP_EXE(tst_bench_qtestlib_simple)
+S60_APP_RESOURCE(tst_bench_qtestlib_simple)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qtestlib_simple_reg.rsc   \private\10003a3f\import\apps\tst_bench_qtestlib_simple_reg.rsc
 
 S60_APP_EXE(tst_bench_events)
 S60_APP_RESOURCE(tst_bench_events)
@@ -273,5 +273,42 @@ data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qtransform_reg.rsc   
 S60_APP_EXE(tst_bench_qstring)
 S60_APP_RESOURCE(tst_bench_qstring)
 data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qstring_reg.rsc   \private\10003a3f\import\apps\tst_bench_qstring_reg.rsc
-	
+
+S60_APP_EXE(tst_bench_qpixmapcache)
+S60_APP_RESOURCE(tst_bench_qpixmapcache)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qpixmapcache_reg.rsc   \private\10003a3f\import\apps\tst_bench_qpixmapcache_reg.rsc
+
+S60_APP_EXE(tst_bench_qscriptclass)
+S60_APP_RESOURCE(tst_bench_qscriptclass)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qscriptclass_reg.rsc   \private\10003a3f\import\apps\tst_bench_qscriptclass_reg.rsc
+
+S60_APP_EXE(tst_bench_qscriptengine)
+S60_APP_RESOURCE(tst_bench_qscriptengine)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qscriptengine_reg.rsc   \private\10003a3f\import\apps\tst_bench_qscriptengine_reg.rsc
+
+S60_APP_EXE(tst_bench_qscriptvalue)
+S60_APP_RESOURCE(tst_bench_qscriptvalue)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qscriptvalue_reg.rsc   \private\10003a3f\import\apps\tst_bench_qscriptvalue_reg.rsc
+
+S60_APP_EXE(tst_bench_qtcpserver)
+S60_APP_RESOURCE(tst_bench_qtcpserver)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qtcpserver_reg.rsc   \private\10003a3f\import\apps\tst_bench_qtcpserver_reg.rsc
+
+S60_APP_EXE(tst_bench_qtext)
+S60_APP_RESOURCE(tst_bench_qtext)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qtext_reg.rsc   \private\10003a3f\import\apps\tst_bench_qtext_reg.rsc
+
+S60_APP_EXE(tst_bench_qthreadstorage)
+S60_APP_RESOURCE(tst_bench_qthreadstorage)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_bench_qthreadstorage_reg.rsc   \private\10003a3f\import\apps\tst_bench_qthreadstorage_reg.rsc
+
+S60_APP_EXE(graphicsviewbenchmark)
+S60_APP_RESOURCE(graphicsviewbenchmark)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\graphicsviewbenchmark_reg.rsc   \private\10003a3f\import\apps\graphicsviewbenchmark_reg.rsc
+
+S60_APP_EXE(tst_GraphicsViewBenchmark)
+S60_APP_RESOURCE(tst_GraphicsViewBenchmark)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\tst_GraphicsViewBenchmark_reg.rsc   \private\10003a3f\import\apps\tst_GraphicsViewBenchmark_reg.rsc
+
+
 #endif // QTDEMOAPPS_IBY

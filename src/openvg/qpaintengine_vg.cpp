@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -131,8 +131,9 @@ public:
     void draw(VGPath path, const QPen& pen, const QBrush& brush, VGint rule = VG_EVEN_ODD);
     void stroke(VGPath path, const QPen& pen);
     void fill(VGPath path, const QBrush& brush, VGint rule = VG_EVEN_ODD);
-    VGPath vectorPathToVGPath(const QVectorPath& path);
-    VGPath painterPathToVGPath(const QPainterPath& path);
+    inline void releasePath(VGPath path);
+    VGPath vectorPathToVGPath(const QVectorPath& path, bool forceNewPath = false);
+    VGPath painterPathToVGPath(const QPainterPath& path, bool forceNewPath = false);
     VGPath roundedRectPath(const QRectF &rect, qreal xRadius, qreal yRadius, Qt::SizeMode mode);
     VGPaintType setBrush
         (VGPaint paint, const QBrush& brush, VGMatrixMode mode,
@@ -178,6 +179,8 @@ public:
     VGPath roundRectPath;   // Cached path for quick drawing of rounded rects.
 #endif
 
+    VGPath reusablePath;    // Reusable path for vectorPathToVGPath(), etc.
+
     QTransform transform;   // Currently active transform.
     bool simpleTransform;   // True if the transform is simple (non-projective).
     qreal penScale;         // Pen scaling factor from "transform".
@@ -188,6 +191,7 @@ public:
 
     bool maskValid;         // True if vgMask() contains valid data.
     bool maskIsSet;         // True if mask would be fully set if it was valid.
+    bool scissorMask;       // True if scissor is used in place of the mask.
     bool rawVG;             // True if processing a raw VG escape.
 
     QRect maskRect;         // Rectangle version of mask if it is simple.
@@ -200,6 +204,7 @@ public:
 
     QRegion scissorRegion;  // Currently active scissor region.
     bool scissorActive;     // True if scissor region is active.
+    bool scissorDirty;      // True if scissor is dirty after native painting.
 
     QPaintEngine::DirtyFlags dirty;
 
@@ -348,15 +353,19 @@ void QVGPaintEnginePrivate::init()
     roundRectPath = 0;
 #endif
 
+    reusablePath = 0;
+
     simpleTransform = true;
     pathTransformSet = false;
     penScale = 1.0;
 
     maskValid = false;
     maskIsSet = false;
+    scissorMask = false;
     rawVG = false;
 
     scissorActive = false;
+    scissorDirty = false;
 
     dirty = 0;
 
@@ -442,6 +451,15 @@ void QVGPaintEnginePrivate::initObjects()
                             VG_PATH_CAPABILITY_ALL);
     vgAppendPathData(linePath, 2, segments, coords);
 #endif
+
+    // This path can be reused over and over by calling vgClearPath().
+    reusablePath = vgCreatePath(VG_PATH_FORMAT_STANDARD,
+                                VG_PATH_DATATYPE_F,
+                                1.0f,        // scale
+                                0.0f,        // bias
+                                32 + 1,      // segmentCapacityHint
+                                32 * 2,      // coordCapacityHint
+                                VG_PATH_CAPABILITY_ALL);
 }
 
 void QVGPaintEnginePrivate::destroy()
@@ -461,6 +479,8 @@ void QVGPaintEnginePrivate::destroy()
     if (roundRectPath)
         vgDestroyPath(roundRectPath);
 #endif
+    if (reusablePath)
+        vgDestroyPath(reusablePath);
 
 #if !defined(QVG_NO_DRAW_GLYPHS)
     QVGFontCache::Iterator it;
@@ -512,14 +532,12 @@ void QVGPaintEnginePrivate::updateTransform(QPaintDevice *pdev)
                         0.0f, -1.0f, 0.0f,
                         0.5f, devh + 0.5f, 1.0f);
 
-    // The image transform is always the full transformation,
-    // because it can be projective.
-    imageTransform = transform * viewport;
-
-    // Determine if the transformation is projective.
-    bool projective = (imageTransform.m13() != 0.0f ||
-                       imageTransform.m23() != 0.0f ||
-                       imageTransform.m33() != 1.0f);
+    // Compute the path transform and determine if it is projective. 
+     pathTransform = transform * viewport; 
+     bool projective = (pathTransform.m13() != 0.0f || 
+     pathTransform.m23() != 0.0f || 
+     pathTransform.m33() != 1.0f); 
+    
     if (projective) {
         // The engine cannot do projective path transforms for us,
         // so we will have to convert the co-ordinates ourselves.
@@ -527,29 +545,50 @@ void QVGPaintEnginePrivate::updateTransform(QPaintDevice *pdev)
         pathTransform = viewport;
         simpleTransform = false;
     } else {
-        pathTransform = imageTransform;
         simpleTransform = true;
     }
     pathTransformSet = false;
+
+    // The image transform is always the full transformation, 
+    // because it can be projective. It also does not need the 
+    // (0.5, -0.5) translation because vgDrawImage() implicitly 
+    // adds 0.5 to each co-ordinate. 
+    QTransform viewport2(1.0f, 0.0f, 0.0f, 
+    0.0f, -1.0f, 0.0f, 
+    0.0f, devh, 1.0f); 
+    imageTransform = transform * viewport2; 
 
     // Calculate the scaling factor to use for turning cosmetic pens
     // into ordinary non-cosmetic pens.
     qt_scaleForTransform(transform, &penScale);
 }
 
-VGPath QVGPaintEnginePrivate::vectorPathToVGPath(const QVectorPath& path)
+inline void QVGPaintEnginePrivate::releasePath(VGPath path)
+{
+    if (path == reusablePath)
+        vgClearPath(path, VG_PATH_CAPABILITY_ALL);
+    else
+        vgDestroyPath(path);
+}
+
+VGPath QVGPaintEnginePrivate::vectorPathToVGPath(const QVectorPath& path, bool forceNewPath)
 {
     int count = path.elementCount();
     const qreal *points = path.points();
     const QPainterPath::ElementType *elements = path.elements();
 
-    VGPath vgpath = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                                 VG_PATH_DATATYPE_F,
-                                 1.0f,        // scale
-                                 0.0f,        // bias
-                                 count + 1,   // segmentCapacityHint
-                                 count * 2,   // coordCapacityHint
-                                 VG_PATH_CAPABILITY_ALL);
+    VGPath vgpath;
+    if (forceNewPath) {
+        vgpath = vgCreatePath(VG_PATH_FORMAT_STANDARD,
+                              VG_PATH_DATATYPE_F,
+                              1.0f,        // scale
+                              0.0f,        // bias
+                              count + 1,   // segmentCapacityHint
+                              count * 2,   // coordCapacityHint
+                              VG_PATH_CAPABILITY_ALL);
+    } else {
+        vgpath = reusablePath;
+    }
 
     // Size is sufficient segments for drawRoundedRect() paths.
     QVarLengthArray<VGubyte, 20> segments;
@@ -721,17 +760,22 @@ VGPath QVGPaintEnginePrivate::vectorPathToVGPath(const QVectorPath& path)
     return vgpath;
 }
 
-VGPath QVGPaintEnginePrivate::painterPathToVGPath(const QPainterPath& path)
+VGPath QVGPaintEnginePrivate::painterPathToVGPath(const QPainterPath& path, bool forceNewPath)
 {
     int count = path.elementCount();
 
-    VGPath vgpath = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                                 VG_PATH_DATATYPE_F,
-                                 1.0f,        // scale
-                                 0.0f,        // bias
-                                 count + 1,   // segmentCapacityHint
-                                 count * 2,   // coordCapacityHint
-                                 VG_PATH_CAPABILITY_ALL);
+    VGPath vgpath;
+    if (forceNewPath) {
+        vgpath = vgCreatePath(VG_PATH_FORMAT_STANDARD,
+                              VG_PATH_DATATYPE_F,
+                              1.0f,        // scale
+                              0.0f,        // bias
+                              count + 1,   // segmentCapacityHint
+                              count * 2,   // coordCapacityHint
+                              VG_PATH_CAPABILITY_ALL);
+    } else {
+        vgpath = reusablePath;
+    }
 
     if (count == 0)
         return vgpath;
@@ -950,13 +994,7 @@ VGPath QVGPaintEnginePrivate::roundedRectPath(const QRectF &rect, qreal xRadius,
         vgModifyPathCoords(vgpath, 0, 9, pts);
     }
 #else
-    VGPath vgpath = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                                 VG_PATH_DATATYPE_F,
-                                 1.0f,        // scale
-                                 0.0f,        // bias
-                                 10,          // segmentCapacityHint
-                                 17 * 2,      // coordCapacityHint
-                                 VG_PATH_CAPABILITY_ALL);
+    VGPath vgpath = reusablePath;
     vgAppendPathData(vgpath, 10, roundedrect_types, pts);
 #endif
 
@@ -983,6 +1021,9 @@ static QImage colorizeBitmap(const QImage &image, const QColor &color)
     }
     return dest;
 }
+
+// defined in qpixmapdata_vg.cpp.
+const uchar *qt_vg_imageBits(const QImage& image);
 
 static VGImage toVGImage
     (const QImage & image, Qt::ImageConversionFlags flags = Qt::AutoColor)
@@ -1017,7 +1058,7 @@ static VGImage toVGImage
         break;
     }
 
-    const uchar *pixels = img.bits();
+    const uchar *pixels = qt_vg_imageBits(img);
 
     VGImage vgImg = QVGImagePool::instance()->createPermanentImage
         (format, img.width(), img.height(), VG_IMAGE_QUALITY_FASTER);
@@ -1061,7 +1102,7 @@ static VGImage toVGImageSubRect
         break;
     }
 
-    const uchar *pixels = img.bits() + bpp * sr.x() +
+    const uchar *pixels = qt_vg_imageBits(img) + bpp * sr.x() +
                           img.bytesPerLine() * sr.y();
 
     VGImage vgImg = QVGImagePool::instance()->createPermanentImage
@@ -1083,7 +1124,7 @@ static VGImage toVGImageWithOpacity(const QImage & image, qreal opacity)
     painter.drawImage(0, 0, image);
     painter.end();
 
-    const uchar *pixels = img.bits();
+    const uchar *pixels = qt_vg_imageBits(img);
 
     VGImage vgImg = QVGImagePool::instance()->createPermanentImage
         (VG_sARGB_8888_PRE, img.width(), img.height(), VG_IMAGE_QUALITY_FASTER);
@@ -1105,7 +1146,7 @@ static VGImage toVGImageWithOpacitySubRect
     painter.drawImage(QPoint(0, 0), image, sr);
     painter.end();
 
-    const uchar *pixels = img.bits();
+    const uchar *pixels = qt_vg_imageBits(img);
 
     VGImage vgImg = QVGImagePool::instance()->createPermanentImage
         (VG_sARGB_8888_PRE, img.width(), img.height(), VG_IMAGE_QUALITY_FASTER);
@@ -1509,7 +1550,7 @@ void QVGPaintEngine::draw(const QVectorPath &path)
         d->draw(vgpath, s->pen, s->brush, VG_EVEN_ODD);
     else
         d->draw(vgpath, s->pen, s->brush, VG_NON_ZERO);
-    vgDestroyPath(vgpath);
+    d->releasePath(vgpath);
 }
 
 void QVGPaintEngine::fill(const QVectorPath &path, const QBrush &brush)
@@ -1520,7 +1561,7 @@ void QVGPaintEngine::fill(const QVectorPath &path, const QBrush &brush)
         d->fill(vgpath, brush, VG_EVEN_ODD);
     else
         d->fill(vgpath, brush, VG_NON_ZERO);
-    vgDestroyPath(vgpath);
+    d->releasePath(vgpath);
 }
 
 void QVGPaintEngine::stroke(const QVectorPath &path, const QPen &pen)
@@ -1528,7 +1569,7 @@ void QVGPaintEngine::stroke(const QVectorPath &path, const QPen &pen)
     Q_D(QVGPaintEngine);
     VGPath vgpath = d->vectorPathToVGPath(path);
     d->stroke(vgpath, pen);
-    vgDestroyPath(vgpath);
+    d->releasePath(vgpath);
 }
 
 // Determine if a co-ordinate transform is simple enough to allow
@@ -1537,7 +1578,28 @@ void QVGPaintEngine::stroke(const QVectorPath &path, const QPen &pen)
 static inline bool clipTransformIsSimple(const QTransform& transform)
 {
     QTransform::TransformationType type = transform.type();
-    return (type == QTransform::TxNone || type == QTransform::TxTranslate);
+    if (type == QTransform::TxNone || type == QTransform::TxTranslate)
+        return true;
+    if (type == QTransform::TxRotate) {
+        // Check for 0, 90, 180, and 270 degree rotations.
+        // (0 might happen after 4 rotations of 90 degrees).
+        qreal m11 = transform.m11();
+        qreal m12 = transform.m12();
+        qreal m21 = transform.m21();
+        qreal m22 = transform.m22();
+        if (m11 == 0.0f && m22 == 0.0f) {
+            if (m12 == 1.0f && m21 == -1.0f)
+                return true;    // 90 degrees.
+            else if (m12 == -1.0f && m21 == 1.0f)
+                return true;    // 270 degrees.
+        } else if (m12 == 0.0f && m21 == 0.0f) {
+            if (m11 == -1.0f && m22 == -1.0f)
+                return true;    // 180 degrees.
+            else if (m11 == 1.0f && m22 == 1.0f)
+                return true;    // 0 degrees.
+        }
+    }
+    return false;
 }
 
 #if defined(QVG_SCISSOR_CLIP)
@@ -1659,12 +1721,12 @@ void QVGPaintEngine::clip(const QVectorPath &path, Qt::ClipOperation op)
     if (op == Qt::NoClip) {
         d->maskValid = false;
         d->maskIsSet = true;
+        d->scissorMask = false;
         d->maskRect = QRect();
         vgSeti(VG_MASKING, VG_FALSE);
         return;
     }
 
-#if defined(QVG_NO_RENDER_TO_MASK)
     // We don't have vgRenderToMask(), so handle simple QRectF's only.
     if (path.shape() == QVectorPath::RectangleHint &&
             path.elementCount() == 4 && clipTransformIsSimple(d->transform)) {
@@ -1674,8 +1736,10 @@ void QVGPaintEngine::clip(const QVectorPath &path, Qt::ClipOperation op)
         QRectF rect(points[0], points[1], points[2] - points[0],
                     points[5] - points[1]);
         clip(rect.toRect(), op);
+        return;
     }
-#else
+
+#if !defined(QVG_NO_RENDER_TO_MASK)
     QPaintDevice *pdev = paintDevice();
     int width = pdev->width();
     int height = pdev->height();
@@ -1701,11 +1765,12 @@ void QVGPaintEngine::clip(const QVectorPath &path, Qt::ClipOperation op)
 
         default: break;
     }
-    vgDestroyPath(vgpath);
+    d->releasePath(vgpath);
 
     vgSeti(VG_MASKING, VG_TRUE);
     d->maskValid = true;
     d->maskIsSet = false;
+    d->scissorMask = false;
 #endif
 }
 
@@ -1726,6 +1791,7 @@ void QVGPaintEngine::clip(const QRect &rect, Qt::ClipOperation op)
         {
             d->maskValid = false;
             d->maskIsSet = true;
+            d->scissorMask = false;
             d->maskRect = QRect();
             vgSeti(VG_MASKING, VG_FALSE);
         }
@@ -1741,6 +1807,7 @@ void QVGPaintEngine::clip(const QRect &rect, Qt::ClipOperation op)
                     vgSeti(VG_MASKING, VG_FALSE);
                 d->maskValid = false;
                 d->maskIsSet = true;
+                d->scissorMask = false;
                 d->maskRect = QRect();
             } else {
                 // Special case: if the intersection of the system
@@ -1758,6 +1825,7 @@ void QVGPaintEngine::clip(const QRect &rect, Qt::ClipOperation op)
                     if (clip.rectCount() != 1) {
                         d->maskValid = false;
                         d->maskIsSet = false;
+                        d->scissorMask = false;
                         d->maskRect = QRect();
                         d->modifyMask(this, VG_FILL_MASK, r);
                         break;
@@ -1766,6 +1834,7 @@ void QVGPaintEngine::clip(const QRect &rect, Qt::ClipOperation op)
                 }
                 d->maskValid = false;
                 d->maskIsSet = false;
+                d->scissorMask = true;
                 d->maskRect = clipRect;
                 vgSeti(VG_MASKING, VG_FALSE);
                 updateScissor();
@@ -1776,13 +1845,30 @@ void QVGPaintEngine::clip(const QRect &rect, Qt::ClipOperation op)
         case Qt::IntersectClip:
         {
             QRect r = d->transform.mapRect(rect);
-            if (d->maskIsSet && isDefaultClipRect(r)) {
+            if (!d->maskValid) {
+                // Mask has not been used yet, so intersect with
+                // the previous scissor-based region in maskRect.
+                if (d->scissorMask)
+                    r = r.intersect(d->maskRect);
+                if (isDefaultClipRect(r)) {
+                    // The clip is the full window, so turn off clipping.
+                    d->maskIsSet = true;
+                    d->maskRect = QRect();
+                } else {
+                    // Activate the scissor on a smaller maskRect.
+                    d->maskIsSet = false;
+                    d->maskRect = r;
+                }
+                d->scissorMask = true;
+                updateScissor();
+            } else if (d->maskIsSet && isDefaultClipRect(r)) {
                 // Intersecting a full-window clip with a full-window
                 // region is the same as turning off clipping.
                 if (d->maskValid)
                     vgSeti(VG_MASKING, VG_FALSE);
                 d->maskValid = false;
                 d->maskIsSet = true;
+                d->scissorMask = false;
                 d->maskRect = QRect();
             } else {
                 d->modifyMask(this, VG_INTERSECT_MASK, r);
@@ -1824,6 +1910,7 @@ void QVGPaintEngine::clip(const QRegion &region, Qt::ClipOperation op)
         {
             d->maskValid = false;
             d->maskIsSet = true;
+            d->scissorMask = false;
             d->maskRect = QRect();
             vgSeti(VG_MASKING, VG_FALSE);
         }
@@ -1839,6 +1926,7 @@ void QVGPaintEngine::clip(const QRegion &region, Qt::ClipOperation op)
                     vgSeti(VG_MASKING, VG_FALSE);
                 d->maskValid = false;
                 d->maskIsSet = true;
+                d->scissorMask = false;
                 d->maskRect = QRect();
             } else {
                 // Special case: if the intersection of the system
@@ -1852,12 +1940,14 @@ void QVGPaintEngine::clip(const QRegion &region, Qt::ClipOperation op)
                 if (clip.rectCount() == 1) {
                     d->maskValid = false;
                     d->maskIsSet = false;
+                    d->scissorMask = true;
                     d->maskRect = clip.boundingRect();
                     vgSeti(VG_MASKING, VG_FALSE);
                     updateScissor();
                 } else {
                     d->maskValid = false;
                     d->maskIsSet = false;
+                    d->scissorMask = false;
                     d->maskRect = QRect();
                     d->modifyMask(this, VG_FILL_MASK, r);
                 }
@@ -1882,6 +1972,7 @@ void QVGPaintEngine::clip(const QRegion &region, Qt::ClipOperation op)
                     vgSeti(VG_MASKING, VG_FALSE);
                 d->maskValid = false;
                 d->maskIsSet = true;
+                d->scissorMask = false;
                 d->maskRect = QRect();
             } else {
                 d->modifyMask(this, VG_INTERSECT_MASK, r);
@@ -1960,6 +2051,7 @@ void QVGPaintEngine::clip(const QPainterPath &path, Qt::ClipOperation op)
     if (op == Qt::NoClip) {
         d->maskValid = false;
         d->maskIsSet = true;
+        d->scissorMask = false;
         d->maskRect = QRect();
         vgSeti(VG_MASKING, VG_FALSE);
         return;
@@ -1990,11 +2082,12 @@ void QVGPaintEngine::clip(const QPainterPath &path, Qt::ClipOperation op)
 
         default: break;
     }
-    vgDestroyPath(vgpath);
+    d->releasePath(vgpath);
 
     vgSeti(VG_MASKING, VG_TRUE);
     d->maskValid = true;
     d->maskIsSet = false;
+    d->scissorMask = false;
 #else
     QPaintEngineEx::clip(path, op);
 #endif
@@ -2003,6 +2096,7 @@ void QVGPaintEngine::clip(const QPainterPath &path, Qt::ClipOperation op)
 void QVGPaintEnginePrivate::ensureMask
         (QVGPaintEngine *engine, int width, int height)
 {
+	  scissorMask = false;
     if (maskIsSet) {
         vgMask(VG_INVALID_HANDLE, VG_FILL_MASK, 0, 0, width, height);
         maskRect = QRect();
@@ -2038,6 +2132,7 @@ void QVGPaintEnginePrivate::modifyMask
     vgSeti(VG_MASKING, VG_TRUE);
     maskValid = true;
     maskIsSet = false;
+    scissorMask = false;
 }
 
 void QVGPaintEnginePrivate::modifyMask
@@ -2059,6 +2154,7 @@ void QVGPaintEnginePrivate::modifyMask
     vgSeti(VG_MASKING, VG_TRUE);
     maskValid = true;
     maskIsSet = false;
+    scissorMask = false;
 }
 
 #endif // !QVG_SCISSOR_CLIP
@@ -2083,6 +2179,7 @@ void QVGPaintEngine::updateScissor()
             // so there is no point doing any scissoring.
             vgSeti(VG_SCISSORING, VG_FALSE);
             d->scissorActive = false;
+            d->scissorDirty = false;
             return;
         }
     } else
@@ -2090,7 +2187,7 @@ void QVGPaintEngine::updateScissor()
     {
 #if !defined(QVG_SCISSOR_CLIP)
         // Combine the system clip with the simple mask rectangle.
-        if (!d->maskRect.isNull()) {
+        if (d->scissorMask) {
             if (region.isEmpty())
                 region = d->maskRect;
             else
@@ -2100,6 +2197,7 @@ void QVGPaintEngine::updateScissor()
                 // so there is no point doing any scissoring.
                 vgSeti(VG_SCISSORING, VG_FALSE);
                 d->scissorActive = false;
+                d->scissorDirty = false;
                 return;
             }
         } else
@@ -2109,11 +2207,12 @@ void QVGPaintEngine::updateScissor()
         if (region.isEmpty()) {
             vgSeti(VG_SCISSORING, VG_FALSE);
             d->scissorActive = false;
+            d->scissorDirty = false;
             return;
         }
     }
 
-    if (d->scissorActive && region == d->scissorRegion)
+    if (d->scissorActive && region == d->scissorRegion && !d->scissorDirty)
         return;
 
     QVector<QRect> rects = region.rects();
@@ -2131,6 +2230,7 @@ void QVGPaintEngine::updateScissor()
 
     vgSetiv(VG_SCISSOR_RECTS, count * 4, params.data());
     vgSeti(VG_SCISSORING, VG_TRUE);
+    d->scissorDirty = false;
     d->scissorActive = true;
     d->scissorRegion = region;
 }
@@ -2178,6 +2278,7 @@ void QVGPaintEngine::clipEnabledChanged()
         // Replay the entire clip stack to put the mask into the right state.
         d->maskValid = false;
         d->maskIsSet = true;
+        d->scissorMask = false;
         d->maskRect = QRect();
         s->clipRegion = defaultClipRegion();
         d->replayClipOperations();
@@ -2187,6 +2288,7 @@ void QVGPaintEngine::clipEnabledChanged()
         vgSeti(VG_MASKING, VG_FALSE);
         d->maskValid = false;
         d->maskIsSet = false;
+        d->scissorMask = false;
         d->maskRect = QRect();
     }
 #endif
@@ -2305,12 +2407,7 @@ bool QVGPaintEngine::clearRect(const QRectF &rect, const QColor &color)
     Q_D(QVGPaintEngine);
     QVGPainterState *s = state();
     if (!s->clipEnabled || s->clipOperation == Qt::NoClip) {
-        // The transform will either be identity or a simple translation,
-        // so do a simpler version of "r = d->transform.map(rect).toRect()".
-        QRect r = QRect(qRound(rect.x() + d->transform.dx()),
-                        qRound(rect.y() + d->transform.dy()),
-                        qRound(rect.width()),
-                        qRound(rect.height()));
+        QRect r = d->transform.mapRect(rect).toRect();
         int height = paintDevice()->height();
         if (d->clearColor != color || d->clearOpacity != s->opacity) {
             VGfloat values[4];
@@ -2337,7 +2434,7 @@ void QVGPaintEngine::fillRect(const QRectF &rect, const QBrush &brush)
         return;
 
     // Check to see if we can use vgClear() for faster filling.
-    if (brush.style() == Qt::SolidPattern &&
+    if (brush.style() == Qt::SolidPattern && brush.isOpaque() &&
             clipTransformIsSimple(d->transform) && d->opacity == 1.0f &&
             clearRect(rect, brush.color())) {
         return;
@@ -2380,7 +2477,7 @@ void QVGPaintEngine::fillRect(const QRectF &rect, const QColor &color)
     Q_D(QVGPaintEngine);
 
     // Check to see if we can use vgClear() for faster filling.
-    if (clipTransformIsSimple(d->transform) && d->opacity == 1.0f &&
+    if (clipTransformIsSimple(d->transform) && d->opacity == 1.0f && color.alpha() == 255 &&
             clearRect(rect, color)) {
         return;
     }
@@ -2425,7 +2522,7 @@ void QVGPaintEngine::drawRoundedRect(const QRectF &rect, qreal xrad, qreal yrad,
         VGPath vgpath = d->roundedRectPath(rect, xrad, yrad, mode);
         d->draw(vgpath, s->pen, s->brush);
 #if defined(QVG_NO_MODIFY_PATH)
-        vgDestroyPath(vgpath);
+        d->releasePath(vgpath);
 #endif
     } else {
         QPaintEngineEx::drawRoundedRect(rect, xrad, yrad, mode);
@@ -2574,13 +2671,7 @@ void QVGPaintEngine::drawEllipse(const QRectF &r)
     Q_D(QVGPaintEngine);
     if (d->simpleTransform) {
         QVGPainterState *s = state();
-        VGPath path = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                                   VG_PATH_DATATYPE_F,
-                                   1.0f, // scale
-                                   0.0f, // bias
-                                   4,    // segmentCapacityHint
-                                   12,   // coordCapacityHint
-                                   VG_PATH_CAPABILITY_ALL);
+        VGPath path = d->reusablePath;
         static VGubyte segments[4] = {
             VG_MOVE_TO_ABS,
             VG_SCCWARC_TO_REL,
@@ -2604,7 +2695,7 @@ void QVGPaintEngine::drawEllipse(const QRectF &r)
         coords[11] = 0.0f;
         vgAppendPathData(path, 4, segments, coords);
         d->draw(path, s->pen, s->brush);
-        vgDestroyPath(path);
+        d->releasePath(path);
     } else {
         // The projective transform version of an ellipse is difficult.
         // Generate a QVectorPath containing cubic curves and transform that.
@@ -2628,7 +2719,7 @@ void QVGPaintEngine::drawPath(const QPainterPath &path)
         d->draw(vgpath, s->pen, s->brush, VG_EVEN_ODD);
     else
         d->draw(vgpath, s->pen, s->brush, VG_NON_ZERO);
-    vgDestroyPath(vgpath);
+    d->releasePath(vgpath);
 }
 
 void QVGPaintEngine::drawPoints(const QPointF *points, int pointCount)
@@ -2703,13 +2794,7 @@ void QVGPaintEngine::drawPolygon(const QPointF *points, int pointCount, PolygonD
 {
     Q_D(QVGPaintEngine);
     QVGPainterState *s = state();
-    VGPath path = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                               VG_PATH_DATATYPE_F,
-                               1.0f,             // scale
-                               0.0f,             // bias
-                               pointCount + 1,   // segmentCapacityHint
-                               pointCount * 2,   // coordCapacityHint
-                               VG_PATH_CAPABILITY_ALL);
+    VGPath path = d->reusablePath;
     QVarLengthArray<VGfloat, 16> coords;
     QVarLengthArray<VGubyte, 10> segments;
     for (int i = 0; i < pointCount; ++i, ++points) {
@@ -2743,20 +2828,14 @@ void QVGPaintEngine::drawPolygon(const QPointF *points, int pointCount, PolygonD
             d->draw(path, s->pen, s->brush, VG_EVEN_ODD);
             break;
     }
-    vgDestroyPath(path);
+    d->releasePath(path);
 }
 
 void QVGPaintEngine::drawPolygon(const QPoint *points, int pointCount, PolygonDrawMode mode)
 {
     Q_D(QVGPaintEngine);
     QVGPainterState *s = state();
-    VGPath path = vgCreatePath(VG_PATH_FORMAT_STANDARD,
-                               VG_PATH_DATATYPE_F,
-                               1.0f,             // scale
-                               0.0f,             // bias
-                               pointCount + 1,   // segmentCapacityHint
-                               pointCount * 2,   // coordCapacityHint
-                               VG_PATH_CAPABILITY_ALL);
+    VGPath path = d->reusablePath;
     QVarLengthArray<VGfloat, 16> coords;
     QVarLengthArray<VGubyte, 10> segments;
     for (int i = 0; i < pointCount; ++i, ++points) {
@@ -2790,7 +2869,7 @@ void QVGPaintEngine::drawPolygon(const QPoint *points, int pointCount, PolygonDr
             d->draw(path, s->pen, s->brush, VG_EVEN_ODD);
             break;
     }
-    vgDestroyPath(path);
+    d->releasePath(path);
 }
 
 void QVGPaintEnginePrivate::setImageOptions()
@@ -3166,15 +3245,15 @@ void QVGFontGlyphCache::cacheGlyphs
         if (!scaledImage.isNull()) {  // Not a space character
             if (scaledImage.format() == QImage::Format_Indexed8) {
                 vgImage = vgCreateImage(VG_A_8, scaledImage.width(), scaledImage.height(), VG_IMAGE_QUALITY_FASTER);
-                vgImageSubData(vgImage, scaledImage.bits(), scaledImage.bytesPerLine(), VG_A_8, 0, 0, scaledImage.width(), scaledImage.height());
+                vgImageSubData(vgImage, qt_vg_imageBits(scaledImage), scaledImage.bytesPerLine(), VG_A_8, 0, 0, scaledImage.width(), scaledImage.height());
             } else if (scaledImage.format() == QImage::Format_Mono) {
                 QImage img = scaledImage.convertToFormat(QImage::Format_Indexed8);
                 vgImage = vgCreateImage(VG_A_8, img.width(), img.height(), VG_IMAGE_QUALITY_FASTER);
-                vgImageSubData(vgImage, img.bits(), img.bytesPerLine(), VG_A_8, 0, 0, img.width(), img.height());
+                vgImageSubData(vgImage, qt_vg_imageBits(img), img.bytesPerLine(), VG_A_8, 0, 0, img.width(), img.height());
             } else {
                 QImage img = scaledImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
                 vgImage = vgCreateImage(VG_sARGB_8888_PRE, img.width(), img.height(), VG_IMAGE_QUALITY_FASTER);
-                vgImageSubData(vgImage, img.bits(), img.bytesPerLine(), VG_sARGB_8888_PRE, 0, 0, img.width(), img.height());
+                vgImageSubData(vgImage, qt_vg_imageBits(img), img.bytesPerLine(), VG_sARGB_8888_PRE, 0, 0, img.width(), img.height());
             }
         }
         origin[0] = -metrics.x.toReal() + 0.5f;
@@ -3189,7 +3268,7 @@ void QVGFontGlyphCache::cacheGlyphs
         ti.fontEngine->getUnscaledGlyph(glyph, &path, &metrics);
         VGPath vgPath;
         if (!path.isEmpty()) {
-            vgPath = d->painterPathToVGPath(path);
+            vgPath = d->painterPathToVGPath(path, true);
         } else {
             // Probably a "space" character with no visible outline.
             vgPath = VG_INVALID_HANDLE;
@@ -3333,6 +3412,7 @@ void QVGPaintEngine::endNativePainting()
     d->brushType = (VGPaintType)0;
     d->clearColor = QColor();
     d->fillPaint = d->brushPaint;
+    d->scissorDirty = true;
     restoreState(QPaintEngine::AllDirty);
     d->dirty = dirty;
     d->rawVG = false;
@@ -3388,6 +3468,7 @@ void QVGPaintEngine::restoreState(QPaintEngine::DirtyFlags dirty)
                   QPaintEngine::DirtyClipEnabled)) != 0) {
         d->maskValid = false;
         d->maskIsSet = false;
+        d->scissorMask = false;
         d->maskRect = QRect();
         clipEnabledChanged();
     }
@@ -3640,7 +3721,7 @@ void QVGCompositionHelper::drawCursorPixmap
         if (vgImage == VG_INVALID_HANDLE)
             return;
         vgImageSubData
-            (vgImage, img.bits() + img.bytesPerLine() * (img.height() - 1),
+            (vgImage, qt_vg_imageBits(img) + img.bytesPerLine() * (img.height() - 1),
              -(img.bytesPerLine()), VG_sARGB_8888_PRE, 0, 0,
              img.width(), img.height());
 
@@ -3666,15 +3747,17 @@ void QVGCompositionHelper::setScissor(const QRegion& region)
 
     vgSetiv(VG_SCISSOR_RECTS, count * 4, params.data());
     vgSeti(VG_SCISSORING, VG_TRUE);
+    d->scissorDirty = false;
     d->scissorActive = true;
     d->scissorRegion = region;
 }
 
 void QVGCompositionHelper::clearScissor()
 {
-    if (d->scissorActive) {
+    if (d->scissorActive || d->scissorDirty) {
         vgSeti(VG_SCISSORING, VG_FALSE);
         d->scissorActive = false;
+        d->scissorDirty = false;
     }
 }
 

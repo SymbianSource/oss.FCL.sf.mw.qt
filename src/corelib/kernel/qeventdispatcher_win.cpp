@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -66,6 +66,14 @@ extern uint qGlobalPostedEventsCount();
 
 #ifndef QS_RAWINPUT
 #  define QS_RAWINPUT 0x0400
+#endif
+
+#ifndef WM_TOUCH
+#  define WM_TOUCH 0x0240
+#endif
+#ifndef WM_GESTURE
+#  define WM_GESTURE 0x0119
+#  define WM_GESTURENOTIFY 0x011A
 #endif
 
 enum {
@@ -502,8 +510,8 @@ LRESULT CALLBACK qt_GetMessageHook(int code, WPARAM wp, LPARAM lp)
                 MSG *msg = (MSG *) lp;
                 if (localSerialNumber != d->lastSerialNumber
                     // if this message IS the one that triggers sendPostedEvents(), no need to post it again
-                    && msg->hwnd != d->internalHwnd
-                    && msg->message != WM_QT_SENDPOSTEDEVENTS) {
+                    && (msg->hwnd != d->internalHwnd
+                        || msg->message != WM_QT_SENDPOSTEDEVENTS)) {
                     PostMessage(d->internalHwnd, WM_QT_SENDPOSTEDEVENTS, 0, 0);
                 }
             }
@@ -714,6 +722,9 @@ bool QEventDispatcherWin32::processEvents(QEventLoop::ProcessEventsFlags flags)
                             && msg.message <= WM_MOUSELAST)
                         || msg.message == WM_MOUSEWHEEL
                         || msg.message == WM_MOUSEHWHEEL
+                        || msg.message == WM_TOUCH
+                        || msg.message == WM_GESTURE
+                        || msg.message == WM_GESTURENOTIFY
                         || msg.message == WM_CLOSE)) {
                     // queue user input events for later processing
                     haveMessage = false;

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -4832,7 +4832,7 @@ XsdTerm::Ptr XsdSchemaParser::parseLocalElement(const XsdParticle::Ptr &particle
 
             if (isSchemaTag(XsdSchemaToken::Annotation, token, namespaceToken)) {
                 const XsdAnnotation::Ptr annotation = parseAnnotation();
-                element->addAnnotation(annotation);
+                term->addAnnotation(annotation);
             } else if (isSchemaTag(XsdSchemaToken::SimpleType, token, namespaceToken)) {
                 if (hasRefAttribute) {
                     error(QtXmlPatterns::tr("%1 element with %2 child element must not have a %3 attribute.")

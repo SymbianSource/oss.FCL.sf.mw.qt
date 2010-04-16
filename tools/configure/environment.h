@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -71,13 +71,12 @@ public:
     static bool cpdir(const QString &srcDir, const QString &destDir);
     static bool rmdir(const QString &name);
 
+    static QString symbianEpocRoot();
+
 private:
     static Compiler detectedCompiler;
 
     static CompilerInfo *compilerInfo(Compiler compiler);
-    static QString keyPath(const QString &rKey);
-    static QString keyName(const QString &rKey);
-    static QString readRegistryKey(HKEY parentHandle, const QString &rSubkey);
 };
 
 

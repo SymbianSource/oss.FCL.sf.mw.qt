@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -48,6 +48,7 @@
 #include "ControlStrip.h"
 #include "TitleBar.h"
 #include "flickcharm.h"
+#include "webview.h"
 #include "ZoomStrip.h"
 
 #if defined (Q_OS_SYMBIAN)
@@ -62,7 +63,7 @@ BrowserView::BrowserView(QWidget *parent)
     , m_currentZoom(100)
 {
     m_titleBar = new TitleBar(this);
-    m_webView = new QWebView(this);
+    m_webView = new WebView(this);
     m_zoomStrip = new ZoomStrip(this);
     m_controlStrip = new ControlStrip(this);
 
@@ -70,7 +71,7 @@ BrowserView::BrowserView(QWidget *parent)
     m_zoomLevels << 100;
     m_zoomLevels << 110 << 120 << 133 << 150 << 170 << 200 << 240 << 300;
 
-    QTimer::singleShot(0, this, SLOT(initialize()));
+    initialize();
 }
 
 void BrowserView::initialize()
@@ -81,6 +82,7 @@ void BrowserView::initialize()
     connect(m_controlStrip, SIGNAL(menuClicked()), SIGNAL(menuButtonClicked()));
     connect(m_controlStrip, SIGNAL(backClicked()), m_webView, SLOT(back()));
     connect(m_controlStrip, SIGNAL(forwardClicked()), m_webView, SLOT(forward()));
+    connect(m_controlStrip, SIGNAL(closeClicked()), qApp, SLOT(quit()));
 
     QPalette pal = m_webView->palette();
     pal.setBrush(QPalette::Base, Qt::white);
@@ -95,7 +97,7 @@ void BrowserView::initialize()
     connect(m_webView, SIGNAL(loadFinished(bool)), SLOT(finish(bool)));
     connect(m_webView, SIGNAL(urlChanged(QUrl)), SLOT(updateTitleBar()));
 
-    m_webView->setHtml("Will try to load page soon!");
+    m_webView->setHtml("about:blank");
     m_webView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_webView->setFocus();
 #ifdef Q_OS_SYMBIAN

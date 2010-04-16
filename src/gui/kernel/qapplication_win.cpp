@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -928,7 +928,11 @@ const QString qt_reg_winclass(QWidget *w)        // register window class
     uint style;
     bool icon;
     QString cname;
-    if (flags & Qt::MSWindowsOwnDC) {
+    if (qt_widget_private(w)->isGLWidget) {
+        cname = QLatin1String("QGLWidget");
+        style = CS_DBLCLKS;
+        icon  = true;
+    } else if (flags & Qt::MSWindowsOwnDC) {
         cname = QLatin1String("QWidgetOwnDC");
         style = CS_DBLCLKS;
 #ifndef Q_WS_WINCE
@@ -1021,7 +1025,7 @@ const QString qt_reg_winclass(QWidget *w)        // register window class
     }
     wc.hCursor      = 0;
 #ifndef Q_WS_WINCE
-    wc.hbrBackground = (HBRUSH)GetSysColorBrush(COLOR_WINDOW);
+    wc.hbrBackground = qt_widget_private(w)->isGLWidget ? 0 : (HBRUSH)GetSysColorBrush(COLOR_WINDOW);
 #else
     wc.hbrBackground = 0;
 #endif
@@ -1901,8 +1905,13 @@ LRESULT CALLBACK QtWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
                 break;
 
             if (!msg.wParam) {
+#ifdef Q_WS_WINCE
+                // On Windows CE, lParam parameter is a constant, not a char pointer.
+                if (msg.lParam == INI_INTL) {
+#else
                 QString area = QString::fromWCharArray((wchar_t*)msg.lParam);
                 if (area == QLatin1String("intl")) {
+#endif
                     QLocalePrivate::updateSystemPrivate();
                     if (!widget->testAttribute(Qt::WA_SetLocale))
                         widget->dptr()->setLocale_helper(QLocale(), true);
@@ -3616,13 +3625,19 @@ bool QETWidget::translatePaintEvent(const MSG &msg)
         return true;
 
     setAttribute(Qt::WA_PendingUpdate, false);
-    const QRegion dirtyInBackingStore(qt_dirtyRegion(this));
-    // Make sure the invalidated region contains the region we're about to repaint.
-    // BeginPaint will set the clip to the invalidated region and it is impossible
-    // to enlarge it afterwards (only shrink it). Using GetDCEx is not suffient
-    // as it may return an invalid context (especially on Windows Vista).
-    if (!dirtyInBackingStore.isEmpty())
-        InvalidateRgn(internalWinId(), dirtyInBackingStore.handle(), false);
+
+    if (d_func()->isGLWidget) {
+        if (d_func()->usesDoubleBufferedGLContext)
+            InvalidateRect(internalWinId(), 0, false);
+    } else {
+        const QRegion dirtyInBackingStore(qt_dirtyRegion(this));
+        // Make sure the invalidated region contains the region we're about to repaint.
+        // BeginPaint will set the clip to the invalidated region and it is impossible
+        // to enlarge it afterwards (only shrink it). Using GetDCEx is not suffient
+        // as it may return an invalid context (especially on Windows Vista).
+        if (!dirtyInBackingStore.isEmpty())
+            InvalidateRgn(internalWinId(), dirtyInBackingStore.handle(), false);
+    }
     PAINTSTRUCT ps;
     d_func()->hd = BeginPaint(internalWinId(), &ps);
 

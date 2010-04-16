@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -404,6 +404,7 @@ QHttpNetworkReply* QHttpNetworkConnectionPrivate::queueRequest(const QHttpNetwor
     QHttpNetworkReply *reply = new QHttpNetworkReply(request.url());
     reply->setRequest(request);
     reply->d_func()->connection = q;
+    reply->d_func()->connectionChannel = &channels[0]; // will have the correct one set later
     HttpMessagePair pair = qMakePair(request, reply);
 
     switch (request.priority()) {
@@ -415,14 +416,13 @@ QHttpNetworkReply* QHttpNetworkConnectionPrivate::queueRequest(const QHttpNetwor
         lowPriorityQueue.prepend(pair);
         break;
     }
-    QMetaObject::invokeMethod(q, "_q_startNextRequest", Qt::QueuedConnection);
+    // this used to be called via invokeMethod and a QueuedConnection
+    _q_startNextRequest();
     return reply;
 }
 
 void QHttpNetworkConnectionPrivate::requeueRequest(const HttpMessagePair &pair)
 {
-    Q_Q(QHttpNetworkConnection);
-
     QHttpNetworkRequest request = pair.first;
     switch (request.priority()) {
     case QHttpNetworkRequest::HighPriority:
@@ -433,7 +433,8 @@ void QHttpNetworkConnectionPrivate::requeueRequest(const HttpMessagePair &pair)
         lowPriorityQueue.prepend(pair);
         break;
     }
-    QMetaObject::invokeMethod(q, "_q_startNextRequest", Qt::QueuedConnection);
+    // this used to be called via invokeMethod and a QueuedConnection
+    _q_startNextRequest();
 }
 
 void QHttpNetworkConnectionPrivate::dequeueAndSendRequest(QAbstractSocket *socket)
@@ -564,7 +565,8 @@ bool QHttpNetworkConnectionPrivate::fillPipeline(QList<HttpMessagePair> &queue, 
 }
 
 
-QString QHttpNetworkConnectionPrivate::errorDetail(QNetworkReply::NetworkError errorCode, QAbstractSocket* socket)
+QString QHttpNetworkConnectionPrivate::errorDetail(QNetworkReply::NetworkError errorCode, QAbstractSocket* socket,
+                                                   const QString &extraDetail)
 {
     Q_ASSERT(socket);
 
@@ -581,7 +583,7 @@ QString QHttpNetworkConnectionPrivate::errorDetail(QNetworkReply::NetworkError e
         errorString = QLatin1String(QT_TRANSLATE_NOOP("QHttp", "Connection closed"));
         break;
     case QNetworkReply::TimeoutError:
-        errorString = QLatin1String(QT_TRANSLATE_NOOP("QHttp", "HTTP request failed"));
+        errorString = QLatin1String(QT_TRANSLATE_NOOP("QAbstractSocket", "Socket operation timed out"));
         break;
     case QNetworkReply::ProxyAuthenticationRequiredError:
         errorString = QLatin1String(QT_TRANSLATE_NOOP("QHttp", "Proxy requires authentication"));
@@ -600,7 +602,7 @@ QString QHttpNetworkConnectionPrivate::errorDetail(QNetworkReply::NetworkError e
         break;
     default:
         // all other errors are treated as QNetworkReply::UnknownNetworkError
-        errorString = QLatin1String(QT_TRANSLATE_NOOP("QHttp", "HTTP request failed"));
+        errorString = extraDetail;
         break;
     }
     return errorString;
@@ -687,23 +689,39 @@ void QHttpNetworkConnectionPrivate::_q_startNextRequest()
         if (channels[i].resendCurrent) {
             channels[i].resendCurrent = false;
             channels[i].state = QHttpNetworkConnectionChannel::IdleState;
-            if (channels[i].reply)
-                channels[i].sendRequest();
+
+            // if this is not possible, error will be emitted and connection terminated
+            if (!channels[i].resetUploadData())
+                continue;
+
+            channels[i].sendRequest();
         }
     }
+
+    // dequeue new ones
+
     QAbstractSocket *socket = 0;
     for (int i = 0; i < channelCount; ++i) {
         QAbstractSocket *chSocket = channels[i].socket;
-        // send the request using the idle socket
-        if (!channels[i].isSocketBusy()) {
+        // try to get a free AND connected socket
+        if (!channels[i].isSocketBusy() && channels[i].socket->state() == QAbstractSocket::ConnectedState) {
             socket = chSocket;
+            dequeueAndSendRequest(socket);
             break;
         }
     }
 
-    // this socket is free,
-    if (socket)
-        dequeueAndSendRequest(socket);
+    if (!socket) {
+        for (int i = 0; i < channelCount; ++i) {
+            QAbstractSocket *chSocket = channels[i].socket;
+            // try to get a free unconnected socket
+            if (!channels[i].isSocketBusy()) {
+                socket = chSocket;
+                dequeueAndSendRequest(socket);
+                break;
+            }
+        }
+    }
 
     // try to push more into all sockets
     // ### FIXME we should move this to the beginning of the function
@@ -731,6 +749,16 @@ void QHttpNetworkConnectionPrivate::_q_restartAuthPendingRequests()
     }
 }
 
+void QHttpNetworkConnectionPrivate::readMoreLater(QHttpNetworkReply *reply)
+{
+    for (int i = 0 ; i < channelCount; ++i) {
+        if (channels[i].reply ==  reply) {
+            // emulate a readyRead() from the socket
+            QMetaObject::invokeMethod(&channels[i], "_q_readyRead", Qt::QueuedConnection);
+            return;
+        }
+    }
+}
 
 QHttpNetworkConnection::QHttpNetworkConnection(const QString &hostName, quint16 port, bool encrypt, QObject *parent)
     : QObject(*(new QHttpNetworkConnectionPrivate(hostName, port, encrypt)), parent)
@@ -832,17 +860,6 @@ QNetworkProxy QHttpNetworkConnection::transparentProxy() const
 
 // SSL support below
 #ifndef QT_NO_OPENSSL
-QSslConfiguration QHttpNetworkConnectionPrivate::sslConfiguration(const QHttpNetworkReply &reply) const
-{
-    if (!encrypt)
-        return QSslConfiguration();
-
-    for (int i = 0; i < channelCount; ++i)
-        if (channels[i].reply == &reply)
-            return static_cast<QSslSocket *>(channels[0].socket)->sslConfiguration();
-    return QSslConfiguration(); // pending or done request
-}
-
 void QHttpNetworkConnection::setSslConfiguration(const QSslConfiguration &config)
 {
     Q_D(QHttpNetworkConnection);

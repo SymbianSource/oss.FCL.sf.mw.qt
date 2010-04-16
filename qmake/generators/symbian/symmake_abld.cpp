@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -47,6 +47,9 @@
 #include <qdir.h>
 #include <qdatetime.h>
 #include <qdebug.h>
+
+// Included from tools/shared
+#include <symbian/epocroot.h>
 
 #define DO_NOTHING_TARGET "do_nothing"
 #define CREATE_TEMPS_TARGET "create_temps"
@@ -155,39 +158,79 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
         t << "endif" << endl << endl;
         t << "CLEANLIB: " DO_NOTHING_TARGET << endl << endl;
 
-        QStringList qmFileNames;
-        QString translationFilename = project->first("TRANSLATIONS");
-        if (!project->values("SYMBIANTRANSLATIONS").isEmpty() && !translationFilename.isEmpty()) {
-            QStringList symbianTranslations = project->values("SYMBIANTRANSLATIONS");
-            QString symbianTrPath = project->first("SYMBIANTRANSLATIONDIR");
-            t << "RESOURCE: create_qm" << endl << endl;
-            t << "create_qm : " << endl;
-            foreach (const QString &symbianTrans, symbianTranslations) {
-                QString translationTsFilename(translationFilename);
-                translationTsFilename.chop(3);
-                translationTsFilename.insert(0,symbianTrPath);
-                translationTsFilename.append(QString::fromLatin1("_"));
-                translationTsFilename.append(symbianTrans);
-                QString translationQmFilename(translationTsFilename);
-                translationTsFilename.append(QString::fromLatin1(".ts"));
-                translationQmFilename.append(QString::fromLatin1(".qm"));
-                t << "\t$(EPOCROOT)epoc32\\tools\\qt\\lrelease -silent -idbased " << translationTsFilename << " -qm " << translationQmFilename << endl;
-                // qmFileNames are needed in RELEASABLES: part
-                qmFileNames.append(translationQmFilename);
+        QStringList trFileNames;
+        if (!project->values("SYMBIANTRANSLATIONS").isEmpty()) {
+            QString translationFilename = project->first("TRANSLATIONS");
+            if (!translationFilename.isEmpty()) {
+                QStringList symbianTranslations = project->values("SYMBIANTRANSLATIONS");
+                QString symbianTrPath = project->first("SYMBIANTRANSLATIONDIR");
+                QString symbianTrSrcPath = project->first("SYMBIANTRANSLATIONSRCDIR");    	
+                QString symbianWinscwUdebQmPath = project->first("SYMBIANWINSCWUDEBTRANSLATIONDIR");  
+                QString symbianWinscwUrelQmPath = project->first("SYMBIANWINSCWURELTRANSLATIONDIR");  
+                t << "RESOURCE: create_qm" << endl << endl;
+                t << "create_qm : " << endl;
+                foreach (const QString &symbianTrans, symbianTranslations) {
+                    QString translationTsFilename(translationFilename);
+                    translationTsFilename.chop(3);
+                    translationTsFilename.insert(0,symbianTrPath);
+                    translationTsFilename.append(QString::fromLatin1("_"));
+                    translationTsFilename.append(symbianTrans);
+                    QString translationQmFilename(translationTsFilename);
+
+                    translationTsFilename.append(QString::fromLatin1(".ts"));
+                    // output path for armv5 qm files./epoc32/data/z/resource/qt/translations/
+                    translationQmFilename.append(QString::fromLatin1(".qm"));
+
+										// input path for ts files. /epoc32/include/platform/qt/translations/
+                    QString translationTsSrcFilename(translationFilename);
+                    translationTsSrcFilename.chop(3);
+                    translationTsSrcFilename.insert(0,symbianTrSrcPath);
+                    translationTsSrcFilename.append(QString::fromLatin1("_"));
+                    translationTsSrcFilename.append(symbianTrans);	
+                    translationTsSrcFilename.append(QString::fromLatin1(".ts"));
+                    	
+										// output path for winscw qm files. /epoc32/release/winscw/udeb/z/resource/qt/translations/
+                    QString translationQmWinscwUdebFilename(translationFilename);
+                    translationQmWinscwUdebFilename.chop(3);
+                    translationQmWinscwUdebFilename.insert(0,symbianWinscwUdebQmPath);
+                    translationQmWinscwUdebFilename.append(QString::fromLatin1("_"));
+                    translationQmWinscwUdebFilename.append(symbianTrans);
+                    translationQmWinscwUdebFilename.append(QString::fromLatin1(".qm"));                    	
+
+										// output path for winscw qm files. /epoc32/release/winscw/urel/z/resource/qt/translations/
+                    QString translationQmWinscwUrelFilename(translationFilename);
+                    translationQmWinscwUrelFilename.chop(3);
+                    translationQmWinscwUrelFilename.insert(0,symbianWinscwUrelQmPath);
+                    translationQmWinscwUrelFilename.append(QString::fromLatin1("_"));
+                    translationQmWinscwUrelFilename.append(symbianTrans);	
+                    translationQmWinscwUrelFilename.append(QString::fromLatin1(".qm"));  
+                    
+                    //these get generated to component mk file.	 
+                    t << "\tlrelease -silent -idbased " << translationTsSrcFilename << " -qm " << translationQmFilename << endl;
+                    t << "\tlrelease -silent -idbased " << translationTsSrcFilename << " -qm " << translationQmWinscwUdebFilename << endl;
+                    t << "\tlrelease -silent -idbased " << translationTsSrcFilename << " -qm " << translationQmWinscwUrelFilename << endl;
+                    
+                    // trFileNames QStringList needed in RELEASABLES part
+                    trFileNames.append(translationQmFilename);
+                    trFileNames.append(translationQmWinscwUdebFilename);
+                    trFileNames.append(translationQmWinscwUrelFilename);
+                }
+                t << endl;
             }
-            t << endl;
+            else
+            t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
         } else {
             t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
         }
         t << "FREEZE: " DO_NOTHING_TARGET << endl << endl;
         t << "SAVESPACE: " DO_NOTHING_TARGET << endl << endl;
 
-        if (!project->values("SYMBIANTRANSLATIONS").isEmpty() && !qmFileNames.isEmpty()) {
+        if (!project->values("SYMBIANTRANSLATIONS").isEmpty()) {
             t << "RELEASABLES: list_qm" << endl << endl;
             t << "list_qm : " << endl;
-            foreach (const QString &qmFilename, qmFileNames) {
-                t << "\t@echo " << qmFilename << endl;
-            }
+            foreach (const QString &trFilename, trFileNames) {
+                t << "\t@echo " << trFilename << endl;
+              }
             t << endl;
         } else {
             t << "RELEASABLES: " DO_NOTHING_TARGET << endl << endl;
@@ -220,7 +263,7 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
     releasePlatforms.removeAll("winscw"); // No release for emulator
 
     QString testClause;
-    if (project->values("CONFIG").contains("symbian_test", Qt::CaseInsensitive))
+    if (project->isActiveConfig("symbian_test"))
         testClause = QLatin1String(" test");
     else
         testClause = QLatin1String("");
@@ -425,11 +468,29 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
     t << "\t-bldmake clean" << endl;
     t << endl;
 
-    // Create execution target
-    if (debugPlatforms.contains("winscw") && targetType == TypeExe) {
-        t << "run:" << endl;
-        t << "\t-call " << epocRoot() << "epoc32\\release\\winscw\\udeb\\" << fixedTarget << ".exe" << endl << endl;
+    t << "clean-debug: $(ABLD)" << endl;
+    foreach(QString item, debugPlatforms) {
+        t << "\t$(ABLD)" << testClause << " reallyclean " << item << " udeb" << endl;
     }
+    t << endl;
+    t << "clean-release: $(ABLD)" << endl;
+    foreach(QString item, releasePlatforms) {
+        t << "\t$(ABLD)" << testClause << " reallyclean " << item << " urel" << endl;
+    }
+    t << endl;
+
+    // For more specific builds, targets are in this form: clean-build-platform, e.g. clean-release-armv5
+    foreach(QString item, debugPlatforms) {
+        t << "clean-debug-" << item << ": $(ABLD)" << endl;
+        t << "\t$(ABLD)" << testClause << " reallyclean " << item << " udeb" << endl;
+    }
+    foreach(QString item, releasePlatforms) {
+        t << "clean-release-" << item << ": $(ABLD)" << endl;
+        t << "\t$(ABLD)" << testClause << " reallyclean " << item << " urel" << endl;
+    }
+    t << endl;
+
+    generateExecutionTargets(t, debugPlatforms);
 }
 
 void SymbianAbldMakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t, const QString &iconTargetFile)

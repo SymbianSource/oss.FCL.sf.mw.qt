@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -44,11 +44,11 @@
 
 #include <stddef.h>
 
-#define QT_VERSION_STR   "4.6.1"
+#define QT_VERSION_STR   "4.6.3"
 /*
    QT_VERSION is (major << 16) + (minor << 8) + patch.
 */
-#define QT_VERSION 0x040601
+#define QT_VERSION 0x040603
 /*
    can be used like #if (QT_VERSION >= QT_VERSION_CHECK(4, 4, 0))
 */
@@ -813,7 +813,7 @@ namespace QT_NAMESPACE {}
 #      define Q_WS_MAC32
 #    endif
 #  elif defined(Q_OS_SYMBIAN)
-#    if !defined(QT_NO_S60) /* :QTP:Version detection not working */
+#    if !defined(QT_NO_S60)
 #      define Q_WS_S60
 #    endif
 #  elif !defined(Q_WS_QWS)
@@ -1674,10 +1674,7 @@ Q_CORE_EXPORT void qt_assert_x(const char *where, const char *what, const char *
 #endif
 
 Q_CORE_EXPORT void qt_check_pointer(const char *, int);
-
-#ifndef QT_NO_EXCEPTIONS
 Q_CORE_EXPORT void qBadAlloc();
-#endif
 
 #ifdef QT_NO_EXCEPTIONS
 #  if defined(QT_NO_DEBUG)
@@ -2412,13 +2409,21 @@ QT3_SUPPORT Q_CORE_EXPORT const char *qInstallPathSysconf();
 
 #if defined(Q_OS_SYMBIAN)
 
-#ifdef SYMBIAN_GRAPHICS_USE_GCE
+#ifdef SYMBIAN_BUILD_GCE
 //RWsPointerCursor is fixed, so don't use low performance sprites
 #define Q_SYMBIAN_FIXED_POINTER_CURSORS
 #define Q_SYMBIAN_HAS_EXTENDED_BITMAP_TYPE
-//enabling new graphics resources
-#define QT_SYMBIAN_SUPPORTS_SGIMAGE
+#define Q_SYMBIAN_WINDOW_SIZE_CACHE
 #define QT_SYMBIAN_SUPPORTS_ADVANCED_POINTER
+
+//enabling new graphics resources
+#ifdef SYMBIAN_GRAPHICS_EGL_SGIMAGELITE
+#  define QT_SYMBIAN_SUPPORTS_SGIMAGE
+#endif
+
+#ifdef SYMBIAN_GRAPHICS_WSERV_QT_EFFECTS
+#  define Q_SYMBIAN_SEMITRANSPARENT_BG_SURFACE
+#endif
 #endif
 
 

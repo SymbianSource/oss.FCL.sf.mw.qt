@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -64,6 +64,8 @@ private:
     void writeObjectsPart(QTextStream &t);
     void writeBuildRulesPart(QTextStream &t);
     void writeRcFilePart(QTextStream &t);
+    void createLdObjectScriptFile(const QString &fileName, const QStringList &objList);
+    void createArObjectScriptFile(const QString &fileName, const QString &target, const QStringList &objList);
     void init();
     void processPrlVariable(const QString &var, const QStringList &l);
 

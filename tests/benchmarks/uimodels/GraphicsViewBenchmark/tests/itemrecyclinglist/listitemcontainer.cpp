@@ -189,9 +189,8 @@ void ListItemContainer::setListItemCaching(const bool enabled, ListItem *listIte
     if (!listItem)
         return;
 
-    QGraphicsEffect* oldEffect = listItem->graphicsEffect();
+    // Deletes the effect.
     listItem->setGraphicsEffect(0);
-    delete oldEffect;
 
     if (enabled) {
         ListItemCache* cache = new ListItemCache;

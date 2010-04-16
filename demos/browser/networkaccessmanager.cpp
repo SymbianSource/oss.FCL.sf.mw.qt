@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -112,8 +112,9 @@ void NetworkAccessManager::requestFinished(QNetworkReply *reply)
     double pctCached = (double(requestFinishedFromCacheCount) * 100.0/ double(requestFinishedCount));
     double pctPipelined = (double(requestFinishedPipelinedCount) * 100.0/ double(requestFinishedCount));
     double pctSecure = (double(requestFinishedSecureCount) * 100.0/ double(requestFinishedCount));
+#ifdef QT_DEBUG
     qDebug("STATS [%lli requests total] [%3.2f%% from cache] [%3.2f%% pipelined] [%3.2f%% SSL/TLS]", requestFinishedCount, pctCached, pctPipelined, pctSecure);
-
+#endif
 }
 
 void NetworkAccessManager::loadSettings()

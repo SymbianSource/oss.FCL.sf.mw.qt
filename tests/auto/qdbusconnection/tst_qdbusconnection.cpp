@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -80,12 +80,15 @@ class tst_QDBusConnection: public QObject
     int signalsReceived;
 public slots:
     void oneSlot() { ++signalsReceived; }
+    void exitLoop() { ++signalsReceived; QTestEventLoop::instance().exitLoop(); }
+    void secondCallWithCallback();
 
 private slots:
     void noConnection();
     void connectToBus();
     void connect();
     void send();
+    void sendWithGui();
     void sendAsync();
     void sendSignal();
 
@@ -101,6 +104,7 @@ private slots:
     void multipleInterfacesInQObject();
 
     void slotsWithLessParameters();
+    void nestedCallWithCallback();
 
 public:
     QString serviceName() const { return "com.trolltech.Qt.Autotests.QDBusConnection"; }
@@ -167,6 +171,22 @@ void tst_QDBusConnection::send()
         "/org/freedesktop/DBus", "org.freedesktop.DBus", "ListNames");
 
     QDBusMessage reply = con.call(msg);
+
+    QCOMPARE(reply.arguments().count(), 1);
+    QCOMPARE(reply.arguments().at(0).typeName(), "QStringList");
+    QVERIFY(reply.arguments().at(0).toStringList().contains(con.baseService()));
+}
+
+void tst_QDBusConnection::sendWithGui()
+{
+    QDBusConnection con = QDBusConnection::sessionBus();
+
+    QVERIFY(con.isConnected());
+
+    QDBusMessage msg = QDBusMessage::createMethodCall("org.freedesktop.DBus",
+        "/org/freedesktop/DBus", "org.freedesktop.DBus", "ListNames");
+
+    QDBusMessage reply = con.call(msg, QDBus::BlockWithGui);
 
     QCOMPARE(reply.arguments().count(), 1);
     QCOMPARE(reply.arguments().at(0).typeName(), "QStringList");
@@ -598,6 +618,32 @@ void tst_QDBusConnection::slotsWithLessParameters()
                         signal.member(), "s", this, SLOT(oneSlot())));
     QVERIFY(con.send(signal));
     QTest::qWait(100);
+    QCOMPARE(signalsReceived, 1);
+}
+
+void tst_QDBusConnection::secondCallWithCallback()
+{
+    qDebug("Hello");
+    QDBusConnection con = QDBusConnection::sessionBus();
+    QDBusMessage msg = QDBusMessage::createMethodCall(con.baseService(), "/test", QString(),
+                                                      "test0");
+    con.callWithCallback(msg, this, SLOT(exitLoop()), SLOT(secondCallWithCallback()));
+}
+
+void tst_QDBusConnection::nestedCallWithCallback()
+{
+    TestObject testObject;
+    QDBusConnection connection = QDBusConnection::sessionBus();
+    QVERIFY(connection.registerObject("/test", &testObject,
+            QDBusConnection::ExportAllContents));
+
+    QDBusMessage msg = QDBusMessage::createMethodCall(connection.baseService(), "/test", QString(),
+                                                      "ThisFunctionDoesntExist");
+    signalsReceived = 0;
+
+    connection.callWithCallback(msg, this, SLOT(exitLoop()), SLOT(secondCallWithCallback()), 10);
+    QTestEventLoop::instance().enterLoop(15);
+    QVERIFY(!QTestEventLoop::instance().timeout());
     QCOMPARE(signalsReceived, 1);
 }
 

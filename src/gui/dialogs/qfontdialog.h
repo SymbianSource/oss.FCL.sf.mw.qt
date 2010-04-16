@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -131,6 +131,9 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_styleHighlighted(int))
     Q_PRIVATE_SLOT(d_func(), void _q_sizeHighlighted(int))
     Q_PRIVATE_SLOT(d_func(), void _q_updateSample())
+#if defined(Q_WS_MAC)
+    Q_PRIVATE_SLOT(d_func(), void _q_macRunNativeAppModalPanel())
+#endif
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QFontDialog::FontDialogOptions)

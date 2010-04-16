@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -54,6 +54,7 @@
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QHostInfo>
 #include <QtNetwork/QFtp>
+#include <QtNetwork/QAbstractNetworkCache>
 #include <QtNetwork/qauthenticator.h>
 #include <QtNetwork/qnetworkaccessmanager.h>
 #include <QtNetwork/qnetworkrequest.h>
@@ -198,6 +199,8 @@ private Q_SLOTS:
 #endif
     void ioGetFromHttpBrokenServer_data();
     void ioGetFromHttpBrokenServer();
+    void ioGetFromHttpWithCache_data();
+    void ioGetFromHttpWithCache();
 
     void ioGetWithManyProxies_data();
     void ioGetWithManyProxies();
@@ -223,7 +226,7 @@ private Q_SLOTS:
     void ioPostToHttpFromMiddleOfQBufferFiveBytes();
     void ioPostToHttpNoBufferFlag();
     void ioPostToHttpUploadProgress();
-    void ioPostToHttpEmtpyUploadProgress();
+    void ioPostToHttpEmptyUploadProgress();
 
     void lastModifiedHeaderForFile();
     void lastModifiedHeaderForHttp();
@@ -253,6 +256,13 @@ private Q_SLOTS:
     void authorizationError();
 
     void httpConnectionCount();
+
+    void httpReUsingConnectionSequential_data();
+    void httpReUsingConnectionSequential();
+    void httpReUsingConnectionFromFinishedSlot_data();
+    void httpReUsingConnectionFromFinishedSlot();
+
+    void httpRecursiveCreation();
 
 #ifndef QT_NO_OPENSSL
     void ioPostToHttpsUploadProgress();
@@ -309,17 +319,20 @@ QT_END_NAMESPACE
             QFAIL(qPrintable(errorMsg));        \
     } while (0);
 
+
+// Does not work for POST/PUT!
 class MiniHttpServer: public QTcpServer
 {
     Q_OBJECT
-    QTcpSocket *client;
-
 public:
+    QTcpSocket *client; // always the last one that was received
     QByteArray dataToTransmit;
     QByteArray receivedData;
     bool doClose;
+    bool multiple;
+    int totalConnections;
 
-    MiniHttpServer(const QByteArray &data) : client(0), dataToTransmit(data), doClose(true)
+    MiniHttpServer(const QByteArray &data) : client(0), dataToTransmit(data), doClose(true), multiple(false), totalConnections(0)
     {
         listen();
         connect(this, SIGNAL(newConnection()), this, SLOT(doAccept()));
@@ -329,14 +342,21 @@ public slots:
     void doAccept()
     {
         client = nextPendingConnection();
-        connect(client, SIGNAL(readyRead()), this, SLOT(sendData()));
+        client->setParent(this);
+        ++totalConnections;
+        connect(client, SIGNAL(readyRead()), this, SLOT(readyReadSlot()));
     }
 
-    void sendData()
+    void readyReadSlot()
     {
         receivedData += client->readAll();
-        if (receivedData.contains("\r\n\r\n") ||
-            receivedData.contains("\n\n")) {
+        int doubleEndlPos = receivedData.indexOf("\r\n\r\n");
+
+        if (doubleEndlPos != -1) {
+            // multiple requests incoming. remove the bytes of the current one
+            if (multiple)
+                receivedData.remove(0, doubleEndlPos+4);
+
             client->write(dataToTransmit);
             if (doClose) {
                 client->disconnectFromHost();
@@ -378,6 +398,61 @@ public:
         return toReturn;
     }
 };
+
+class MyMemoryCache: public QAbstractNetworkCache
+{
+public:
+    typedef QPair<QNetworkCacheMetaData, QByteArray> CachedContent;
+    typedef QHash<QByteArray, CachedContent> CacheData;
+    CacheData cache;
+
+    MyMemoryCache(QObject *parent) : QAbstractNetworkCache(parent) {}
+
+    QNetworkCacheMetaData metaData(const QUrl &url)
+    {
+        return cache.value(url.toEncoded()).first;
+    }
+
+    void updateMetaData(const QNetworkCacheMetaData &metaData)
+    {
+        cache[metaData.url().toEncoded()].first = metaData;
+    }
+
+    QIODevice *data(const QUrl &url)
+    {
+        CacheData::ConstIterator it = cache.find(url.toEncoded());
+        if (it == cache.constEnd())
+            return 0;
+        QBuffer *io = new QBuffer(this);
+        io->setData(it->second);
+        io->open(QIODevice::ReadOnly);
+        io->seek(0);
+        return io;
+    }
+
+    bool remove(const QUrl &url)
+    {
+        cache.remove(url.toEncoded());
+        return true;
+    }
+
+    qint64 cacheSize() const
+    {
+        qint64 total = 0;
+        foreach (const CachedContent &entry, cache)
+            total += entry.second.size();
+        return total;
+    }
+
+    QIODevice *prepare(const QNetworkCacheMetaData &)
+    { Q_ASSERT(0 && "Should not have tried to add to the cache"); return 0; }
+    void insert(QIODevice *)
+    { Q_ASSERT(0 && "Should not have tried to add to the cache"); }
+
+    void clear() { cache.clear(); }
+};
+Q_DECLARE_METATYPE(MyMemoryCache::CachedContent)
+Q_DECLARE_METATYPE(MyMemoryCache::CacheData)
 
 class DataReader: public QObject
 {
@@ -762,6 +837,7 @@ void tst_QNetworkReply::cleanup()
     // clear the internal cache
     QNetworkAccessManagerPrivate::clearCache(&manager);
     manager.setProxy(QNetworkProxy());
+    manager.setCache(0);
 
     // clear cookies
     cookieJar->setAllCookies(QList<QNetworkCookie>());
@@ -777,13 +853,20 @@ void tst_QNetworkReply::stateChecking()
     QVERIFY(reply->isOpen());
     QVERIFY(reply->isReadable());
     QVERIFY(!reply->isWritable());
-    QCOMPARE(reply->errorString(), QString("Unknown error"));
+
+    // both behaviours are OK since we might change underlying behaviour again
+    if (!reply->isFinished())
+        QCOMPARE(reply->errorString(), QString("Unknown error"));
+    else
+        QVERIFY(!reply->errorString().isEmpty());
+
 
     QCOMPARE(reply->manager(), &manager);
     QCOMPARE(reply->request(), req);
     QCOMPARE(int(reply->operation()), int(QNetworkAccessManager::GetOperation));
-    QCOMPARE(reply->error(), QNetworkReply::NoError);
-    QCOMPARE(reply->isFinished(), false);
+    // error and not error are OK since we might change underlying behaviour again
+    if (!reply->isFinished())
+        QCOMPARE(reply->error(), QNetworkReply::NoError);
     QCOMPARE(reply->url(), url);
 
     reply->abort();
@@ -1090,7 +1173,8 @@ void tst_QNetworkReply::getErrors()
     QNetworkReplyPtr reply = manager.get(request);
     reply->setParent(this);     // we have expect-fails
 
-    QCOMPARE(reply->error(), QNetworkReply::NoError);
+    if (!reply->isFinished())
+        QCOMPARE(reply->error(), QNetworkReply::NoError);
 
     // now run the request:
     connect(reply, SIGNAL(finished()),
@@ -1451,6 +1535,7 @@ void tst_QNetworkReply::ioGetFromFile()
 
     QNetworkRequest request(QUrl::fromLocalFile(file.fileName()));
     QNetworkReplyPtr reply = manager.get(request);
+    QVERIFY(reply->isFinished()); // a file should immediatly be done
     DataReader reader(reply);
 
     connect(reply, SIGNAL(finished()), &QTestEventLoop::instance(), SLOT(exitLoop()));
@@ -1964,6 +2049,11 @@ void tst_QNetworkReply::ioGetFromHttpBrokenServer_data()
     QTest::newRow("invalid-version+disconnect") << QByteArray("HTTP/123 200 ") << true;
     QTest::newRow("invalid-version2+disconnect") << QByteArray("HTTP/a.\033 200 ") << true;
     QTest::newRow("invalid-reply-code+disconnect") << QByteArray("HTTP/1.0 fuu ") << true;
+
+    QTest::newRow("immediate disconnect") << QByteArray("") << true;
+    QTest::newRow("justHalfStatus+disconnect") << QByteArray("HTTP/1.1") << true;
+    QTest::newRow("justStatus+disconnect") << QByteArray("HTTP/1.1 200 OK\r\n") << true;
+    QTest::newRow("justStatusAndHalfHeaders+disconnect") << QByteArray("HTTP/1.1 200 OK\r\nContent-L") << true;
 }
 
 void tst_QNetworkReply::ioGetFromHttpBrokenServer()
@@ -1982,6 +2072,146 @@ void tst_QNetworkReply::ioGetFromHttpBrokenServer()
 
     QCOMPARE(reply->url(), request.url());
     QVERIFY(reply->error() != QNetworkReply::NoError);
+}
+
+void tst_QNetworkReply::ioGetFromHttpWithCache_data()
+{
+    qRegisterMetaType<MyMemoryCache::CachedContent>();
+    QTest::addColumn<QByteArray>("dataToSend");
+    QTest::addColumn<QString>("body");
+    QTest::addColumn<MyMemoryCache::CachedContent>("cachedReply");
+    QTest::addColumn<int>("cacheMode");
+    QTest::addColumn<bool>("loadedFromCache");
+    QTest::addColumn<bool>("networkUsed");
+
+    QByteArray reply200 =
+            "HTTP/1.0 200\r\n"
+            "Connection: keep-alive\r\n"
+            "Content-Type: text/plain\r\n"
+            "Cache-control: no-cache\r\n"
+            "Content-length: 8\r\n"
+            "\r\n"
+            "Reloaded";
+    QByteArray reply304 =
+            "HTTP/1.0 304 Use Cache\r\n"
+            "Connection: keep-alive\r\n"
+            "\r\n";
+
+    QTest::newRow("not-cached,always-network")
+            << reply200 << "Reloaded" << MyMemoryCache::CachedContent() << int(QNetworkRequest::AlwaysNetwork) << false << true;
+    QTest::newRow("not-cached,prefer-network")
+            << reply200 << "Reloaded" << MyMemoryCache::CachedContent() << int(QNetworkRequest::PreferNetwork) << false << true;
+    QTest::newRow("not-cached,prefer-cache")
+            << reply200 << "Reloaded" << MyMemoryCache::CachedContent() << int(QNetworkRequest::PreferCache) << false << true;
+
+    QDateTime present = QDateTime::currentDateTime().toUTC();
+    QDateTime past = present.addSecs(-3600);
+    QDateTime future = present.addSecs(3600);
+    static const char dateFormat[] = "ddd, dd MMM yyyy hh:mm:ss 'GMT'";
+
+    QNetworkCacheMetaData::RawHeaderList rawHeaders;
+    MyMemoryCache::CachedContent content;
+    content.second = "Not-reloaded";
+    content.first.setLastModified(past);
+
+    //
+    // Set to expired
+    //
+    rawHeaders.clear();
+    rawHeaders << QNetworkCacheMetaData::RawHeader("Date", QLocale::c().toString(past, dateFormat).toLatin1())
+            << QNetworkCacheMetaData::RawHeader("Cache-control", "max-age=0"); // isn't used in cache loading
+    content.first.setRawHeaders(rawHeaders);
+    content.first.setLastModified(past);
+
+    QTest::newRow("expired,200,prefer-network")
+            << reply200 << "Reloaded" << content << int(QNetworkRequest::PreferNetwork) << false << true;
+    QTest::newRow("expired,200,prefer-cache")
+            << reply200 << "Reloaded" << content << int(QNetworkRequest::PreferCache) << false << true;
+
+    QTest::newRow("expired,304,prefer-network")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::PreferNetwork) << true << true;
+    QTest::newRow("expired,304,prefer-cache")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::PreferCache) << true << true;
+
+    //
+    // Set to not-expired
+    //
+    rawHeaders.clear();
+    rawHeaders << QNetworkCacheMetaData::RawHeader("Date", QLocale::c().toString(past, dateFormat).toLatin1())
+            << QNetworkCacheMetaData::RawHeader("Cache-control", "max-age=7200"); // isn't used in cache loading
+    content.first.setRawHeaders(rawHeaders);
+    content.first.setExpirationDate(future);
+
+    QTest::newRow("not-expired,200,always-network")
+            << reply200 << "Reloaded" << content << int(QNetworkRequest::AlwaysNetwork) << false << true;
+    QTest::newRow("not-expired,200,prefer-network")
+            << reply200 << "Not-reloaded" << content << int(QNetworkRequest::PreferNetwork) << true << false;
+    QTest::newRow("not-expired,200,prefer-cache")
+            << reply200 << "Not-reloaded" << content << int(QNetworkRequest::PreferCache) << true << false;
+    QTest::newRow("not-expired,200,always-cache")
+            << reply200 << "Not-reloaded" << content << int(QNetworkRequest::AlwaysCache) << true << false;
+
+    QTest::newRow("not-expired,304,prefer-network")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::PreferNetwork) << true << false;
+    QTest::newRow("not-expired,304,prefer-cache")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::PreferCache) << true << false;
+    QTest::newRow("not-expired,304,always-cache")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::AlwaysCache) << true << false;
+
+    //
+    // Set must-revalidate now
+    //
+    rawHeaders.clear();
+    rawHeaders << QNetworkCacheMetaData::RawHeader("Date", QLocale::c().toString(past, dateFormat).toLatin1())
+            << QNetworkCacheMetaData::RawHeader("Cache-control", "max-age=7200, must-revalidate"); // must-revalidate is used
+    content.first.setRawHeaders(rawHeaders);
+
+    QTest::newRow("must-revalidate,200,always-network")
+            << reply200 << "Reloaded" << content << int(QNetworkRequest::AlwaysNetwork) << false << true;
+    QTest::newRow("must-revalidate,200,prefer-network")
+            << reply200 << "Reloaded" << content << int(QNetworkRequest::PreferNetwork) << false << true;
+    QTest::newRow("must-revalidate,200,prefer-cache")
+            << reply200 << "Not-reloaded" << content << int(QNetworkRequest::PreferCache) << true << false;
+    QTest::newRow("must-revalidate,200,always-cache")
+            << reply200 << "Not-reloaded" << content << int(QNetworkRequest::AlwaysCache) << true << false;
+
+    QTest::newRow("must-revalidate,304,prefer-network")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::PreferNetwork) << true << true;
+    QTest::newRow("must-revalidate,304,prefer-cache")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::PreferCache) << true << false;
+    QTest::newRow("must-revalidate,304,always-cache")
+            << reply304 << "Not-reloaded" << content << int(QNetworkRequest::AlwaysCache) << true << false;
+}
+
+void tst_QNetworkReply::ioGetFromHttpWithCache()
+{
+    QFETCH(QByteArray, dataToSend);
+    MiniHttpServer server(dataToSend);
+    server.doClose = false;
+
+    MyMemoryCache *memoryCache = new MyMemoryCache(&manager);
+    manager.setCache(memoryCache);
+
+    QFETCH(MyMemoryCache::CachedContent, cachedReply);
+    QUrl url = "http://localhost:" + QString::number(server.serverPort());
+    cachedReply.first.setUrl(url);
+    if (!cachedReply.second.isNull())
+        memoryCache->cache.insert(url.toEncoded(), cachedReply);
+
+    QFETCH(int, cacheMode);
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::CacheLoadControlAttribute, cacheMode);
+    request.setAttribute(QNetworkRequest::CacheSaveControlAttribute, false);
+    QNetworkReplyPtr reply = manager.get(request);
+
+    connect(reply, SIGNAL(finished()), &QTestEventLoop::instance(), SLOT(exitLoop()));
+    QTestEventLoop::instance().enterLoop(10);
+    QVERIFY(!QTestEventLoop::instance().timeout());
+
+    QTEST(reply->attribute(QNetworkRequest::SourceIsFromCacheAttribute).toBool(), "loadedFromCache");
+    QTEST(server.totalConnections > 0, "networkUsed");
+    QFETCH(QString, body);
+    QCOMPARE(reply->readAll().constData(), qPrintable(body));
 }
 
 void tst_QNetworkReply::ioGetWithManyProxies_data()
@@ -2921,7 +3151,7 @@ void tst_QNetworkReply::ioPostToHttpUploadProgress()
     server.close();
 }
 
-void tst_QNetworkReply::ioPostToHttpEmtpyUploadProgress()
+void tst_QNetworkReply::ioPostToHttpEmptyUploadProgress()
 {
     QByteArray ba;
     ba.resize(0);
@@ -2969,12 +3199,13 @@ void tst_QNetworkReply::ioPostToHttpEmtpyUploadProgress()
 
 void tst_QNetworkReply::lastModifiedHeaderForFile()
 {
-    QFileInfo fileInfo(SRCDIR "./bigfile");
+    QFileInfo fileInfo(SRCDIR "/bigfile");
+    QVERIFY(fileInfo.exists());
+
     QUrl url = QUrl::fromLocalFile(fileInfo.filePath());
 
     QNetworkRequest request(url);
     QNetworkReplyPtr reply = manager.head(request);
-    QSignalSpy spy(reply, SIGNAL(uploadProgress(qint64,qint64)));
     connect(reply, SIGNAL(finished()), &QTestEventLoop::instance(), SLOT(exitLoop()));
     QTestEventLoop::instance().enterLoop(10);
     QVERIFY(!QTestEventLoop::instance().timeout());
@@ -2990,7 +3221,6 @@ void tst_QNetworkReply::lastModifiedHeaderForHttp()
 
     QNetworkRequest request(url);
     QNetworkReplyPtr reply = manager.head(request);
-    QSignalSpy spy(reply, SIGNAL(uploadProgress(qint64,qint64)));
     connect(reply, SIGNAL(finished()), &QTestEventLoop::instance(), SLOT(exitLoop()));
     QTestEventLoop::instance().enterLoop(10);
     QVERIFY(!QTestEventLoop::instance().timeout());
@@ -3571,6 +3801,174 @@ void tst_QNetworkReply::httpConnectionCount()
 #else
     QCOMPARE(pendingConnectionCount, 6);
 #endif
+}
+
+void tst_QNetworkReply::httpReUsingConnectionSequential_data()
+{
+    QTest::addColumn<bool>("doDeleteLater");
+    QTest::newRow("deleteLater") << true;
+    QTest::newRow("noDeleteLater") << false;
+}
+
+void tst_QNetworkReply::httpReUsingConnectionSequential()
+{
+    QFETCH(bool, doDeleteLater);
+
+    QByteArray response("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
+    MiniHttpServer server(response);
+    server.multiple = true;
+    server.doClose = false;
+
+    QUrl url;
+    url.setScheme("http");
+    url.setPort(server.serverPort());
+    url.setHost("127.0.0.1");
+    // first request
+    QNetworkReply* reply1 = manager.get(QNetworkRequest(url));
+    connect(reply1, SIGNAL(finished()), &QTestEventLoop::instance(), SLOT(exitLoop()));
+    QTestEventLoop::instance().enterLoop(2);
+    QVERIFY(!QTestEventLoop::instance().timeout());
+    QVERIFY(!reply1->error());
+    int reply1port = server.client->peerPort();
+
+    if (doDeleteLater)
+        reply1->deleteLater();
+
+    // finished received, send the next one
+    QNetworkReply*reply2 = manager.get(QNetworkRequest(url));
+    connect(reply2, SIGNAL(finished()), &QTestEventLoop::instance(), SLOT(exitLoop()));
+    QTestEventLoop::instance().enterLoop(2);
+    QVERIFY(!QTestEventLoop::instance().timeout());
+    QVERIFY(!reply2->error());
+    int reply2port = server.client->peerPort(); // should still be the same object
+
+    QVERIFY(reply1port > 0);
+    QCOMPARE(server.totalConnections, 1);
+    QCOMPARE(reply2port, reply1port);
+
+    if (!doDeleteLater)
+        reply1->deleteLater(); // only do it if it was not done earlier
+    reply2->deleteLater();
+}
+
+class HttpReUsingConnectionFromFinishedSlot : public QObject {
+    Q_OBJECT;
+public:
+    QNetworkReply* reply1;
+    QNetworkReply* reply2;
+    QUrl url;
+    QNetworkAccessManager manager;
+public slots:
+    void finishedSlot() {
+        QVERIFY(!reply1->error());
+
+        QFETCH(bool, doDeleteLater);
+        if (doDeleteLater) {
+            reply1->deleteLater();
+            reply1 = 0;
+        }
+
+        // kick off 2nd request and exit the loop when it is done
+        reply2 = manager.get(QNetworkRequest(url));
+        reply2->setParent(this);
+        connect(reply2, SIGNAL(finished()), &QTestEventLoop::instance(), SLOT(exitLoop()));
+    }
+};
+
+void tst_QNetworkReply::httpReUsingConnectionFromFinishedSlot_data()
+{
+    httpReUsingConnectionSequential_data();
+}
+
+void tst_QNetworkReply::httpReUsingConnectionFromFinishedSlot()
+{
+    QByteArray response("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n");
+    MiniHttpServer server(response);
+    server.multiple = true;
+    server.doClose = false;
+
+    HttpReUsingConnectionFromFinishedSlot helper;
+    helper.reply1 = 0;
+    helper.reply2 = 0;
+    helper.url.setScheme("http");
+    helper.url.setPort(server.serverPort());
+    helper.url.setHost("127.0.0.1");
+
+    // first request
+    helper.reply1 = helper.manager.get(QNetworkRequest(helper.url));
+    helper.reply1->setParent(&helper);
+    connect(helper.reply1, SIGNAL(finished()), &helper, SLOT(finishedSlot()));
+    QTestEventLoop::instance().enterLoop(4);
+    QVERIFY(!QTestEventLoop::instance().timeout());
+
+    QVERIFY(helper.reply2);
+    QVERIFY(!helper.reply2->error());
+
+    QCOMPARE(server.totalConnections, 1);
+}
+
+class HttpRecursiveCreationHelper : public QObject {
+    Q_OBJECT
+public:
+
+    HttpRecursiveCreationHelper():
+            QObject(0),
+            requestsStartedCount_finished(0),
+            requestsStartedCount_readyRead(0),
+            requestsFinishedCount(0)
+    {
+    }
+    QNetworkAccessManager manager;
+    int requestsStartedCount_finished;
+    int requestsStartedCount_readyRead;
+    int requestsFinishedCount;
+public slots:
+    void finishedSlot() {
+        requestsFinishedCount++;
+
+        QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+        QVERIFY(!reply->error());
+        QVERIFY(reply->bytesAvailable() == 27906);
+
+        if (requestsFinishedCount == 60) {
+            QTestEventLoop::instance().exitLoop();
+            return;
+        }
+
+        if (requestsStartedCount_finished < 30) {
+            startOne();
+            requestsStartedCount_finished++;
+        }
+
+        reply->deleteLater();
+    }
+    void readyReadSlot() {
+        QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+        QVERIFY(!reply->error());
+
+        if (requestsStartedCount_readyRead < 30 && reply->bytesAvailable() > 27906/2) {
+            startOne();
+            requestsStartedCount_readyRead++;
+        }
+    }
+    void startOne() {
+        QUrl url = "http://" + QtNetworkSettings::serverName() + "/gif/fluke.gif";
+        QNetworkRequest request(url);
+        QNetworkReply *reply = manager.get(request);
+        reply->setParent(this);
+        connect(reply, SIGNAL(finished()), this, SLOT(finishedSlot()));
+        connect(reply, SIGNAL(readyRead()), this, SLOT(readyReadSlot()));
+    }
+};
+
+void tst_QNetworkReply::httpRecursiveCreation()
+{
+    // this test checks if creation of new requests to the same host properly works
+    // from readyRead() and finished() signals
+    HttpRecursiveCreationHelper helper;
+    helper.startOne();
+    QTestEventLoop::instance().enterLoop(30);
+    QVERIFY(!QTestEventLoop::instance().timeout());
 }
 
 #ifndef QT_NO_OPENSSL

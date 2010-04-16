@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
@@ -329,6 +329,13 @@ void QGLFBOGLPaintDevice::setFBO(QGLFramebufferObject* f,
     } else if (attachment == QGLFramebufferObject::Depth) {
         fboFormat.setDepth(true);
     }
+
+    GLenum format = f->format().internalTextureFormat();
+    reqAlpha = (format != GL_RGB
+#ifndef QT_OPENGL_ES
+                && format != GL_RGB5 && format != GL_RGB8
+#endif
+    );
 }
 
 QGLContext *QGLFBOGLPaintDevice::context() const
@@ -396,7 +403,7 @@ void QGLFramebufferObjectPrivate::init(QGLFramebufferObject *q, const QSize &sz,
     QGLContext *ctx = const_cast<QGLContext *>(QGLContext::currentContext());
     fbo_guard.setContext(ctx);
 
-    bool ext_detected = (QGLExtensions::glExtensions & QGLExtensions::FramebufferObject);
+    bool ext_detected = (QGLExtensions::glExtensions() & QGLExtensions::FramebufferObject);
     if (!ext_detected || (ext_detected && !qt_resolve_framebufferobject_extensions(ctx)))
         return;
 
@@ -466,7 +473,7 @@ void QGLFramebufferObjectPrivate::init(QGLFramebufferObject *q, const QSize &sz,
     }
 
     if (attachment == QGLFramebufferObject::CombinedDepthStencil
-        && (QGLExtensions::glExtensions & QGLExtensions::PackedDepthStencil)) {
+        && (QGLExtensions::glExtensions() & QGLExtensions::PackedDepthStencil)) {
         // depth and stencil buffer needs another extension
         glGenRenderbuffers(1, &depth_stencil_buffer);
         Q_ASSERT(!glIsRenderbuffer(depth_stencil_buffer));
@@ -1028,8 +1035,7 @@ QPaintEngine *QGLFramebufferObject::paintEngine() const
 */
 bool QGLFramebufferObject::hasOpenGLFramebufferObjects()
 {
-    QGLExtensions::init();
-    return (QGLExtensions::glExtensions & QGLExtensions::FramebufferObject);
+    return (QGLExtensions::glExtensions() & QGLExtensions::FramebufferObject);
 }
 
 /*!
@@ -1188,8 +1194,7 @@ bool QGLFramebufferObject::isBound() const
 */
 bool QGLFramebufferObject::hasOpenGLFramebufferBlit()
 {
-    QGLExtensions::init();
-    return (QGLExtensions::glExtensions & QGLExtensions::FramebufferBlit);
+    return (QGLExtensions::glExtensions() & QGLExtensions::FramebufferBlit);
 }
 
 /*!
@@ -1229,7 +1234,7 @@ void QGLFramebufferObject::blitFramebuffer(QGLFramebufferObject *target, const Q
                                            GLbitfield buffers,
                                            GLenum filter)
 {
-    if (!(QGLExtensions::glExtensions & QGLExtensions::FramebufferBlit))
+    if (!(QGLExtensions::glExtensions() & QGLExtensions::FramebufferBlit))
         return;
 
     const QGLContext *ctx = QGLContext::currentContext();
