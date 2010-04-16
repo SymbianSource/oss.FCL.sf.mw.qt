@@ -8,4 +8,8 @@ The commit imported was from the
 
 and has the sha1 checksum
 
+<<<<<<< HEAD
         e9151b11e974f0aa47fd40c225f88f35ced91496
+=======
+        14feb62c96ffe2c37e3e2fdac4e370fdbc76ef62
+>>>>>>> 8f75ee7... Updated WebKit from /home/shausman/src/webkit/trunk to qtwebkit/qtwebkit-4.6 ( 14feb62c96ffe2c37e3e2fdac4e370fdbc76ef62 )

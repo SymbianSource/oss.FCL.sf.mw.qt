@@ -659,6 +659,7 @@ QEglContext *QVGEGLWindowSurfaceDirect::ensureContext(QWidget *widget)
 #endif
         windowSurface = context->createSurface(widget, &surfaceProps);
         isPaintingActive = false;
+        needToSwap = true;
     }
 #else
     if (context && size != newSize) {
@@ -710,20 +711,21 @@ QEglContext *QVGEGLWindowSurfaceDirect::ensureContext(QWidget *widget)
             needToSwap = false;
         }
 #endif
-#if !defined(QVG_NO_PRESERVED_SWAP)
-        // Try to force the surface back buffer to preserve its contents.
-        if (needToSwap) {
-            eglGetError();  // Clear error state first.
-            eglSurfaceAttrib(QEglContext::display(), surface,
-                             EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED);
-            if (eglGetError() != EGL_SUCCESS) {
-                qWarning("QVG: could not enable preserved swap");
-            }
-        }
-#endif
         windowSurface = surface;
         isPaintingActive = false;
     }
+
+#if !defined(QVG_NO_PRESERVED_SWAP)
+    // Try to force the surface back buffer to preserve its contents.
+    if (needToSwap) {
+        eglGetError();  // Clear error state first.
+        eglSurfaceAttrib(QEglContext::display(), windowSurface,
+                EGL_SWAP_BEHAVIOR, EGL_BUFFER_PRESERVED);
+        if (eglGetError() != EGL_SUCCESS) {
+            qWarning("QVG: could not enable preserved swap");
+        }
+    }
+#endif
     return context;
 }
 
@@ -754,6 +756,33 @@ void QVGEGLWindowSurfaceDirect::endPaint
         }
         isPaintingActive = false;
     }
+}
+
+bool QVGEGLWindowSurfaceDirect::supportsStaticContents() const
+{
+#if defined(QVG_BUFFER_SCROLLING) && !defined(QVG_NO_PRESERVED_SWAP)
+    return true;
+#else
+    return QVGEGLWindowSurfacePrivate::supportsStaticContents();
+#endif
+}
+
+bool QVGEGLWindowSurfaceDirect::scroll(QWidget *widget, const QRegion& area, int dx, int dy)
+{
+#ifdef QVG_BUFFER_SCROLLING
+    QEglContext *context = ensureContext(widget);
+    if (context) {
+        context->makeCurrent(windowSurface);
+        QRect scrollRect = area.boundingRect();
+        int sx = scrollRect.x();
+        int sy = size.height() - scrollRect.y() - scrollRect.height();
+        vgSeti(VG_SCISSORING, VG_FALSE);
+        vgCopyPixels(sx + dx, sy - dy, sx, sy, scrollRect.width(), scrollRect.height());
+        context->lazyDoneCurrent();
+        return true;
+    }
+#endif
+    return false;
 }
 
 QT_END_NAMESPACE
