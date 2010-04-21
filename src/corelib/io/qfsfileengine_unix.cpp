@@ -518,9 +518,7 @@ bool QFSFileEngine::mkdir(const QString &name, bool createParentDirectories) con
                     if ((st.st_mode & S_IFMT) != S_IFDIR)
                         return false;
                 } else if (QT_MKDIR(chunk, 0777) != 0) {
-                    //QTP: workaround for QT-3141
-                    if (errno != EEXIST)
-                        return false;
+                    return false;
                 }
             }
         }

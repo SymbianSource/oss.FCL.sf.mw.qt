@@ -73,6 +73,7 @@
 # endif
 # include <private/qs60mainapplication_p.h>
 # include <centralrepository.h>
+# include "qs60mainappui.h"
 #endif
 
 #include "private/qstylesheetstyle_p.h"
@@ -372,8 +373,13 @@ QSymbianControl::~QSymbianControl()
 {
     if (S60->curWin == this)
         S60->curWin = 0;
-    if (!QApplicationPrivate::is_app_closing)
-        setFocusSafely(false);
+    if (!QApplicationPrivate::is_app_closing) {
+        QT_TRY {
+            setFocusSafely(false);
+        } QT_CATCH(const std::exception&) {
+            // ignore exceptions, nothing can be done
+        }
+    }
     S60->appUi()->RemoveFromStack(this);
     delete m_longTapDetector;
 }
@@ -533,6 +539,14 @@ void QSymbianControl::HandlePointerEvent(const TPointerEvent& pEvent)
 
     sendMouseEvent(receiver, type, globalPos, button, modifiers);
 }
+
+#ifdef Q_WS_S60
+void QSymbianControl::HandleStatusPaneSizeChange()
+{
+    QS60MainAppUi *s60AppUi = static_cast<QS60MainAppUi *>(S60->appUi());
+    s60AppUi->HandleStatusPaneSizeChange();
+}
+#endif
 
 void QSymbianControl::sendMouseEvent(
         QWidget *receiver,
@@ -989,7 +1003,7 @@ void QSymbianControl::FocusChanged(TDrawNow /* aDrawNow */)
         }
 #endif
     } else if (QApplication::activeWindow() == qwidget->window()) {
-        if (CCoeEnv::Static()->AppUi()->IsDisplayingMenuOrDialog()) {
+        if (CCoeEnv::Static()->AppUi()->IsDisplayingMenuOrDialog() || S60->menuBeingConstructed) {
             QWidget *fw = QApplication::focusWidget();
             if (fw) {
                 QFocusEvent event(QEvent::FocusOut, Qt::PopupFocusReason);
@@ -1239,6 +1253,7 @@ void qt_init(QApplicationPrivate * /* priv */, int)
     }
 
     S60->avkonComponentsSupportTransparency = false;
+    S60->menuBeingConstructed = false;
 
 #ifdef Q_WS_S60
     TUid KCRUidAvkon = { 0x101F876E };

@@ -785,13 +785,13 @@ qint64 QIODevice::read(char *data, qint64 maxSize)
     do {
         // Try reading from the buffer.
         int lastReadChunkSize = d->buffer.read(data, maxSize);
-        *d->pPos += lastReadChunkSize;
-        readSoFar += lastReadChunkSize;
-        // fast exit when satisfied by buffer
-        if (lastReadChunkSize == maxSize && !(d->openMode & Text))
-            return readSoFar;
-
         if (lastReadChunkSize > 0) {
+            *d->pPos += lastReadChunkSize;
+            readSoFar += lastReadChunkSize;
+            // fast exit when satisfied by buffer
+            if (lastReadChunkSize == maxSize && !(d->openMode & Text))
+                return readSoFar;
+
             data += lastReadChunkSize;
             maxSize -= lastReadChunkSize;
 #if defined QIODEVICE_DEBUG

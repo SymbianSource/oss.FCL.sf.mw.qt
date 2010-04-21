@@ -6,7 +6,9 @@ COPY := $(call ecopy)
 
 EPOC_ROOT := $(subst \,/,$(EPOCROOT))
 QT_ROOT := $(subst src/s60installs/deviceconfiguration,,$(subst \,/,$(EXTENSION_ROOT)))
-INSTALLPATH := epoc32/tools/qt/
+QMAKEPATH := epoc32/tools/qt/
+INSTALLTOOLSPATH := epoc32/tools/
+MKSPECPATH := epoc32/tools/qt/
 
 # Determine which platform we are building on
 ifeq ($(OSTYPE),unix)
@@ -23,8 +25,8 @@ CONFIGURE_ROOT := $(subst src\s60installs\deviceconfiguration,,$(EXTENSION_ROOT)
 
 TARGETDIR := $(EPOC_ROOT)$(INSTALLPATH)
 SOURCEDIR := $(QT_ROOT)bin/
-TARGET_TOOLS := $(TARGETDIR)qmake$(DOTEXE) $(TARGETDIR)moc$(DOTEXE) $(TARGETDIR)rcc$(DOTEXE) $(TARGETDIR)uic$(DOTEXE) $(TARGETDIR)/lrelease$(DOTEXE)
-SOURCE_TOOLS := $(SOURCEDIR)qmake$(DOTEXE) $(SOURCEDIR)moc$(DOTEXE) $(SOURCEDIR)rcc$(DOTEXE) $(SOURCEDIR)uic$(DOTEXE) $(SOURCEDIR)/lrelease$(DOTEXE)
+TARGET_TOOLS := $(EPOC_ROOT)$(QMAKEPATH)qmake$(DOTEXE) $(TARGETDIR)moc$(DOTEXE) $(TARGETDIR)rcc$(DOTEXE) $(TARGETDIR)uic$(DOTEXE)
+SOURCE_TOOLS := $(SOURCEDIR)qmake$(DOTEXE) $(SOURCEDIR)moc$(DOTEXE) $(SOURCEDIR)rcc$(DOTEXE) $(SOURCEDIR)uic$(DOTEXE)
 
 XPLATFORM:=symbian-abld
 

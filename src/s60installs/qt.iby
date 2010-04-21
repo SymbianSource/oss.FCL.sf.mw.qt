@@ -6,7 +6,7 @@
 #warning("qt.iby: hack - BINARY_SELECTION_ORDER really needs to be at the baseport/device level as it depends on the device type");
 BINARY_SELECTION_ORDER ARMV6,ARMV5 // hack - this really needs to be at the baseport/device level as it depends on the device type
 
-file=ABI_DIR\BUILD_DIR\QtCore.dll            SHARED_LIB_DIR\QtCore.dll
+file=ABI_DIR\BUILD_DIR\QtCore.dll            SHARED_LIB_DIR\QtCore.dll UNPAGED
 file=ABI_DIR\BUILD_DIR\QtGui.dll             SHARED_LIB_DIR\QtGui.dll
 file=ABI_DIR\BUILD_DIR\QtOpenVG.dll          SHARED_LIB_DIR\QtOpenVG.dll
 file=ABI_DIR\BUILD_DIR\QtSvg.dll             SHARED_LIB_DIR\QtSvg.dll
@@ -19,7 +19,6 @@ file=ABI_DIR\BUILD_DIR\QtWebKit.dll          SHARED_LIB_DIR\QtWebKit.dll
 file=ABI_DIR\BUILD_DIR\phonon.dll            SHARED_LIB_DIR\phonon.dll
 file=ABI_DIR\BUILD_DIR\QtMultimedia.dll      SHARED_LIB_DIR\QtMultimedia.dll
 file=ABI_DIR\BUILD_DIR\QtXmlPatterns.dll     SHARED_LIB_DIR\QtXmlPatterns.dll
-file=ABI_DIR\BUILD_DIR\QtDeclarative.dll     SHARED_LIB_DIR\QtDeclarative.dll
 
 // imageformats
 file=ABI_DIR\BUILD_DIR\qgif.dll              SHARED_LIB_DIR\qgif.dll

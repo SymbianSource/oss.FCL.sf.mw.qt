@@ -1406,12 +1406,14 @@ QMenu::QMenu(QMenuPrivate &dd, QWidget *parent)
 QMenu::~QMenu()
 {
     Q_D(QMenu);
-    QHash<QAction *, QWidget *>::iterator it = d->widgetItems.begin();
-    for (; it != d->widgetItems.end(); ++it) {
-        if (QWidget *widget = it.value()) {
-            QWidgetAction *action = static_cast<QWidgetAction *>(it.key());
-            action->releaseWidget(widget);
-            *it = 0;
+    if (!d->widgetItems.isEmpty()) {  // avoid detach on shared null hash
+        QHash<QAction *, QWidget *>::iterator it = d->widgetItems.begin();
+        for (; it != d->widgetItems.end(); ++it) {
+            if (QWidget *widget = it.value()) {
+                QWidgetAction *action = static_cast<QWidgetAction *>(it.key());
+                action->releaseWidget(widget);
+                *it = 0;
+            }
         }
     }
 
@@ -2811,7 +2813,9 @@ void QMenu::mouseMoveEvent(QMouseEvent *e)
 
     QAction *action = d->actionAt(e->pos());
     if (!action) {
-        if (d->hasHadMouse)
+        if (d->hasHadMouse
+            && (!d->currentAction
+                || !(d->currentAction->menu() && d->currentAction->menu()->isVisible())))
             d->setCurrentAction(0);
         return;
     } else if(e->buttons()) {

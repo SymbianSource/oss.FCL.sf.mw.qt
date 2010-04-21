@@ -12597,15 +12597,15 @@ EXPORTS
 	?setConfig@QEglContext@@QAEXH@Z @ 12596 NONAME ; void QEglContext::setConfig(int)
 	?hasExtension@QEglContext@@SA_NPBD@Z @ 12597 NONAME ; bool QEglContext::hasExtension(char const *)
 	?doneCurrent@QEglContext@@QAE_NXZ @ 12598 NONAME ; bool QEglContext::doneCurrent(void)
-	?display@QEglContext@@SAHXZ @ 12599 NONAME ; int QEglContext::display(void)
+	?display@QEglContext@@SAHXZ @ 12599 NONAME ; int QEglContext::display(void)	
 	?setPixelFormat@QEglProperties@@QAEXW4Format@QImage@@@Z @ 12600 NONAME ; void QEglProperties::setPixelFormat(enum QImage::Format)
-	?currentContext@QEglContext@@CAPAV1@W4API@QEgl@@@Z @ 12601 NONAME ABSENT ; class QEglContext * QEglContext::currentContext(enum QEgl::API)
-	?errorString@QEglContext@@SA?AVQString@@H@Z @ 12602 NONAME ABSENT ; class QString QEglContext::errorString(int)
+	?currentContext@QEglContext@@CAPAV1@W4API@QEgl@@@Z @ 12601 NONAME ; class QEglContext * QEglContext::currentContext(enum QEgl::API)
+	?errorString@QEglContext@@SA?AVQString@@H@Z @ 12602 NONAME ; class QString QEglContext::errorString(int)
 	?removeAllApplicationFonts@QFontDatabase@@SA_NXZ @ 12603 NONAME ; NONAME ; bool QFontDatabase::removeAllApplicationFonts()
-	?setWidth@QGraphicsItemPrivate@@UAEXM@Z @ 12604 NONAME ; void QGraphicsItemPrivate::setWidth(float)
-	?setHeight@QGraphicsItemPrivate@@UAEXM@Z @ 12605 NONAME ; void QGraphicsItemPrivate::setHeight(float)
-	?height@QGraphicsItemPrivate@@UBEMXZ @ 12606 NONAME ; float QGraphicsItemPrivate::height(void) const
-	?width@QGraphicsItemPrivate@@UBEMXZ @ 12607 NONAME ; float QGraphicsItemPrivate::width(void) const
-	?resetHeight@QGraphicsItemPrivate@@UAEXXZ @ 12608 NONAME ; void QGraphicsItemPrivate::resetHeight(void)
-	?resetWidth@QGraphicsItemPrivate@@UAEXXZ @ 12609 NONAME ; void QGraphicsItemPrivate::resetWidth(void)
+	?setWidth@QGraphicsItemPrivate@@UAEXM@Z @ 12604 NONAME ABSENT ; void QGraphicsItemPrivate::setWidth(float)
+	?setHeight@QGraphicsItemPrivate@@UAEXM@Z @ 12605 NONAME  ABSENT  ; void QGraphicsItemPrivate::setHeight(float)
+	?height@QGraphicsItemPrivate@@UBEMXZ @ 12606 NONAME  ABSENT ; float QGraphicsItemPrivate::height(void) const
+	?width@QGraphicsItemPrivate@@UBEMXZ @ 12607 NONAME ABSENT  ; float QGraphicsItemPrivate::width(void) const
+	?resetHeight@QGraphicsItemPrivate@@UAEXXZ @ 12608 NONAME ABSENT  ; void QGraphicsItemPrivate::resetHeight(void)
+	?resetWidth@QGraphicsItemPrivate@@UAEXXZ @ 12609 NONAME  ABSENT ; void QGraphicsItemPrivate::resetWidth(void)
 

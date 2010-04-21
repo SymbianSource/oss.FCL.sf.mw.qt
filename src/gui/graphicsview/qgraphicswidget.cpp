@@ -324,14 +324,6 @@ void QGraphicsWidget::resize(const QSizeF &size)
 */
 
 /*!
-
-  \fn QGraphicsWidget::geometryChanged()
-
-  This signal gets emitted whenever the geometry of the item changes
-  \internal
-*/
-
-/*!
     \property QGraphicsWidget::geometry
     \brief the geometry of the widget
 
@@ -392,17 +384,13 @@ void QGraphicsWidget::setGeometry(const QRectF &rect)
     }
     QSizeF oldSize = size();
     QGraphicsLayoutItem::setGeometry(newGeom);
-    emit geometryChanged();
+
     // Send resize event
     bool resized = newGeom.size() != oldSize;
     if (resized) {
         QGraphicsSceneResizeEvent re;
         re.setOldSize(oldSize);
         re.setNewSize(newGeom.size());
-        if (oldSize.width() != newGeom.size().width())
-            emit widthChanged();
-        if (oldSize.height() != newGeom.size().height())
-            emit heightChanged();
         QApplication::sendEvent(this, &re);
     }
 }
@@ -1079,13 +1067,13 @@ QVariant QGraphicsWidget::itemChange(GraphicsItemChange change, const QVariant &
         QApplication::sendEvent(this, &event);
         break;
     }
-    case ItemCursorChange: {
+    case ItemCursorHasChanged: {
         // Deliver CursorChange.
         QEvent event(QEvent::CursorChange);
         QApplication::sendEvent(this, &event);
         break;
     }
-    case ItemToolTipChange: {
+    case ItemToolTipHasChanged: {
         // Deliver ToolTipChange.
         QEvent event(QEvent::ToolTipChange);
         QApplication::sendEvent(this, &event);

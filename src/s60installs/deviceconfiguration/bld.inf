@@ -31,15 +31,8 @@ wrappers/qmake      /epoc32/tools/qmake
 wrappers/qmake_abld.bat  /epoc32/tools/qmake.bat
 wrappers/qmake_abld      /epoc32/tools/qmake
 #endif
-wrappers/moc.bat    /epoc32/tools/moc.bat
-wrappers/moc        /epoc32/tools/moc
-wrappers/rcc.bat    /epoc32/tools/rcc.bat
-wrappers/rcc        /epoc32/tools/rcc
-wrappers/uic.bat    /epoc32/tools/uic.bat
-wrappers/uic        /epoc32/tools/uic
+
 wrappers/qt.conf    /epoc32/tools/qt/qt.conf
-wrappers/lrelease.bat /epoc32/tools/lrelease.bat
-wrappers/lrelease   /epoc32/tools/lrelease
 
 /* export platform specific configuration */
 
@@ -73,5 +66,5 @@ PRJ_TESTMMPFILES
 PRJ_EXTENSIONS
 START EXTENSION qt/qtconfig
 OPTION QT_ROOT ..
-OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process
+OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process -nomake examples -nomake demos -nomake tools
 END

@@ -122,6 +122,7 @@ public:
     int qtOwnsS60Environment : 1;
     int supportsPremultipliedAlpha : 1;
     int avkonComponentsSupportTransparency : 1;
+    int menuBeingConstructed : 1;
     QApplication::QS60MainApplicationFactory s60ApplicationFactory; // typedef'ed pointer type
     static inline void updateScreenSize();
     static inline RWsSession& wsSession();
@@ -154,7 +155,7 @@ class QLongTapTimer;
 
 class QSymbianControl : public CCoeControl, public QAbstractLongTapObserver
 #ifdef Q_WS_S60
-, public MAknFadedComponent
+, public MAknFadedComponent, public MEikStatusPaneObserver
 #endif
 {
 public:
@@ -182,6 +183,7 @@ public:
 
 #ifdef Q_WS_S60
     void FadeBehindPopup(bool fade){ popupFader.FadeBehindPopup( this, this, fade); }
+    void HandleStatusPaneSizeChange();
 
 protected: // from MAknFadedComponent
     TInt CountFadedComponents() {return 1;}

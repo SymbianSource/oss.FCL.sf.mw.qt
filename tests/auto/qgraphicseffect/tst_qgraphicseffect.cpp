@@ -75,6 +75,7 @@ private slots:
     void inheritOpacity();
     void dropShadowClipping();
     void childrenVisibilityShouldInvalidateCache();
+    void prepareGeometryChangeInvalidateCache();
 };
 
 void tst_QGraphicsEffect::initTestCase()
@@ -277,9 +278,8 @@ void tst_QGraphicsEffect::draw()
     // Make sure installing the effect triggers a repaint.
     CustomEffect *effect = new CustomEffect;
     item->setGraphicsEffect(effect);
-    QTest::qWait(50);
-    QCOMPARE(effect->numRepaints, 1);
-    QCOMPARE(item->numRepaints, 1);
+    QTRY_COMPARE(effect->numRepaints, 1);
+    QTRY_COMPARE(item->numRepaints, 1);
 
     // Make sure QPainter* and QStyleOptionGraphicsItem* stays persistent
     // during QGraphicsEffect::draw/QGraphicsItem::paint.
@@ -293,26 +293,23 @@ void tst_QGraphicsEffect::draw()
 
     // Make sure updating the source triggers a repaint.
     item->update();
-    QTest::qWait(50);
-    QCOMPARE(effect->numRepaints, 1);
-    QCOMPARE(item->numRepaints, 1);
+    QTRY_COMPARE(effect->numRepaints, 1);
+    QTRY_COMPARE(item->numRepaints, 1);
     QVERIFY(effect->m_sourceChangedFlags & QGraphicsEffect::SourceInvalidated);
     effect->reset();
     item->reset();
 
     // Make sure changing the effect's bounding rect triggers a repaint.
     effect->setMargin(20);
-    QTest::qWait(50);
-    QCOMPARE(effect->numRepaints, 1);
-    QCOMPARE(item->numRepaints, 1);
+    QTRY_COMPARE(effect->numRepaints, 1);
+    QTRY_COMPARE(item->numRepaints, 1);
     effect->reset();
     item->reset();
 
     // Make sure change the item's bounding rect triggers a repaint.
     item->setRect(0, 0, 50, 50);
-    QTest::qWait(50);
-    QCOMPARE(effect->numRepaints, 1);
-    QCOMPARE(item->numRepaints, 1);
+    QTRY_COMPARE(effect->numRepaints, 1);
+    QTRY_COMPARE(item->numRepaints, 1);
     QVERIFY(effect->m_sourceChangedFlags & QGraphicsEffect::SourceBoundingRectChanged);
     effect->reset();
     item->reset();
@@ -320,8 +317,7 @@ void tst_QGraphicsEffect::draw()
     // Make sure the effect is the one to issue a repaint of the item.
     effect->doNothingInDraw = true;
     item->update();
-    QTest::qWait(50);
-    QCOMPARE(effect->numRepaints, 1);
+    QTRY_COMPARE(effect->numRepaints, 1);
     QCOMPARE(item->numRepaints, 0);
     effect->doNothingInDraw = false;
     effect->reset();
@@ -336,9 +332,8 @@ void tst_QGraphicsEffect::draw()
     item->reset();
 
     effect->setEnabled(true);
-    QTest::qWait(50);
-    QCOMPARE(effect->numRepaints, 1);
-    QCOMPARE(item->numRepaints, 1);
+    QTRY_COMPARE(effect->numRepaints, 1);
+    QTRY_COMPARE(item->numRepaints, 1);
     effect->reset();
     item->reset();
 
@@ -352,8 +347,7 @@ void tst_QGraphicsEffect::draw()
     QPointer<CustomEffect> ptr = effect;
     item->setGraphicsEffect(0);
     QVERIFY(!ptr);
-    QTest::qWait(50);
-    QCOMPARE(item->numRepaints, 1);
+    QTRY_COMPARE(item->numRepaints, 1);
 }
 
 void tst_QGraphicsEffect::opacity()
@@ -515,7 +509,6 @@ void tst_QGraphicsEffect::drawPixmapItem()
     QTRY_VERIFY(effect->repaints >= 1);
 
     item->rotate(180);
-    QTest::qWait(50);
 
     QTRY_VERIFY(effect->repaints >= 2);
 }
@@ -560,9 +553,8 @@ void tst_QGraphicsEffect::deviceCoordinateTranslateCaching()
     int numRepaints = item->numRepaints;
 
     item->translate(10, 0);
-    QTest::qWait(50);
 
-    QVERIFY(item->numRepaints == numRepaints);
+    QTRY_VERIFY(item->numRepaints == numRepaints);
 }
 
 void tst_QGraphicsEffect::inheritOpacity()
@@ -588,7 +580,6 @@ void tst_QGraphicsEffect::inheritOpacity()
     int numRepaints = item->numRepaints;
 
     rectItem->setOpacity(1);
-    QTest::qWait(50);
 
     // item should have been rerendered due to opacity changing
     QTRY_VERIFY(item->numRepaints > numRepaints);
@@ -655,6 +646,33 @@ void tst_QGraphicsEffect::childrenVisibilityShouldInvalidateCache()
     QApplication::processEvents();
     //a new child appears we need to redraw the effect.
     QCOMPARE(parent.nbPaint, 3);
+}
+
+void tst_QGraphicsEffect::prepareGeometryChangeInvalidateCache()
+{
+    MyGraphicsItem *item = new MyGraphicsItem;
+    item->resize(200, 200);
+
+    QGraphicsScene scene;
+    scene.addItem(item);
+
+    QGraphicsView view(&scene);
+    view.show();
+    QTest::qWaitForWindowShown(&view);
+    QTRY_COMPARE(item->nbPaint, 1);
+
+    item->nbPaint = 0;
+    item->setGraphicsEffect(new QGraphicsDropShadowEffect);
+    QTRY_COMPARE(item->nbPaint, 1);
+
+    item->nbPaint = 0;
+    item->resize(300, 300);
+    QTRY_COMPARE(item->nbPaint, 1);
+
+    item->nbPaint = 0;
+    item->setPos(item->pos() + QPointF(10, 10));
+    QTest::qWait(50);
+    QCOMPARE(item->nbPaint, 0);
 }
 
 QTEST_MAIN(tst_QGraphicsEffect)

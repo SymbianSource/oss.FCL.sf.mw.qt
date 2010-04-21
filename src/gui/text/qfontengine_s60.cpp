@@ -79,6 +79,31 @@ QByteArray QFontEngineS60Extensions::getSfntTable(uint tag) const
     return result;
 }
 
+bool QFontEngineS60Extensions::getSfntTableData(uint tag, uchar *buffer, uint *length) const
+{
+    if (!m_trueTypeExtension->HasTrueTypeTable(tag))
+        return false;
+
+    bool result = true;
+    TInt error = KErrNone;
+    TInt tableByteLength;
+    TAny *table =
+        q_check_ptr(m_trueTypeExtension->GetTrueTypeTable(error, tag, &tableByteLength));
+
+    if (error != KErrNone) {
+        return false;
+    } else if (*length > 0 && *length < tableByteLength) {
+        result = false; // Caller did not allocate enough memory
+    } else {
+        *length = tableByteLength;
+        if (buffer)
+            qMemCopy(buffer, table, tableByteLength);
+    }
+
+    m_trueTypeExtension->ReleaseTrueTypeTable(table);
+    return result;
+}
+
 const unsigned char *QFontEngineS60Extensions::cmap() const
 {
     if (!m_cmap) {
@@ -196,9 +221,11 @@ bool QFontEngineS60::stringToCMap(const QChar *characters, int len, QGlyphLayout
 
     HB_Glyph *g = glyphs->glyphs;
     const unsigned char* cmap = m_extensions->cmap();
+    const bool isRtl = (flags & QTextEngine::RightToLeft);
     for (int i = 0; i < len; ++i) {
         const unsigned int uc = getChar(characters, i, len);
-        *g++ = QFontEngine::getTrueTypeGlyphIndex(cmap, uc);
+        *g++ = QFontEngine::getTrueTypeGlyphIndex(cmap,
+        		isRtl ? QChar::mirroredChar(uc) : uc);
     }
 
     glyphs->numGlyphs = g - glyphs->glyphs;
@@ -216,8 +243,8 @@ void QFontEngineS60::recalcAdvances(QGlyphLayout *glyphs, QTextEngine::ShaperFla
     Q_UNUSED(flags);
     for (int i = 0; i < glyphs->numGlyphs; i++) {
         const glyph_metrics_t bbox = boundingBox_const(glyphs->glyphs[i]);
-        glyphs->advances_x[i] = glyphs->offsets[i].x = bbox.xoff;
-        glyphs->advances_y[i] = glyphs->offsets[i].y = bbox.yoff;
+        glyphs->advances_x[i] = bbox.xoff;
+        glyphs->advances_y[i] = bbox.yoff;
     }
 }
 
@@ -324,6 +351,11 @@ bool QFontEngineS60::canRender(const QChar *string, int len)
 QByteArray QFontEngineS60::getSfntTable(uint tag) const
 {
     return m_extensions->getSfntTable(tag);
+}
+
+bool QFontEngineS60::getSfntTableData(uint tag, uchar *buffer, uint *length) const
+{
+    return m_extensions->getSfntTableData(tag, buffer, length);
 }
 
 QFontEngine::Type QFontEngineS60::type() const
