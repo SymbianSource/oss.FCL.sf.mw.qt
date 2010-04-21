@@ -73,7 +73,6 @@
 # endif
 # include <private/qs60mainapplication_p.h>
 # include <centralrepository.h>
-# include "qs60mainappui.h"
 #endif
 
 #include "private/qstylesheetstyle_p.h"
@@ -534,14 +533,6 @@ void QSymbianControl::HandlePointerEvent(const TPointerEvent& pEvent)
 
     sendMouseEvent(receiver, type, globalPos, button, modifiers);
 }
-
-#ifdef Q_WS_S60
-void QSymbianControl::HandleStatusPaneSizeChange()
-{
-    QS60MainAppUi *s60AppUi = static_cast<QS60MainAppUi *>(S60->appUi());
-    s60AppUi->HandleStatusPaneSizeChange();
-}
-#endif
 
 void QSymbianControl::sendMouseEvent(
         QWidget *receiver,
