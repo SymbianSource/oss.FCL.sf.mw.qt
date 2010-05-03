@@ -384,6 +384,7 @@ private slots:
     void tabChangesFocus();
     void tabChangesFocus_data();
     void cacheMode();
+    void cacheMode2();
     void updateCachedItemAfterMove();
     void deviceTransform_data();
     void deviceTransform();
@@ -438,6 +439,8 @@ private slots:
     void QTBUG_6738_missingUpdateWithSetParent();
     void QTBUG_7714_fullUpdateDiscardingOpacityUpdate2();
     void QT_2653_fullUpdateDiscardingOpacityUpdate();
+    void QT_2649_focusScope();
+    void sortItemsWhileAdding();
 
 private:
     QList<QGraphicsItem *> paintedItems;
@@ -6822,6 +6825,9 @@ void tst_QGraphicsItem::cacheMode()
     QTRY_COMPARE(tester->repaints, 4);
     QCOMPARE(testerChild->repaints, 4);
     QCOMPARE(testerChild2->repaints, 3);
+    tester->resetTransform();
+    testerChild->resetTransform();
+    testerChild2->resetTransform();
 
     // Explicit update causes a repaint.
     tester->update(0, 0, 5, 5);
@@ -6895,23 +6901,24 @@ void tst_QGraphicsItem::cacheMode()
     // because the parent is rotated with a perspective.
     testerChild->setPos(1, 1);
     QTest::qWait(25);
-    QTRY_COMPARE(tester->repaints, 10);
+    QTRY_COMPARE(tester->repaints, 11);
     QCOMPARE(testerChild->repaints, 10);
     QCOMPARE(testerChild2->repaints, 5);
+    tester->resetTransform();
 
     // Make a huge item
     tester->setGeometry(QRectF(-4000, -4000, 8000, 8000));
     QTest::qWait(25);
-    QTRY_COMPARE(tester->repaints, 11);
-    QCOMPARE(testerChild->repaints, 10);
+    QTRY_COMPARE(tester->repaints, 12);
+    QCOMPARE(testerChild->repaints, 11);
     QCOMPARE(testerChild2->repaints, 5);
 
     // Move the large item - will cause a repaint as the
     // cache is clipped.
     tester->setPos(5, 0);
     QTest::qWait(25);
-    QTRY_COMPARE(tester->repaints, 12);
-    QCOMPARE(testerChild->repaints, 10);
+    QTRY_COMPARE(tester->repaints, 13);
+    QCOMPARE(testerChild->repaints, 11);
     QCOMPARE(testerChild2->repaints, 5);
 
     // Hiding and showing should invalidate the cache
@@ -6919,9 +6926,81 @@ void tst_QGraphicsItem::cacheMode()
     QTest::qWait(25);
     tester->show();
     QTest::qWait(25);
-    QTRY_COMPARE(tester->repaints, 13);
-    QCOMPARE(testerChild->repaints, 11);
+    QTRY_COMPARE(tester->repaints, 14);
+    QCOMPARE(testerChild->repaints, 12);
     QCOMPARE(testerChild2->repaints, 6);
+}
+
+void tst_QGraphicsItem::cacheMode2()
+{
+    QGraphicsScene scene(0, 0, 100, 100);
+    QGraphicsView view(&scene);
+    view.resize(150, 150);
+    view.show();
+    QApplication::setActiveWindow(&view);
+    QTest::qWaitForWindowShown(&view);
+
+    // Increase the probability of window activation
+    // not causing another repaint of test items.
+    QTest::qWait(50);
+
+    EventTester *tester = new EventTester;
+    scene.addItem(tester);
+    QTest::qWait(10);
+    QTRY_COMPARE(tester->repaints, 1);
+
+    // Switching from NoCache to NoCache (no repaint)
+    tester->setCacheMode(QGraphicsItem::NoCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 1);
+
+    // Switching from NoCache to DeviceCoordinateCache (no repaint)
+    tester->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 1);
+
+    // Switching from DeviceCoordinateCache to DeviceCoordinateCache (no repaint)
+    tester->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 1);
+
+    // Switching from DeviceCoordinateCache to NoCache (no repaint)
+    tester->setCacheMode(QGraphicsItem::NoCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 1);
+
+    // Switching from NoCache to ItemCoordinateCache (repaint)
+    tester->setCacheMode(QGraphicsItem::ItemCoordinateCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 2);
+
+    // Switching from ItemCoordinateCache to ItemCoordinateCache (no repaint)
+    tester->setCacheMode(QGraphicsItem::ItemCoordinateCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 2);
+
+    // Switching from ItemCoordinateCache to ItemCoordinateCache with different size (repaint)
+    tester->setCacheMode(QGraphicsItem::ItemCoordinateCache, QSize(100, 100));
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 3);
+
+    // Switching from ItemCoordinateCache to NoCache (repaint)
+    tester->setCacheMode(QGraphicsItem::NoCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 4);
+
+    // Switching from DeviceCoordinateCache to ItemCoordinateCache (repaint)
+    tester->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 4);
+    tester->setCacheMode(QGraphicsItem::ItemCoordinateCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 5);
+
+    // Switching from ItemCoordinateCache to DeviceCoordinateCache (repaint)
+    tester->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    QTest::qWait(50);
+    QTRY_COMPARE(tester->repaints, 6);
 }
 
 void tst_QGraphicsItem::updateCachedItemAfterMove()
@@ -10000,6 +10079,106 @@ void tst_QGraphicsItem::QTBUG_7714_fullUpdateDiscardingOpacityUpdate2()
 
     QTRY_COMPARE(origView.repaints, 1);
     QTRY_COMPARE(view.repaints, 1);
+}
+
+void tst_QGraphicsItem::QT_2649_focusScope()
+{
+    QGraphicsScene *scene = new QGraphicsScene;
+
+    QGraphicsRectItem *subFocusItem = new QGraphicsRectItem;
+    subFocusItem->setFlags(QGraphicsItem::ItemIsFocusable);
+    subFocusItem->setFocus();
+    QCOMPARE(subFocusItem->focusItem(), (QGraphicsItem *)subFocusItem);
+
+    QGraphicsRectItem *scope = new QGraphicsRectItem;
+    scope->setFlags(QGraphicsItem::ItemIsFocusable | QGraphicsItem::ItemIsFocusScope);
+    scope->setFocus();
+    subFocusItem->setParentItem(scope);
+    QCOMPARE(subFocusItem->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(subFocusItem->focusScopeItem(), (QGraphicsItem *)0);
+    QCOMPARE(scope->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(scope->focusScopeItem(), (QGraphicsItem *)subFocusItem);
+
+    QGraphicsRectItem *rootItem = new QGraphicsRectItem;
+    rootItem->setFlags(QGraphicsItem::ItemIsFocusable);
+    scope->setParentItem(rootItem);
+    QCOMPARE(rootItem->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(rootItem->focusScopeItem(), (QGraphicsItem *)0);
+    QCOMPARE(subFocusItem->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(subFocusItem->focusScopeItem(), (QGraphicsItem *)0);
+    QCOMPARE(scope->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(scope->focusScopeItem(), (QGraphicsItem *)subFocusItem);
+
+    scene->addItem(rootItem);
+
+    QEvent windowActivate(QEvent::WindowActivate);
+    qApp->sendEvent(scene, &windowActivate);
+    scene->setFocus();
+
+    QCOMPARE(rootItem->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(scope->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(subFocusItem->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(rootItem->focusScopeItem(), (QGraphicsItem *)0);
+    QCOMPARE(scope->focusScopeItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(subFocusItem->focusScopeItem(), (QGraphicsItem *)0);
+    QVERIFY(subFocusItem->hasFocus());
+
+    scope->hide();
+
+    QCOMPARE(rootItem->focusItem(), (QGraphicsItem *)0);
+    QCOMPARE(scope->focusItem(), (QGraphicsItem *)0);
+    QCOMPARE(subFocusItem->focusItem(), (QGraphicsItem *)0);
+    QCOMPARE(rootItem->focusScopeItem(), (QGraphicsItem *)0);
+    QCOMPARE(scope->focusScopeItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(subFocusItem->focusScopeItem(), (QGraphicsItem *)0);
+    QVERIFY(!subFocusItem->hasFocus());
+
+    scope->show();
+
+    QCOMPARE(rootItem->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(scope->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(subFocusItem->focusItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(rootItem->focusScopeItem(), (QGraphicsItem *)0);
+    QCOMPARE(scope->focusScopeItem(), (QGraphicsItem *)subFocusItem);
+    QCOMPARE(subFocusItem->focusScopeItem(), (QGraphicsItem *)0);
+    QVERIFY(subFocusItem->hasFocus());
+
+    // This should not crash
+    scope->hide();
+    delete scene;
+}
+
+class MyGraphicsItemWithItemChange : public QGraphicsWidget
+{
+public:
+    MyGraphicsItemWithItemChange(QGraphicsItem *parent = 0) : QGraphicsWidget(parent)
+    {}
+
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value)
+    {
+        if (change == QGraphicsItem::ItemSceneHasChanged) {
+            foreach (QGraphicsView *view, scene()->views()) {
+                //We trigger a sort of unindexed items in the BSP
+                view->sceneRect();
+            }
+        }
+        return QGraphicsWidget::itemChange(change, value);
+    }
+};
+
+void tst_QGraphicsItem::sortItemsWhileAdding()
+{
+    QGraphicsScene scene;
+    QGraphicsView view(&scene);
+    QGraphicsWidget grandGrandParent;
+    grandGrandParent.resize(200, 200);
+    scene.addItem(&grandGrandParent);
+    QGraphicsWidget grandParent;
+    grandParent.resize(200, 200);
+    QGraphicsWidget parent(&grandParent);
+    parent.resize(200, 200);
+    MyGraphicsItemWithItemChange item(&parent);
+    grandParent.setParentItem(&grandGrandParent);
 }
 
 QTEST_MAIN(tst_QGraphicsItem)

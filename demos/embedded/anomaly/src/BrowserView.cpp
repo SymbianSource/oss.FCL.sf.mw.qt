@@ -71,7 +71,7 @@ BrowserView::BrowserView(QWidget *parent)
     m_zoomLevels << 100;
     m_zoomLevels << 110 << 120 << 133 << 150 << 170 << 200 << 240 << 300;
 
-    initialize();
+    QTimer::singleShot(0, this, SLOT(initialize()));
 }
 
 void BrowserView::initialize()

@@ -125,7 +125,7 @@ SUBDIRS += \
 #           qhelpindexmodel \
 #           qhelpprojectdata \
            qhostaddress \
-           qhostinfo \
+#           qhostinfo \
            qhttp \
 #           qhttpnetworkreply \
 #           qhttpnetworkconnection \
@@ -255,7 +255,7 @@ SUBDIRS += \
            qsslcipher \
            qsslerror \
            qsslkey \
-           qsslsocket \
+#           qsslsocket \
            qstackedlayout \
            qstackedwidget \
            qstandarditem \
@@ -285,13 +285,13 @@ SUBDIRS += \
            qtablewidget \
            qtabwidget \
            qtcpserver \
-           qtcpsocket \
+#           qtcpsocket \
            qtemporaryfile \
            qtessellator \
            qtextblock \
            qtextboundaryfinder \
            qtextbrowser \
-           qtextcodec \
+#           #qtextcodec \
            qtextcursor \
            qtextdocument \
            qtextdocumentfragment \

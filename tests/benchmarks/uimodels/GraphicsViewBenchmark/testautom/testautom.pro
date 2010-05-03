@@ -40,3 +40,8 @@ DEPLOYMENT_PLUGIN += resourcemonplugin
 
 OTHER_FILES = testscript.js \
     testautom.pri
+
+# Causes crashing on Symbian if paging is enabled.
+symbian {
+    MMP_RULES -= PAGED
+}

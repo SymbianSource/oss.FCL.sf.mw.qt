@@ -669,7 +669,8 @@ CFG_QWS_FREETYPE=no
 CFG_LIBFREETYPE=no
 CFG_SQL_AVAILABLE=
 QT_DEFAULT_BUILD_PARTS="libs tools examples demos docs translations"
-CFG_BUILD_PARTS=""
+#QTP change for lRelease app. Need for Symbian
+CFG_BUILD_PARTS="translations"
 CFG_NOBUILD_PARTS=""
 CFG_RELEASE_QMAKE=no
 CFG_PHONON=yes
@@ -7559,7 +7560,7 @@ for part in $CFG_BUILD_PARTS; do
     case "$part" in
     tools) PART_ROOTS="$PART_ROOTS tools" ;;
     libs) PART_ROOTS="$PART_ROOTS src" ;;
-    translations) PART_ROOTS="$PART_ROOTS tools/linguist/lrelease translations" ;;
+    translations) PART_ROOTS="$PART_ROOTS tools/linguist/lrelease" ;;
     examples) PART_ROOTS="$PART_ROOTS examples demos" ;;
     *) ;;
     esac

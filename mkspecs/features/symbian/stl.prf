@@ -30,4 +30,3 @@ exists($${EPOCROOT}epoc32/release/armv5/urel/libstdcpp.dll)|exists($${EPOCROOT}e
 
 LIBS *= $$STL_LIB
 MMP_RULES *= $$STL_MMP_RULE
-

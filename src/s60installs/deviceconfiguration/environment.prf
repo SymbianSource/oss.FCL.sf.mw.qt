@@ -3,5 +3,3 @@ CONFIG *= symbian_no_export_sqlite
 
 # STL autodetection in clean builds not working, specify it explicitly
 CONFIG *= stl
-
-CONFIG *= headerexport

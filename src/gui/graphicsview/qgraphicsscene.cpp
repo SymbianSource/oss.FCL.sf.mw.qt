@@ -4285,6 +4285,7 @@ static void _q_paintIntoCache(QPixmap *pix, QGraphicsItem *item, const QRegion &
     if (!subPix.isNull()) {
         // Blit the subpixmap into the main pixmap.
         pixmapPainter.begin(pix);
+        pixmapPainter.setCompositionMode(QPainter::CompositionMode_Source);
         pixmapPainter.setClipRegion(pixmapExposed);
         pixmapPainter.drawPixmap(br.topLeft(), subPix);
         pixmapPainter.end();
@@ -4450,6 +4451,8 @@ void QGraphicsScenePrivate::drawItemHelper(QGraphicsItem *item, QPainter *painte
         }
 
         // Create or reuse offscreen pixmap, possibly scroll/blit from the old one.
+        // If the world transform is rotated we always recreate the cache to avoid
+        // wrong blending.
         bool pixModified = false;
         QGraphicsItemCache::DeviceData *deviceData = &itemCache->deviceData[widget];
         bool invertable = true;
@@ -4457,7 +4460,9 @@ void QGraphicsScenePrivate::drawItemHelper(QGraphicsItem *item, QPainter *painte
         if (invertable)
             diff *= painter->worldTransform();
         deviceData->lastTransform = painter->worldTransform();
-        if (!invertable || diff.type() > QTransform::TxTranslate) {
+        if (!invertable
+            || diff.type() > QTransform::TxTranslate
+            || painter->worldTransform().type() > QTransform::TxScale) {
             pixModified = true;
             itemCache->allExposed = true;
             itemCache->exposed.clear();
@@ -4714,31 +4719,18 @@ void QGraphicsScenePrivate::drawSubtreeRecursive(QGraphicsItem *item, QPainter *
         if (sourced->currentCachedSystem() != Qt::LogicalCoordinates
             && sourced->lastEffectTransform != painter->worldTransform())
         {
-            bool unclipped = false;
             if (sourced->lastEffectTransform.type() <= QTransform::TxTranslate
                 && painter->worldTransform().type() <= QTransform::TxTranslate)
             {
-                QRectF itemRect = item->boundingRect();
-                if (!item->d_ptr->children.isEmpty())
-                    itemRect |= item->childrenBoundingRect();
+                QRectF sourceRect = sourced->boundingRect(Qt::DeviceCoordinates);
+                QRect effectRect = sourced->paddedEffectRect(Qt::DeviceCoordinates, sourced->currentCachedMode(), sourceRect);
 
-                QRectF oldSourceRect = sourced->lastEffectTransform.mapRect(itemRect);
-                QRectF newSourceRect = painter->worldTransform().mapRect(itemRect);
-
-                QRect oldEffectRect = sourced->paddedEffectRect(sourced->currentCachedSystem(), sourced->currentCachedMode(), oldSourceRect);
-                QRect newEffectRect = sourced->paddedEffectRect(sourced->currentCachedSystem(), sourced->currentCachedMode(), newSourceRect);
-
-                QRect deviceRect(0, 0, painter->device()->width(), painter->device()->height());
-                if (deviceRect.contains(oldEffectRect) && deviceRect.contains(newEffectRect)) {
-                    sourced->setCachedOffset(newEffectRect.topLeft());
-                    unclipped = true;
-                }
+                sourced->setCachedOffset(effectRect.topLeft());
+            } else {
+                sourced->invalidateCache(QGraphicsEffectSourcePrivate::TransformChanged);
             }
 
             sourced->lastEffectTransform = painter->worldTransform();
-
-            if (!unclipped)
-                sourced->invalidateCache(QGraphicsEffectSourcePrivate::TransformChanged);
         }
 
         item->d_ptr->graphicsEffect->draw(painter);

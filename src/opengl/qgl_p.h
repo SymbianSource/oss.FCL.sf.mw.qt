@@ -80,13 +80,19 @@
 #define q_vertexTypeEnum GL_FIXED
 #endif //QT_OPENGL_ES_1_CL
 
-#ifdef QT_OPENGL_ES
+#if defined(QT_OPENGL_ES) || defined(QT_OPENGL_ES_2)
 QT_BEGIN_INCLUDE_NAMESPACE
+
 #if defined(QT_OPENGL_ES_2)
-#include <EGL/egl.h>
-#else
-#include <GLES/egl.h>
+#   include <GLES2/gl2.h>
 #endif
+
+#if defined(QT_GLES_EGL)
+#   include <GLES/egl.h>
+#else
+#   include <EGL/egl.h>
+#endif
+
 QT_END_INCLUDE_NAMESPACE
 #endif
 
@@ -572,7 +578,7 @@ inline GLenum qt_gl_preferredTextureTarget()
 }
 
 // One resource per group of shared contexts.
-class Q_AUTOTEST_EXPORT QGLContextResource
+class Q_OPENGL_EXPORT QGLContextResource
 {
 public:
     typedef void (*FreeFunc)(void *);

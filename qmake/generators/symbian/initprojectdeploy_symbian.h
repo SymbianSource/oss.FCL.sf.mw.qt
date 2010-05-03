@@ -51,6 +51,8 @@
 #include <stdlib.h>
 
 #define PLUGIN_STUB_DIR "qmakepluginstubs"
+#define ROM_DEPLOYMENT_PLATFORM "rom"
+#define EMULATOR_DEPLOYMENT_PLATFORM "emulator"
 
 struct CopyItem
 {
@@ -71,6 +73,5 @@ extern void initProjectDeploySymbian(QMakeProject* project,
                               const QString &build,
                               QStringList& generatedDirs,
                               QStringList& generatedFiles);
-//:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
-extern	void writeSbsDeploymentList(const DeploymentList& depList, QTextStream& t);
+
 #endif // INITPROJECTDEPLOYSYMBIAN_H

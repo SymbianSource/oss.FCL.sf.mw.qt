@@ -58,9 +58,7 @@ protected:
     virtual void appendAbldTempDirs(QStringList& sysincspaths, QString includepath);
 
     void writeStoreBuildTarget(QTextStream &t);
-
-    //:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
-    bool writeDeploymentTargets(QTextStream &t, bool isRelease = false);
+    bool writeDeploymentTargets(QTextStream &t, bool isRom);
 
 public:
 

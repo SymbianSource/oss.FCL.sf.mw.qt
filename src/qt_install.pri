@@ -7,13 +7,6 @@ target.path=$$[QT_INSTALL_LIBS]
 INSTALLS += target
 
 #headers
-!symbian: {
-    HEADER_INSTALL_PATH = $$[QT_INSTALL_HEADERS]
-} else {
-    # :QTP: QT_BOOTSTRAPPED qmake doesn't seem to take care of -headerdir 
-    HEADER_INSTALL_PATH = /epoc32/include/mw
-}
-
 qt_install_headers {
     INSTALL_HEADERS = $$SYNCQT.HEADER_FILES
     equals(TARGET, QtCore) {
@@ -21,34 +14,21 @@ qt_install_headers {
        INSTALL_HEADERS *= $$QT_BUILD_TREE/src/corelib/global/qconfig.h \
                           $$QT_SOURCE_TREE/src/corelib/arch/$$QT_ARCH/arch
     }
-    # :QTP: avoid duplicate exports for qconfig.h and qxmlstream.h
-    symbian: {
-        equals(TARGET, QtXml) {
-            INSTALL_HEADERS -= ../xml/stream/qxmlstream.h
-        }
-        equals(TARGET, QtCore) {
-            INSTALL_HEADERS -= $$QT_BUILD_TREE/src/corelib/global/qconfig.h
-        }
-        equals(TARGET, phonon) {
-            INSTALL_HEADERS -= ../../include/phonon_compat/Phonon/Phonon \
-                               ../../include/phonon/Phonon/Phonon
-        }
-    }
 
     equals(TARGET, phonon) {
-        class_headers.path = $$HEADER_INSTALL_PATH/$$TARGET
+        class_headers.path = $$[QT_INSTALL_HEADERS]/$$TARGET
     } else {
         flat_headers.files = $$INSTALL_HEADERS
-        flat_headers.path = $$HEADER_INSTALL_PATH/Qt
+        flat_headers.path = $$[QT_INSTALL_HEADERS]/Qt
         INSTALLS += flat_headers
 
-        class_headers.path = $$HEADER_INSTALL_PATH/$$TARGET
+        class_headers.path = $$[QT_INSTALL_HEADERS]/$$TARGET
     }
     class_headers.files = $$SYNCQT.HEADER_CLASSES
     INSTALLS += class_headers
 
     targ_headers.files = $$INSTALL_HEADERS
-    targ_headers.path = $$HEADER_INSTALL_PATH/$$TARGET
+    targ_headers.path = $$[QT_INSTALL_HEADERS]/$$TARGET
     INSTALLS += targ_headers
 
     contains(QT_CONFIG,private_tests) {

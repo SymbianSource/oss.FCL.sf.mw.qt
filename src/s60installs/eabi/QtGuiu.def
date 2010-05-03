@@ -1818,7 +1818,7 @@ EXPORTS
 	_ZN12QLineControl17_q_deleteSelectedEv @ 1817 NONAME
 	_ZN12QLineControl17processMouseEventEP11QMouseEvent @ 1818 NONAME
 	_ZN12QLineControl17resetInputContextEv @ 1819 NONAME
-	_ZN12QLineControl17updateDisplayTextEv @ 1820 NONAME
+	_ZN12QLineControl17updateDisplayTextEv @ 1820 NONAME ABSENT
 	_ZN12QLineControl18displayTextChangedERK7QString @ 1821 NONAME
 	_ZN12QLineControl18removeSelectedTextEv @ 1822 NONAME
 	_ZN12QLineControl19_q_clipboardChangedEv @ 1823 NONAME
@@ -4663,7 +4663,7 @@ EXPORTS
 	_ZN20QGraphicsItemPrivate12resolveDepthEv @ 4662 NONAME
 	_ZN20QGraphicsItemPrivate12setPosHelperERK7QPointF @ 4663 NONAME
 	_ZN20QGraphicsItemPrivate13clearSubFocusEP13QGraphicsItem @ 4664 NONAME
-	_ZN20QGraphicsItemPrivate14setFocusHelperEN2Qt11FocusReasonEb @ 4665 NONAME
+	_ZN20QGraphicsItemPrivate14setFocusHelperEN2Qt11FocusReasonEb @ 4665 NONAME ABSENT
 	_ZN20QGraphicsItemPrivate15resetFocusProxyEv @ 4666 NONAME
 	_ZN20QGraphicsItemPrivate16setEnabledHelperEbbb @ 4667 NONAME
 	_ZN20QGraphicsItemPrivate16setVisibleHelperEbbb @ 4668 NONAME
@@ -11805,4 +11805,11 @@ EXPORTS
 	_ZN24QImagePixmapCleanupHooks34executePixmapDataModificationHooksEP11QPixmapData @ 11804 NONAME
 	_ZN9QS60Style10timerEventEP11QTimerEvent @ 11805 NONAME
 	_ZN9QS60Style11eventFilterEP7QObjectP6QEvent @ 11806 NONAME
-	_ZN11QEglContext7displayEv @ 11807 NONAME
+	_ZN13QFontDatabase25removeAllApplicationFontsEv @ 11807 NONAME
+	_ZN11QEglContext7displayEv @ 11808 NONAME
+    _ZN20QGraphicsItemPrivate10resetWidthEv @ 11809 NONAME
+    _ZN20QGraphicsItemPrivate11resetHeightEv @ 11810 NONAME
+    _ZN20QGraphicsItemPrivate8setWidthEf @ 11811 NONAME
+    _ZN20QGraphicsItemPrivate9setHeightEf @ 11812 NONAME
+    _ZNK20QGraphicsItemPrivate5widthEv @ 11813 NONAME
+    _ZNK20QGraphicsItemPrivate6heightEv @ 11814 NONAME

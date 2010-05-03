@@ -2221,9 +2221,7 @@ QStringList QCoreApplication::libraryPaths()
             while (err == KErrNone) {
                 QString foundDir(reinterpret_cast<const QChar *>(finder.File().Ptr()),
                                  finder.File().Length());
-                /* :QTP: Disabled because of severe braindead OpenC regression of returning -1 for certain directories 
                 foundDir = QDir(foundDir).canonicalPath();
-                */
                 if (!app_libpaths->contains(foundDir))
                     app_libpaths->append(foundDir);
                 err = finder.Find();

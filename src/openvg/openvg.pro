@@ -3,7 +3,6 @@ QT += core \
     gui
 
 DEFINES+=QT_BUILD_OPENVG_LIB
-DEFINES += QVG_SCISSOR_CLIP
 
 contains(QT_CONFIG, shivavg) {
     DEFINES += QVG_NO_DRAW_GLYPHS
@@ -33,6 +32,8 @@ contains(QT_CONFIG, egl) {
         qwindowsurface_vg.cpp \
         qwindowsurface_vgegl.cpp
 }
+
+symbian: DEFINES += QVG_RECREATE_ON_SIZE_CHANGE QVG_SCISSOR_CLIP 
 
 include(../qbase.pri)
 

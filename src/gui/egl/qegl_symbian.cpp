@@ -96,7 +96,7 @@ void QEglProperties::setPaintDeviceFormat(QPaintDevice *dev)
     if (devType == QInternal::Image)
         setPixelFormat(static_cast<QImage *>(dev)->format());
     else
-        setPixelFormat(QImage::Format_RGB32);
+        setPixelFormat(QImage::Format_ARGB32);
 }
 
 

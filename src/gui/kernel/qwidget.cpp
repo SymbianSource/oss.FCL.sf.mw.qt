@@ -118,6 +118,10 @@
 #include "private/qgraphicssystem_p.h"
 #include "private/qgesturemanager_p.h"
 
+#ifdef QT_KEYPAD_NAVIGATION
+#include "qtabwidget.h" // Needed in inTabWidget()
+#endif // QT_KEYPAD_NAVIGATION
+
 // widget/widget data creation count
 //#define QWIDGET_EXTRA_DEBUG
 //#define ALIEN_DEBUG
@@ -6119,6 +6123,8 @@ void QWidget::setFocus(Qt::FocusReason reason)
             previousProxyFocus = topData->proxyWidget->widget()->focusWidget();
             if (previousProxyFocus && previousProxyFocus->focusProxy())
                 previousProxyFocus = previousProxyFocus->focusProxy();
+            if (previousProxyFocus == this && !topData->proxyWidget->d_func()->proxyIsGivingFocus)
+                return;
         }
     }
 #endif
@@ -7531,6 +7537,23 @@ void QWidgetPrivate::hideChildren(bool spontaneous)
         QWidget *widget = qobject_cast<QWidget*>(childList.at(i));
         if (!widget || widget->isWindow() || widget->testAttribute(Qt::WA_WState_Hidden))
             continue;
+#ifdef QT_MAC_USE_COCOA
+        // Before doing anything we need to make sure that we don't leave anything in a non-consistent state.
+        // When hiding a widget we need to make sure that no mouse_down events are active, because
+        // the mouse_up event will never be received by a hidden widget or one of its descendants.
+        // The solution is simple, before going through with this we check if there are any mouse_down events in
+        // progress, if so we check if it is related to this widget or not. If so, we just reset the mouse_down and
+        // then we continue.
+        // In X11 and Windows we send a mouse_release event, however we don't do that here because we were already
+        // ignoring that from before. I.e. Carbon did not send the mouse release event, so we will not send the
+        // mouse release event. There are two ways to interpret this:
+        // 1. If we don't send the mouse release event, the widget might get into an inconsistent state, i.e. it
+        // might be waiting for a release event that will never arrive.
+        // 2. If we send the mouse release event, then the widget might decide to trigger an action that is not
+        // supposed to trigger because it is not visible.
+        if(widget == qt_button_down)
+            qt_button_down = 0;
+#endif // QT_MAC_USE_COCOA
         if (spontaneous)
             widget->setAttribute(Qt::WA_Mapped, false);
         else
@@ -7925,13 +7948,16 @@ inline void setDisabledStyle(QWidget *w, bool setStyle)
     // set/reset WS_DISABLED style.
     if(w && w->isWindow() && w->isVisible() && w->isEnabled()) {
         LONG dwStyle = GetWindowLong(w->winId(), GWL_STYLE);
+        LONG newStyle = dwStyle;
         if (setStyle)
-            dwStyle |= WS_DISABLED;
+            newStyle |= WS_DISABLED;
         else
-            dwStyle &= ~WS_DISABLED;
-        SetWindowLong(w->winId(), GWL_STYLE, dwStyle);
-        // we might need to repaint in some situations (eg. menu)
-        w->repaint();
+            newStyle &= ~WS_DISABLED;
+        if (newStyle != dwStyle) {
+            SetWindowLong(w->winId(), GWL_STYLE, newStyle);
+            // we might need to repaint in some situations (eg. menu)
+            w->repaint();
+        }
     }
 }
 #endif
@@ -11625,6 +11651,45 @@ QWidget *QWidgetPrivate::widgetInNavigationDirection(Direction direction)
         }
     }
     return targetWidget;
+}
+
+/*!
+    \internal
+
+    Tells us if it there is currently a reachable widget by keypad navigation in
+    a certain \a orientation.
+    If no navigation is possible, occuring key events in that \a orientation may
+    be used to interact with the value in the focussed widget, even though it
+    currently has not the editFocus.
+
+    \sa QWidgetPrivate::widgetInNavigationDirection(), QWidget::hasEditFocus()
+*/
+bool QWidgetPrivate::canKeypadNavigate(Qt::Orientation orientation)
+{
+    return orientation == Qt::Horizontal?
+            (QWidgetPrivate::widgetInNavigationDirection(QWidgetPrivate::DirectionEast)
+                    || QWidgetPrivate::widgetInNavigationDirection(QWidgetPrivate::DirectionWest))
+            :(QWidgetPrivate::widgetInNavigationDirection(QWidgetPrivate::DirectionNorth)
+                    || QWidgetPrivate::widgetInNavigationDirection(QWidgetPrivate::DirectionSouth));
+}
+/*!
+    \internal
+
+    Checks, if the \a widget is inside a QTabWidget. If is is inside
+    one, left/right key events will be used to switch between tabs in keypad
+    navigation. If there is no QTabWidget, the horizontal key events can be used
+to
+    interact with the value in the focussed widget, even though it currently has
+    not the editFocus.
+
+    \sa QWidget::hasEditFocus()
+*/
+bool QWidgetPrivate::inTabWidget(QWidget *widget)
+{
+    for (QWidget *tabWidget = widget; tabWidget; tabWidget = tabWidget->parentWidget())
+        if (qobject_cast<const QTabWidget*>(tabWidget))
+            return true;
+    return false;
 }
 #endif
 

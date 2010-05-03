@@ -25,3 +25,8 @@ symbian: {
 }
 
 DEPLOYMENT_PLUGIN += resourcemonplugin
+
+# Causes crashing on Symbian if paging is enabled.
+symbian {
+    MMP_RULES -= PAGED
+}

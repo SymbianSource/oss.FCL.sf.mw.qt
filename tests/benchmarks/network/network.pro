@@ -1,5 +1,5 @@
 TEMPLATE = subdirs
 SUBDIRS = \ 
         access \
-        kernel \
+#        kernel \
         socket

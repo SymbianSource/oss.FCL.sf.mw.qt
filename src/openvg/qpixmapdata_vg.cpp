@@ -39,15 +39,16 @@
 **
 ****************************************************************************/
 
-#include "../src/gui/egl/qegl_p.h"
 #include "qpixmapdata_vg_p.h"
 #include "qpaintengine_vg_p.h"
 #include <QtGui/private/qdrawhelper_p.h>
 #include "qvg_p.h"
 #include "qvgimagepool_p.h"
 
+#if defined(Q_OS_SYMBIAN)
 #include <private/qt_s60_p.h>
 #include <fbs.h>
+#endif
 #ifdef QT_SYMBIAN_SUPPORTS_SGIMAGE
 #include <sgresource/sgimage.h>
 typedef EGLImageKHR (*pfnEglCreateImageKHR)(EGLDisplay, EGLContext, EGLenum, EGLClientBuffer, EGLint*);
@@ -465,13 +466,9 @@ void QVGPixmapData::cleanup()
 
 void QVGPixmapData::fromNativeType(void* pixmap, NativeType type)
 {
-#if defined(QT_SYMBIAN_SUPPORTS_SGIMAGE) && !defined(QT_NO_EGL)
     if (type == QPixmapData::SgImage && pixmap) {
+#if defined(QT_SYMBIAN_SUPPORTS_SGIMAGE) && !defined(QT_NO_EGL)
         RSgImage *sgImage = reinterpret_cast<RSgImage*>(pixmap);
-        // when "0" used as argument then
-        // default display, context are used
-        if (!context)
-            context = qt_vg_create_context(0, QInternal::Pixmap);
 
         destroyImages();
         prevSize = QSize();
@@ -510,7 +507,7 @@ void QVGPixmapData::fromNativeType(void* pixmap, NativeType type)
         }
 
         const EGLint KEglImageAttribs[] = {EGL_IMAGE_PRESERVED_SYMBIAN, EGL_TRUE, EGL_NONE};
-        EGLImageKHR eglImage = eglCreateImageKHR(context->display(),
+        EGLImageKHR eglImage = eglCreateImageKHR(QEglContext::display(),
                 EGL_NO_CONTEXT,
                 EGL_NATIVE_PIXMAP_KHR,
                 (EGLClientBuffer)sgImage,
@@ -541,6 +538,7 @@ void QVGPixmapData::fromNativeType(void* pixmap, NativeType type)
         // release stuff
         eglDestroyImageKHR(QEglContext::display(), eglImage);
         driver.Close();
+#endif
     } else if (type == QPixmapData::FbsBitmap) {
         CFbsBitmap *bitmap = reinterpret_cast<CFbsBitmap*>(pixmap);
 
@@ -586,16 +584,12 @@ void QVGPixmapData::fromNativeType(void* pixmap, NativeType type)
         if(deleteSourceBitmap)
             delete bitmap;
     }
-#else
-    Q_UNUSED(pixmap);
-    Q_UNUSED(type);
-#endif
 }
 
 void* QVGPixmapData::toNativeType(NativeType type)
 {
-#if defined(QT_SYMBIAN_SUPPORTS_SGIMAGE) && !defined(QT_NO_EGL)
     if (type == QPixmapData::SgImage) {
+#if defined(QT_SYMBIAN_SUPPORTS_SGIMAGE) && !defined(QT_NO_EGL)
         toVGImage();
 
         if (!isValid() || vgImage == VG_INVALID_HANDLE)
@@ -630,7 +624,7 @@ void* QVGPixmapData::toNativeType(NativeType type)
         }
 
         const EGLint KEglImageAttribs[] = {EGL_IMAGE_PRESERVED_SYMBIAN, EGL_TRUE, EGL_NONE};
-        EGLImageKHR eglImage = eglCreateImageKHR(context->display(),
+        EGLImageKHR eglImage = eglCreateImageKHR(QEglContext::display(),
                 EGL_NO_CONTEXT,
                 EGL_NATIVE_PIXMAP_KHR,
                 (EGLClientBuffer)sgImage,
@@ -662,6 +656,7 @@ void* QVGPixmapData::toNativeType(NativeType type)
         eglDestroyImageKHR(QEglContext::display(), eglImage);
         driver.Close();
         return reinterpret_cast<void*>(sgImage);
+#endif
     } else if (type == QPixmapData::FbsBitmap) {
         CFbsBitmap *bitmap = q_check_ptr(new CFbsBitmap);
 
@@ -683,10 +678,7 @@ void* QVGPixmapData::toNativeType(NativeType type)
 
         return reinterpret_cast<void*>(bitmap);
     }
-#else
-    Q_UNUSED(type);
     return 0;
-#endif
 }
 #endif //Q_OS_SYMBIAN
 

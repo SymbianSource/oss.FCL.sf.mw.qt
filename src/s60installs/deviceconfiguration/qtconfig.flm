@@ -11,6 +11,7 @@ QT_ROOT:=../../..
 TARGETDIR:=$(EPOCROOT)/$(INSTALLPATH)
 SOURCEDIR:=$(EXTENSION_ROOT)/$(QT_ROOT)/bin
 TOOLSSRCDIR:=$(EXTENSION_ROOT)/$(QT_ROOT)/src/tools
+LANGUAGETOOLSDIR:=$(EXTENSION_ROOT)/$(QT_ROOT)/tools/linguist
 CONFIGURE_APP:=configure$(DOTEXE)
 
 $(call makepath,$(TARGETDIR))
@@ -25,7 +26,7 @@ PLATFORM:=$(PLATFORM.WIN32)
 endif
 
 TARGET_TOOLS:=$(TARGETDIR)/qmake$(DOTEXE) $(TARGETDIR)/moc$(DOTEXE) $(TARGETDIR)/rcc$(DOTEXE) $(TARGETDIR)/uic$(DOTEXE) $(TARGETDIR)/lrelease$(DOTEXE)
-QT_TOOLS:= $(TOOLSSRCDIR)/uic $(TOOLSSRCDIR)/moc $(TOOLSSRCDIR)/rcc
+QT_TOOLS:= $(TOOLSSRCDIR)/uic $(TOOLSSRCDIR)/moc $(TOOLSSRCDIR)/rcc $(LANGUAGETOOLSDIR)/lrelease
 SOURCE_TOOLS:=$(SOURCEDIR)/qmake$(DOTEXE) $(SOURCEDIR)/moc$(DOTEXE) $(SOURCEDIR)/rcc$(DOTEXE) $(SOURCEDIR)/uic$(DOTEXE) $(SOURCEDIR)/lrelease$(DOTEXE)
 
 define QtConfiguration
@@ -57,9 +58,12 @@ endif
 
 $(SOURCEDIR)/qmake$(DOTEXE): $(EXTENSION_ROOT)/$(QT_ROOT)/$(CONFIGURE_APP)
 	$(call startrule,qtconf) \
-	cd $(EXTENSION_ROOT)/$(QT_ROOT) && \
-	$(EXTENSION_ROOT)/$(QT_ROOT)/$(CONFIGURE_APP) -platform $(PLATFORM) -xplatform $(XPLATFORM) $(OPTIONS) \
+	cd $(EXTENSION_ROOT)/$(QT_ROOT) && unset INCLUDE && unset LIB && $(EXTENSION_ROOT)/$(QT_ROOT)/$(CONFIGURE_APP) -platform $(PLATFORM) -xplatform $(XPLATFORM) $(OPTIONS) \
 	$(call endrule,qtconf)
+	$(call startrule,syncqt) \
+	cd $(EXTENSION_ROOT)/$(QT_ROOT)/bin/ && \
+	perl syncqt -base-dir $(EXTENSION_ROOT)/$(QT_ROOT) -copy -oneway -outdir $(EPOCROOT)/epoc32/include/ -outsubdir mw
+	$(call endrule,syncqt)
 	$(call startrule,mkspecexport) \
 	$(GNUCP) -R $(EXTENSION_ROOT)/$(QT_ROOT)/mkspecs $(TARGETDIR)
 	$(call endrule,mkspecexport)

@@ -59,15 +59,11 @@
 #define FINALIZE_TARGET "finalize"
 #define GENERATED_SOURCES_TARGET "generated_sources"
 #define ALL_SOURCE_DEPS_TARGET "all_source_deps"
-//:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
 #define DEPLOYMENT_TARGET "deployment"
 #define DEPLOYMENT_CLEAN_TARGET "deployment_clean"
 #define WINSCW_DEPLOYMENT_TARGET "winscw_deployment"
 #define WINSCW_DEPLOYMENT_CLEAN_TARGET "winscw_deployment_clean"
-/* :QTP:QTPROD-155: Don't write .make.cache during the compilation, it causes dependency problems in
- * the parallel build clusters
- */
-#define STORE_BUILD_TARGET ""
+#define STORE_BUILD_TARGET "store_build"
 
 SymbianAbldMakefileGenerator::SymbianAbldMakefileGenerator() : SymbianMakefileGenerator() { }
 SymbianAbldMakefileGenerator::~SymbianAbldMakefileGenerator() { }
@@ -119,24 +115,23 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
         QString cleanDepsWinscw;
         QString finalDepsWinscw;
         QStringList wrapperTargets;
-        //:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
         if (deploymentOnly) {
             buildDeps.append(STORE_BUILD_TARGET);
             cleanDeps.append(DEPLOYMENT_CLEAN_TARGET);
-            cleanDepsWinscw.append(WINSCW_DEPLOYMENT_CLEAN_TARGET);
+            cleanDepsWinscw.append(WINSCW_DEPLOYMENT_CLEAN_TARGET " " DEPLOYMENT_CLEAN_TARGET);
             finalDeps.append(DEPLOYMENT_TARGET);
-            finalDepsWinscw.append(WINSCW_DEPLOYMENT_TARGET);
+            finalDepsWinscw.append(WINSCW_DEPLOYMENT_TARGET " " DEPLOYMENT_TARGET);
             wrapperTargets << WINSCW_DEPLOYMENT_TARGET
-				<< WINSCW_DEPLOYMENT_CLEAN_TARGET
-				<< DEPLOYMENT_TARGET 
-                << DEPLOYMENT_CLEAN_TARGET 
+                << WINSCW_DEPLOYMENT_CLEAN_TARGET
+                << DEPLOYMENT_TARGET
+                << DEPLOYMENT_CLEAN_TARGET
                 << STORE_BUILD_TARGET;
         } else {
             buildDeps.append(CREATE_TEMPS_TARGET " " PRE_TARGETDEPS_TARGET " " STORE_BUILD_TARGET);
             cleanDeps.append(EXTENSION_CLEAN " " DEPLOYMENT_CLEAN_TARGET);
-            cleanDepsWinscw.append(EXTENSION_CLEAN " " WINSCW_DEPLOYMENT_CLEAN_TARGET);
+            cleanDepsWinscw.append(EXTENSION_CLEAN " " WINSCW_DEPLOYMENT_CLEAN_TARGET " " DEPLOYMENT_CLEAN_TARGET);
             finalDeps.append(FINALIZE_TARGET " " DEPLOYMENT_TARGET);
-            finalDepsWinscw.append(FINALIZE_TARGET " " WINSCW_DEPLOYMENT_TARGET);
+            finalDepsWinscw.append(FINALIZE_TARGET " " WINSCW_DEPLOYMENT_TARGET " " DEPLOYMENT_TARGET);
             wrapperTargets << PRE_TARGETDEPS_TARGET
                 << CREATE_TEMPS_TARGET
                 << EXTENSION_CLEAN
@@ -263,7 +258,7 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
     releasePlatforms.removeAll("winscw"); // No release for emulator
 
     QString testClause;
-    if (project->isActiveConfig("symbian_test"))
+    if (project->isActiveConfig(SYMBIAN_TEST_CONFIG))
         testClause = QLatin1String(" test");
     else
         testClause = QLatin1String("");
@@ -286,6 +281,8 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
     t << "DEL_FILE          = " << var("QMAKE_DEL_FILE") << endl;
     t << "DEL_DIR           = " << var("QMAKE_DEL_DIR") << endl;
     t << "MOVE              = " << var("QMAKE_MOVE") << endl;
+    t << "CHK_DIR_EXISTS    = " << var("QMAKE_CHK_DIR_EXISTS") << endl;
+    t << "MKDIR             = " << var("QMAKE_MKDIR") << endl;
     t << "XCOPY             = xcopy /d /f /h /r /y /i" << endl;
     t << "ABLD              = ABLD.BAT" << endl;
     t << "DEBUG_PLATFORMS   = " << debugPlatforms.join(" ") << endl;
@@ -450,16 +447,13 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
         qDeleteAll(subtargets);
     }
 
-    writeDeploymentTargets(t);
-    //:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
-	writeDeploymentTargets(t, true);
+    // Deploymend targets for both emulator and rom deployment
+    writeDeploymentTargets(t, false);
+    writeDeploymentTargets(t, true);
 
     writeSisTargets(t);
 
-    /* :QTP:QTPROD-155: Don't write .make.cache during the compilation, it causes dependency problems in
-     * the parallel build clusters
     writeStoreBuildTarget(t);
-    */
 
     generateDistcleanTargets(t);
 
@@ -500,33 +494,36 @@ void SymbianAbldMakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t,
     Q_UNUSED(iconTargetFile);
 }
 
-//:QTP:QTPROD-92 Deployment of plugins requires WINSCW build before ARM build
-bool SymbianAbldMakefileGenerator::writeDeploymentTargets(QTextStream &t, bool isRelease /*= false*/)
+bool SymbianAbldMakefileGenerator::writeDeploymentTargets(QTextStream &t, bool isRom)
 {
-    if (isRelease)
+    if (isRom)
         t << DEPLOYMENT_TARGET ":" << endl;
     else
         t << WINSCW_DEPLOYMENT_TARGET ":" << endl;
 
-    QString remoteTestPath = epocRoot() + QLatin1String( isRelease?"epoc32\\data\\z\\private\\":"epoc32\\winscw\\c\\private\\") 
-        + privateDirUid;   // default 4 OpenC; 4 all Symbian too
+    QString remoteTestPath = epocRoot()
+        + QLatin1String(isRom ? "epoc32\\data\\z\\private\\" : "epoc32\\winscw\\c\\private\\")
+        + privateDirUid;
     DeploymentList depList;
 
-    initProjectDeploySymbian(project, depList, remoteTestPath, false, QLatin1String(isRelease?"armv5":"winscw"), QLatin1String(isRelease?"urel":"udeb"), 
-        generatedDirs, generatedFiles);
+    initProjectDeploySymbian(project, depList, remoteTestPath, false,
+        QLatin1String(isRom ? ROM_DEPLOYMENT_PLATFORM : EMULATOR_DEPLOYMENT_PLATFORM),
+        QString(), generatedDirs, generatedFiles);
 
     if (depList.size())
         t << "\t-echo Deploying changed files..." << endl;
+
     for (int i = 0; i < depList.size(); ++i) {
         // Xcopy prompts for selecting file or directory if target doesn't exist,
         // and doesn't provide switch to force file selection. It does provide dir forcing, though,
         // so strip the last part of the destination.
-        t << "\t-$(XCOPY) \"" << depList.at(i).from << "\" \"" << depList.at(i).to.left(depList.at(i).to.lastIndexOf("\\") + 1) << "\"" << endl;
+        t << "\t-$(XCOPY) \"" << depList.at(i).from << "\" \""
+          << depList.at(i).to.left(depList.at(i).to.lastIndexOf("\\") + 1) << "\"" << endl;
     }
 
     t << endl;
 
-    if (isRelease)
+    if (isRom)
         t << DEPLOYMENT_CLEAN_TARGET ":" << endl;
     else
         t << WINSCW_DEPLOYMENT_CLEAN_TARGET ":" << endl;

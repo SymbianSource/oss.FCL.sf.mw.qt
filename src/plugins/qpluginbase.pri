@@ -17,5 +17,11 @@ wince*:LIBS += $$QMAKE_LIBS_GUI
 symbian: {
     TARGET.EPOCALLOWDLLDATA=1
     TARGET.CAPABILITY = All -Tcb
+    TARGET = $${TARGET}$${QT_LIBINFIX}
     load(armcc_warnings)
+
+    # load the environment specific feature definitions
+    exists($${EPOCROOT}epoc32/tools/qt/mkspecs/features/environment.prf) {
+        load($${EPOCROOT}epoc32/tools/qt/mkspecs/features/environment.prf)
+    }
 }
