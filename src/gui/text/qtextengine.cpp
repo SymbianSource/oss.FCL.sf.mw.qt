@@ -856,7 +856,7 @@ void QTextEngine::shapeLine(const QScriptLine &line)
     }
 }
 
-extern int qt_defaultDpiY(); // in qfont.cpp
+Q_GUI_EXPORT extern int qt_defaultDpiY(); // in qfont.cpp
 
 void QTextEngine::shapeText(int item) const
 {
@@ -1648,7 +1648,7 @@ glyph_metrics_t QTextEngine::boundingBox(int from,  int len) const
                 }
             }
 
-            glyph_t glyph = glyphs.glyphs[logClusters[pos + ilen - 1]];
+            glyph_t glyph = glyphs.glyphs[logClusters[ilen - 1]];
             glyph_metrics_t gi = fe->boundingBox(glyph);
             if (gi.isValid())
                 gm.width -= qRound(gi.xoff - gi.x - gi.width);
@@ -2495,7 +2495,7 @@ void QTextEngine::splitItem(int item, int pos) const
 //     qDebug("split at position %d itempos=%d", pos, item);
 }
 
-extern int qt_defaultDpiY();
+Q_GUI_EXPORT extern int qt_defaultDpiY();
 
 QFixed QTextEngine::calculateTabWidth(int item, QFixed x) const
 {

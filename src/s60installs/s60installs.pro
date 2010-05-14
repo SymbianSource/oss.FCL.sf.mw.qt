@@ -64,17 +64,14 @@ symbian: {
 
     qtlibraries.pkg_prerules = vendorinfo
     qtlibraries.pkg_prerules += "; Dependencies of Qt libraries"
-
-    # Comment the following dependencies out because it is not needed in MCL
-    
-    #qtlibraries.pkg_prerules += "(0x20013851), 1, 5, 1, {\"PIPS Installer\"}"
-    #contains(QT_CONFIG, openssl) | contains(QT_CONFIG, openssl-linked) {
-    #    qtlibraries.pkg_prerules += "(0x200110CB), 1, 5, 1, {\"Open C LIBSSL Common\"}"
-    #}
-    #contains(CONFIG, stl) {
-    #    qtlibraries.pkg_prerules += "(0x2000F866), 1, 0, 0, {\"Standard C++ Library Common\"}"
-    #}
-    #qtlibraries.pkg_prerules += "(0x2002af5f), 0, 5, 0, {\"sqlite3\"}"
+    qtlibraries.pkg_prerules += "(0x20013851), 1, 5, 1, {\"PIPS Installer\"}"
+    contains(QT_CONFIG, openssl) | contains(QT_CONFIG, openssl-linked) {
+        qtlibraries.pkg_prerules += "(0x200110CB), 1, 5, 1, {\"Open C LIBSSL Common\"}"
+    }
+    contains(CONFIG, stl) {
+        qtlibraries.pkg_prerules += "(0x2000F866), 1, 0, 0, {\"Standard C++ Library Common\"}"
+    }
+    qtlibraries.pkg_prerules += "(0x2002af5f), 0, 5, 0, {\"sqlite3\"}"
 
     !contains(QT_CONFIG, no-jpeg): imageformats_plugins.sources += qjpeg$${QT_LIBINFIX}.dll
     !contains(QT_CONFIG, no-gif):  imageformats_plugins.sources += qgif$${QT_LIBINFIX}.dll

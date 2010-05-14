@@ -7,7 +7,7 @@
 
 # FLM to convert .ts to .qm
 
-LRELEASE:=$(EPOCROOT)/epoc32/tools/qt/lrelease$(DOTEXE)
+LRELEASE:=$(EPOCROOT)/epoc32/tools/lrelease$(DOTEXE)
 #TSFILE:=$(EPOCROOT)$(TSFILE)
 #QMFILE:=$(EPOCROOT)$(QMFILE)
 

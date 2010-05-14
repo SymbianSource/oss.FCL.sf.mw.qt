@@ -11807,9 +11807,10 @@ EXPORTS
 	_ZN9QS60Style11eventFilterEP7QObjectP6QEvent @ 11806 NONAME
 	_ZN13QFontDatabase25removeAllApplicationFontsEv @ 11807 NONAME
 	_ZN11QEglContext7displayEv @ 11808 NONAME
-    _ZN20QGraphicsItemPrivate10resetWidthEv @ 11809 NONAME
-    _ZN20QGraphicsItemPrivate11resetHeightEv @ 11810 NONAME
-    _ZN20QGraphicsItemPrivate8setWidthEf @ 11811 NONAME
-    _ZN20QGraphicsItemPrivate9setHeightEf @ 11812 NONAME
-    _ZNK20QGraphicsItemPrivate5widthEv @ 11813 NONAME
-    _ZNK20QGraphicsItemPrivate6heightEv @ 11814 NONAME
+    _ZN20QGraphicsItemPrivate10resetWidthEv @ 11809 NONAME ABSENT
+    _ZN20QGraphicsItemPrivate11resetHeightEv @ 11810 NONAME ABSENT
+    _ZN20QGraphicsItemPrivate8setWidthEf @ 11811 NONAME ABSENT
+    _ZN20QGraphicsItemPrivate9setHeightEf @ 11812 NONAME ABSENT
+    _ZNK20QGraphicsItemPrivate5widthEv @ 11813 NONAME ABSENT
+    _ZNK20QGraphicsItemPrivate6heightEv @ 11814 NONAME ABSENT
+

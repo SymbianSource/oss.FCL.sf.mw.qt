@@ -9,6 +9,8 @@
 
 QT_ROOT:=../../..
 TARGETDIR:=$(EPOCROOT)/$(INSTALLPATH)
+QMAKEDIR:=$(EPOCROOT)/$(INSTALLPATH)/qt
+MKSPECDIR:=$(EPOCROOT)/$(INSTALLPATH)/qt
 SOURCEDIR:=$(EXTENSION_ROOT)/$(QT_ROOT)/bin
 TOOLSSRCDIR:=$(EXTENSION_ROOT)/$(QT_ROOT)/src/tools
 LANGUAGETOOLSDIR:=$(EXTENSION_ROOT)/$(QT_ROOT)/tools/linguist
@@ -16,7 +18,7 @@ CONFIGURE_APP:=configure$(DOTEXE)
 
 $(call makepath,$(TARGETDIR))
 
-ifeq ($(OSTYPE),unix)
+ifneq ($(filter linux,$(HOSTPLATFORM)),)
 PLATFORM:=$(PLATFORM.LINUX)
  ifeq ($(XPLATFORM), symbian-sbsv2)
  CONFIGURE_APP:=configure_symbian
@@ -25,12 +27,12 @@ else
 PLATFORM:=$(PLATFORM.WIN32)
 endif
 
-TARGET_TOOLS:=$(TARGETDIR)/qmake$(DOTEXE) $(TARGETDIR)/moc$(DOTEXE) $(TARGETDIR)/rcc$(DOTEXE) $(TARGETDIR)/uic$(DOTEXE) $(TARGETDIR)/lrelease$(DOTEXE)
+TARGET_TOOLS:=$(QMAKEDIR)/qmake$(DOTEXE) $(TARGETDIR)/moc$(DOTEXE) $(TARGETDIR)/rcc$(DOTEXE) $(TARGETDIR)/uic$(DOTEXE) $(TARGETDIR)/lrelease$(DOTEXE)
 QT_TOOLS:= $(TOOLSSRCDIR)/uic $(TOOLSSRCDIR)/moc $(TOOLSSRCDIR)/rcc $(LANGUAGETOOLSDIR)/lrelease
 SOURCE_TOOLS:=$(SOURCEDIR)/qmake$(DOTEXE) $(SOURCEDIR)/moc$(DOTEXE) $(SOURCEDIR)/rcc$(DOTEXE) $(SOURCEDIR)/uic$(DOTEXE) $(SOURCEDIR)/lrelease$(DOTEXE)
 
 define QtConfiguration
-ifeq ($(OSTYPE),unix)
+ifneq ($(filter linux,$(HOSTPLATFORM)),)
 $(TARGET_TOOLS): $(QT_TOOLS)
 else
 $(TARGET_TOOLS): $(SOURCEDIR)/qmake$(DOTEXE)
@@ -39,7 +41,7 @@ endif
 	$(GNUCP) $(SOURCEDIR)/$$(notdir $$@) $$@ \
 	$(call endrule,qtconf_deploy)
 
-ifeq ($(OSTYPE),unix)
+ifneq ($(filter linux,$(HOSTPLATFORM)),)
 $(QT_TOOLS): $(TOOLSSRCDIR)/bootstrap
 	$(call startrule,qtconf_tools_build) \
 	cd $$@; \
@@ -65,7 +67,7 @@ $(SOURCEDIR)/qmake$(DOTEXE): $(EXTENSION_ROOT)/$(QT_ROOT)/$(CONFIGURE_APP)
 	perl syncqt -base-dir $(EXTENSION_ROOT)/$(QT_ROOT) -copy -oneway -outdir $(EPOCROOT)/epoc32/include/ -outsubdir mw
 	$(call endrule,syncqt)
 	$(call startrule,mkspecexport) \
-	$(GNUCP) -R $(EXTENSION_ROOT)/$(QT_ROOT)/mkspecs $(TARGETDIR)
+	$(GNUCP) -R $(EXTENSION_ROOT)/$(QT_ROOT)/mkspecs $(MKSPECDIR)
 	$(call endrule,mkspecexport)
 endef
 
@@ -75,7 +77,7 @@ GUARD:=done_$(call sanitise,$(TARGETDIR)/qmake$(DOTEXE))
 # UREL and UDEB do not execute makesis twice on the same target 
 ifeq ($($(GUARD)),)
 $(GUARD):=1
-ifeq ($(OSTYPE),unix)
+ifneq ($(filter linux,$(HOSTPLATFORM)),)
 ALL:: $(QT_TOOLS) $(TARGET_TOOLS)
 else
 ALL:: $(TARGET_TOOLS)

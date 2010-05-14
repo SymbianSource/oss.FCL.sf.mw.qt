@@ -190,6 +190,9 @@ public:
 
 void getDsaRegion(RWsSession &session, const RWindowBase &window)
 {
+    // Dump complete window tree
+    session.LogCommand(RWsSession::ELoggingStatusDump);
+
     RDirectScreenAccess dsa(session);
     TInt err = dsa.Construct();
     CDummyAO ao;
@@ -214,7 +217,7 @@ void getDsaRegion(RWsSession &session, const RWindowBase &window)
 void MMF::DsaVideoPlayer::handleParametersChanged(VideoParameters parameters)
 {
     TRACE_CONTEXT(DsaVideoPlayer::handleParametersChanged, EVideoInternal);
-    TRACE_ENTRY_0();
+    TRACE_ENTRY("parameters 0x%x", parameters.operator int());
 
     if (!m_window)
         return;
@@ -223,38 +226,40 @@ void MMF::DsaVideoPlayer::handleParametersChanged(VideoParameters parameters)
     getDsaRegion(m_wsSession, *m_window);
 #endif
 
-    static const TBool antialias = ETrue;
-    int err = KErrNone;
+    if (m_player) {
+        static const TBool antialias = ETrue;
+        int err = KErrNone;
 
-    if (parameters & ScaleFactors) {
-        TRAP(err, m_player->SetScaleFactorL(m_scaleWidth, m_scaleHeight,
-                                            antialias));
-        if(KErrNone != err) {
-            TRACE("SetScaleFactorL (1) err %d", err);
-            setError(tr("Video display error"), err);
-        }
-    }
-
-    if (KErrNone == err) {
-        if (parameters & WindowHandle || parameters & WindowScreenRect) {
-            TRAP(err,
-                m_player->SetDisplayWindowL(m_wsSession, m_screenDevice,
-                                            *m_window,
-                                            m_videoScreenRect,
-                                            m_videoScreenRect));
+        if (parameters & ScaleFactors) {
+            TRAP(err, m_player->SetScaleFactorL(m_scaleWidth, m_scaleHeight,
+                                                antialias));
+            if(KErrNone != err) {
+                TRACE("SetScaleFactorL (1) err %d", err);
+                setError(tr("Video display error"), err);
+            }
         }
 
-        if (KErrNone != err) {
-            TRACE("SetDisplayWindowL err %d", err);
-            setError(tr("Video display error"), err);
-        } else {
-            m_dsaActive = true;
-            if (parameters & ScaleFactors) {
-                TRAP(err, m_player->SetScaleFactorL(m_scaleWidth, m_scaleHeight,
-                                                    antialias));
-                if (KErrNone != err) {
-                    TRACE("SetScaleFactorL (2) err %d", err);
-                    setError(tr("Video display error"), err);
+        if (KErrNone == err) {
+            if (parameters & WindowHandle || parameters & WindowScreenRect) {
+                TRAP(err,
+                    m_player->SetDisplayWindowL(m_wsSession, m_screenDevice,
+                                                *m_window,
+                                                m_videoScreenRect,
+                                                m_videoScreenRect));
+            }
+
+            if (KErrNone != err) {
+                TRACE("SetDisplayWindowL err %d", err);
+                setError(tr("Video display error"), err);
+            } else {
+                m_dsaActive = true;
+                if (parameters & ScaleFactors) {
+                    TRAP(err, m_player->SetScaleFactorL(m_scaleWidth, m_scaleHeight,
+                                                        antialias));
+                    if (KErrNone != err) {
+                        TRACE("SetScaleFactorL (2) err %d", err);
+                        setError(tr("Video display error"), err);
+                    }
                 }
             }
         }
@@ -265,25 +270,43 @@ void MMF::DsaVideoPlayer::handleParametersChanged(VideoParameters parameters)
 
 void MMF::DsaVideoPlayer::startDirectScreenAccess()
 {
+    TRACE_CONTEXT(DsaVideoPlayer::startDirectScreenAccess, EVideoInternal);
+    TRACE_ENTRY("dsaActive %d", m_dsaActive);
+
+    int err = KErrNone;
+
     if (!m_dsaActive) {
-        TRAPD(err, m_player->StartDirectScreenAccessL());
+        TRAP(err, m_player->StartDirectScreenAccessL());
         if (KErrNone == err)
             m_dsaActive = true;
         else
             setError(tr("Video display error"), err);
     }
+
+    if (m_videoOutput)
+        m_videoOutput->dump();
+
+    TRACE_EXIT("error %d", err);
 }
 
 bool MMF::DsaVideoPlayer::stopDirectScreenAccess()
 {
+    TRACE_CONTEXT(DsaVideoPlayer::stopDirectScreenAccess, EVideoInternal);
+    TRACE_ENTRY("dsaActive %d", m_dsaActive);
+
+    int err = KErrNone;
+
     const bool dsaWasActive = m_dsaActive;
     if (m_dsaActive) {
-        TRAPD(err, m_player->StopDirectScreenAccessL());
+        TRAP(err, m_player->StopDirectScreenAccessL());
         if (KErrNone == err)
             m_dsaActive = false;
         else
             setError(tr("Video display error"), err);
     }
+
+    TRACE_EXIT("error %d", err);
+
     return dsaWasActive;
 }
 

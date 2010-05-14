@@ -9,7 +9,7 @@ cross_compile: CONFIG += nostrip
 
 isEmpty(QT_BUILD_PARTS) { #defaults
     symbian {
-       QT_BUILD_PARTS = libs tools
+       QT_BUILD_PARTS = libs tools examples demos
     } else {
        QT_BUILD_PARTS = libs tools examples demos docs translations
     }
@@ -30,10 +30,6 @@ isEmpty(QT_BUILD_PARTS) { #defaults
        QT_BUILD_PARTS -= qmake
        QT_BUILD_PARTS = qmake $$QT_BUILD_PARTS
    }
-   symbian {
-      #QTP: build libs only by default
-      QT_BUILD_PARTS = libs
-   }
 }
 
 #process the projects
@@ -44,8 +40,6 @@ for(PROJECT, $$list($$lower($$unique(QT_BUILD_PARTS)))) {
        SUBDIRS += examples
     } else:isEqual(PROJECT, demos) {
        SUBDIRS += demos
-    } else:isEqual(PROJECT, tests) {
-       SUBDIRS += tests
     } else:isEqual(PROJECT, libs) {
        include(src/src.pro)
     } else:isEqual(PROJECT, docs) {

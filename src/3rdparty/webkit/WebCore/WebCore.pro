@@ -203,10 +203,12 @@ mameo5|symbian|embedded {
 
 !CONFIG(QTDIR_build):!contains(DEFINES, ENABLE_QT_BEARER=.) {
     symbian: {
-        exists($${EPOCROOT}epoc32/release/winscw/udeb/QtBearer.lib)| \
-        exists($${EPOCROOT}epoc32/release/armv5/lib/QtBearer.lib) {
-            DEFINES += ENABLE_QT_BEARER=1
-        }
+        # exists($${EPOCROOT}epoc32/release/winscw/udeb/QtBearer.lib)| \
+        # exists($${EPOCROOT}epoc32/release/armv5/lib/QtBearer.lib) {
+        #     DEFINES += ENABLE_QT_BEARER=1
+        # }
+        # :QTP:Bearer management always enabled
+        DEFINES += ENABLE_QT_BEARER=1
     }
 }
 
