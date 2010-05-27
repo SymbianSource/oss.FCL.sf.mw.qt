@@ -98,18 +98,26 @@ public:
     QFontDatabaseS60StoreImplementation();
     ~QFontDatabaseS60StoreImplementation();
 
-    const QFontEngineS60Extensions *extension(const QString &typeface) const;
+    const QFontEngineS60Extensions *extension(const QString &typeface, bool bold, bool italic) const;
 
 private:
     RHeap* m_heap;
     CFontStore *m_store;
     COpenFontRasterizer *m_rasterizer;
-    mutable QHash<QString, const QFontEngineS60Extensions *> m_extensions;
+    mutable QList<const QFontEngineS60Extensions *> m_extensions;
+    mutable QHash<QString, const QFontEngineS60Extensions *> m_extensionsHash;
 };
 
 QFontDatabaseS60StoreImplementation::QFontDatabaseS60StoreImplementation()
 {
-    m_heap = User::ChunkHeap(NULL, 0x1000, 0x100000);
+    QStringList filters;
+    filters.append(QLatin1String("*.ttf"));
+    filters.append(QLatin1String("*.ccc"));
+    const QFileInfoList fontFiles = alternativeFilePaths(QLatin1String("resource\\Fonts"), filters);
+
+    const TInt heapMinLength = 0x1000;
+    const TInt heapMaxLength = qMax(0x20000 * fontFiles.count(), heapMinLength);
+    m_heap = User::ChunkHeap(NULL, heapMinLength, heapMaxLength);
     QT_TRAP_THROWING(
         m_store = CFontStore::NewL(m_heap);
         m_rasterizer = COpenFontRasterizer::NewL(TUid::Uid(0x101F7F5E));
@@ -117,10 +125,6 @@ QFontDatabaseS60StoreImplementation::QFontDatabaseS60StoreImplementation()
         m_store->InstallRasterizerL(m_rasterizer);
         CleanupStack::Pop(m_rasterizer););
 
-    QStringList filters;
-    filters.append(QString::fromLatin1("*.ttf"));
-    filters.append(QString::fromLatin1("*.ccc"));
-    const QFileInfoList fontFiles = alternativeFilePaths(QString::fromLatin1("resource\\Fonts"), filters);
     foreach (const QFileInfo &fontFileInfo, fontFiles) {
         const QString fontFile = QDir::toNativeSeparators(fontFileInfo.absoluteFilePath());
         TPtrC fontFilePtr(qt_QString2TPtrC(fontFile));
@@ -129,7 +133,7 @@ QFontDatabaseS60StoreImplementation::QFontDatabaseS60StoreImplementation()
 }
 QFontDatabaseS60StoreImplementation::~QFontDatabaseS60StoreImplementation()
 {
-    typedef QHash<QString, const QFontEngineS60Extensions *>::iterator iterator;
+    typedef QList<const QFontEngineS60Extensions *>::iterator iterator;
     for (iterator p = m_extensions.begin(); p != m_extensions.end(); ++p) {
         m_store->ReleaseFont((*p)->fontOwner());
         delete *p;
@@ -156,13 +160,18 @@ COpenFont* OpenFontFromBitmapFont(const CBitmapFont* aBitmapFont)
 }
 #endif // FNTSTORE_H_INLINES_SUPPORT_FMM
 
-const QFontEngineS60Extensions *QFontDatabaseS60StoreImplementation::extension(const QString &typeface) const
+const QFontEngineS60Extensions *QFontDatabaseS60StoreImplementation::extension(const QString &typeface, 
+                                                                               bool bold, bool italic) const
 {
-    if (!m_extensions.contains(typeface)) {
+    const QString searchKey = typeface + QString::number(int(bold)) + QString::number(int(italic));
+    if (!m_extensionsHash.contains(searchKey)) {
         CFont* font = NULL;
-        TFontSpec spec(qt_QString2TPtrC(typeface), 1);
-        spec.iHeight = 1;
-        const TInt err = m_store->GetNearestFontToDesignHeightInPixels(font, spec);
+        TFontSpec searchSpec(qt_QString2TPtrC(typeface), 1);
+        if (bold)
+            searchSpec.iFontStyle.SetStrokeWeight(EStrokeWeightBold);
+        if (italic)
+            searchSpec.iFontStyle.SetPosture(EPostureItalic);
+        const TInt err = m_store->GetNearestFontToDesignHeightInPixels(font, searchSpec);
         Q_ASSERT(err == KErrNone && font);
         const CBitmapFont *bitmapFont = static_cast<CBitmapFont*>(font);
         COpenFont *openFont =
@@ -171,9 +180,20 @@ const QFontEngineS60Extensions *QFontDatabaseS60StoreImplementation::extension(c
 #else
             OpenFontFromBitmapFont(bitmapFont);
 #endif // FNTSTORE_H_INLINES_SUPPORT_FMM
-        m_extensions.insert(typeface, new QFontEngineS60Extensions(font, openFont));
+        const TOpenFontFaceAttrib* const attrib = openFont->FaceAttrib();
+        const QString foundKey =
+                QString((const QChar*)attrib->FullName().Ptr(), attrib->FullName().Length());
+        if (!m_extensionsHash.contains(foundKey)) {
+            QFontEngineS60Extensions *extras = new QFontEngineS60Extensions(font, openFont);
+            m_extensions.append(extras);
+            m_extensionsHash.insert(searchKey, extras);
+            m_extensionsHash.insert(foundKey, extras);
+        } else {
+            m_store->ReleaseFont(font);
+            m_extensionsHash.insert(searchKey, m_extensionsHash.value(foundKey));
+        }
     }
-    return m_extensions.value(typeface);
+    return m_extensionsHash.value(searchKey);
 }
 #else
 class QFontEngineFTS60 : public QFontEngineFT
@@ -273,7 +293,7 @@ static void initializeDb()
             style->smoothScalable = typefaceSupport.iIsScalable;
             style->pixelSize(0, true);
 
-            const QFontEngineS60Extensions *extension = store->extension(familyName);
+            const QFontEngineS60Extensions *extension = store->extension(familyName, faceAttrib.IsBold(), faceAttrib.IsItalic());
             const QByteArray os2Table = extension->getSfntTable(MAKE_TAG('O', 'S', '/', '2'));
             const unsigned char* data = reinterpret_cast<const unsigned char*>(os2Table.constData());
             const unsigned char* ulUnicodeRange = data + 42;
@@ -396,7 +416,7 @@ QFontEngine *QFontDatabase::findFont(int script, const QFontPrivate *, const QFo
 #if defined(QT_NO_FREETYPE)
         const QFontDatabaseS60StoreImplementation *store =
                 static_cast<const QFontDatabaseS60StoreImplementation*>(db->s60Store);
-        const QFontEngineS60Extensions *extension = store->extension(fontFamily);
+        const QFontEngineS60Extensions *extension = store->extension(fontFamily, request.weight > QFont::Normal, request.style != QFont::StyleNormal );
         fe = new QFontEngineS60(request, extension);
 #else
         QFontEngine::FaceId faceId;

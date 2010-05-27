@@ -57,8 +57,6 @@ QT_BEGIN_NAMESPACE
 
 //#define DEBUG_AUDIO 1
 
-static const int minimumIntervalTime = 50;
-
 QAudioInputPrivate::QAudioInputPrivate(const QByteArray &device, const QAudioFormat& audioFormat):
     settings(audioFormat)
 {
@@ -74,16 +72,11 @@ QAudioInputPrivate::QAudioInputPrivate(const QByteArray &device, const QAudioFor
     pullMode = true;
     resuming = false;
     finished = false;
-
-    connect(this,SIGNAL(processMore()),SLOT(deviceReady()));
-
-    InitializeCriticalSection(&waveInCriticalSection);
 }
 
 QAudioInputPrivate::~QAudioInputPrivate()
 {
     stop();
-    DeleteCriticalSection(&waveInCriticalSection);
 }
 
 void CALLBACK QAudioInputPrivate::waveInProc( HWAVEIN hWaveIn, UINT uMsg,
@@ -98,20 +91,18 @@ void CALLBACK QAudioInputPrivate::waveInProc( HWAVEIN hWaveIn, UINT uMsg,
     if(!qAudio)
         return;
 
+    QMutexLocker(&qAudio->mutex);
+
     switch(uMsg) {
         case WIM_OPEN:
             break;
         case WIM_DATA:
-            EnterCriticalSection(&qAudio->waveInCriticalSection);
             if(qAudio->waveFreeBlockCount > 0)
                 qAudio->waveFreeBlockCount--;
             qAudio->feedback();
-            LeaveCriticalSection(&qAudio->waveInCriticalSection);
             break;
         case WIM_CLOSE:
-            EnterCriticalSection(&qAudio->waveInCriticalSection);
             qAudio->finished = true;
-            LeaveCriticalSection(&qAudio->waveInCriticalSection);
             break;
         default:
             return;
@@ -156,7 +147,7 @@ void QAudioInputPrivate::freeBlocks(WAVEHDR* blockArray)
     int count = buffer_size/period_size;
 
     for(int i = 0; i < count; i++) {
-        waveInUnprepareHeader(hWaveIn,&blocks[i], sizeof(WAVEHDR));
+        waveInUnprepareHeader(hWaveIn,blocks, sizeof(WAVEHDR));
         blocks+=sizeof(WAVEHDR);
     }
     HeapFree(GetProcessHeap(), 0, blockArray);
@@ -278,9 +269,9 @@ bool QAudioInputPrivate::open()
         return false;
     }
 
-    EnterCriticalSection(&waveInCriticalSection);
+    mutex.lock();
     waveFreeBlockCount = buffer_size/period_size;
-    LeaveCriticalSection(&waveInCriticalSection);
+    mutex.unlock();
 
     waveCurrentBlock = 0;
 
@@ -324,13 +315,11 @@ void QAudioInputPrivate::close()
         Sleep(10);
     }
 
-    EnterCriticalSection(&waveInCriticalSection);
-    for(int i=0; i<waveFreeBlockCount; i++) {
-        if(waveBlocks[i].dwFlags & WHDR_PREPARED)
-            waveInUnprepareHeader(hWaveIn,&waveBlocks[i],sizeof(WAVEHDR));
-    }
-    LeaveCriticalSection(&waveInCriticalSection);
+    mutex.lock();
+    for(int i=0; i<waveFreeBlockCount; i++)
+        waveInUnprepareHeader(hWaveIn,&waveBlocks[i],sizeof(WAVEHDR));
     freeBlocks(waveBlocks);
+    mutex.unlock();
 }
 
 int QAudioInputPrivate::bytesReady() const
@@ -401,9 +390,10 @@ qint64 QAudioInputPrivate::read(char* data, qint64 len)
 
         waveInUnprepareHeader(hWaveIn,&waveBlocks[header], sizeof(WAVEHDR));
 
-        EnterCriticalSection(&waveInCriticalSection);
+        mutex.lock();
         waveFreeBlockCount++;
-        LeaveCriticalSection(&waveInCriticalSection);
+        mutex.unlock();
+
         waveBlocks[header].dwBytesRecorded=0;
         waveBlocks[header].dwFlags = 0L;
         result = waveInPrepareHeader(hWaveIn,&waveBlocks[header], sizeof(WAVEHDR));
@@ -411,18 +401,22 @@ qint64 QAudioInputPrivate::read(char* data, qint64 len)
             result = waveInPrepareHeader(hWaveIn,&waveBlocks[header], sizeof(WAVEHDR));
             qWarning("QAudioInput: failed to prepare block %d,err=%d",header,result);
             errorState = QAudio::IOError;
-            EnterCriticalSection(&waveInCriticalSection);
+
+            mutex.lock();
             waveFreeBlockCount--;
-            LeaveCriticalSection(&waveInCriticalSection);
+            mutex.unlock();
+
             return 0;
         }
         result = waveInAddBuffer(hWaveIn, &waveBlocks[header], sizeof(WAVEHDR));
         if(result != MMSYSERR_NOERROR) {
             qWarning("QAudioInput: failed to setup block %d,err=%d",header,result);
             errorState = QAudio::IOError;
-            EnterCriticalSection(&waveInCriticalSection);
+
+            mutex.lock();
             waveFreeBlockCount--;
-            LeaveCriticalSection(&waveInCriticalSection);
+            mutex.unlock();
+
             return 0;
         }
         header++;
@@ -430,7 +424,7 @@ qint64 QAudioInputPrivate::read(char* data, qint64 len)
             header = 0;
         p+=l;
 
-        EnterCriticalSection(&waveInCriticalSection);
+        mutex.lock();
         if(!pullMode) {
 	    if(l+period_size > len && waveFreeBlockCount == buffer_size/period_size)
 	        done = true;
@@ -438,7 +432,7 @@ qint64 QAudioInputPrivate::read(char* data, qint64 len)
 	    if(waveFreeBlockCount == buffer_size/period_size)
 	        done = true;
 	}
-        LeaveCriticalSection(&waveInCriticalSection);
+        mutex.unlock();
 
 	written+=l;
     }
@@ -462,9 +456,10 @@ void QAudioInputPrivate::resume()
                 return;
             }
         }
-        EnterCriticalSection(&waveInCriticalSection);
+
+        mutex.lock();
         waveFreeBlockCount = buffer_size/period_size;
-        LeaveCriticalSection(&waveInCriticalSection);
+        mutex.unlock();
 
         waveCurrentBlock = 0;
         header = 0;
@@ -492,10 +487,7 @@ int QAudioInputPrivate::periodSize() const
 
 void QAudioInputPrivate::setNotifyInterval(int ms)
 {
-    if(ms >= minimumIntervalTime)
-        intervalTime = ms;
-    else
-        intervalTime = minimumIntervalTime;
+    intervalTime = qMax(0, ms);
 }
 
 int QAudioInputPrivate::notifyInterval() const
@@ -529,14 +521,13 @@ void QAudioInputPrivate::feedback()
     QTime now(QTime::currentTime());
     qDebug()<<now.second()<<"s "<<now.msec()<<"ms :feedback() INPUT "<<this;
 #endif
-    bytesAvailable = bytesReady();
-
     if(!(deviceState==QAudio::StoppedState||deviceState==QAudio::SuspendedState))
-        emit processMore();
+        QMetaObject::invokeMethod(this, "deviceReady", Qt::QueuedConnection);
 }
 
 bool QAudioInputPrivate::deviceReady()
 {
+    bytesAvailable = bytesReady();
 #ifdef DEBUG_AUDIO
     QTime now(QTime::currentTime());
     qDebug()<<now.second()<<"s "<<now.msec()<<"ms :deviceReady() INPUT";
@@ -553,7 +544,7 @@ bool QAudioInputPrivate::deviceReady()
 	a->trigger();
     }
 
-    if((timeStamp.elapsed() + elapsedTimeOffset) > intervalTime) {
+    if(intervalTime && (timeStamp.elapsed() + elapsedTimeOffset) > intervalTime) {
         emit notify();
         elapsedTimeOffset = timeStamp.elapsed() + elapsedTimeOffset - intervalTime;
         timeStamp.restart();

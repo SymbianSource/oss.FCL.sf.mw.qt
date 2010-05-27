@@ -5255,20 +5255,10 @@ QInputContext *QApplication::inputContext() const
             qic = QInputContextFactory::create(QLatin1String("xim"), that);
         that->d_func()->inputContext = qic;
     }
-#elif defined(Q_OS_SYMBIAN)
+#elif defined(Q_WS_S60)
     if (!d->inputContext) {
         QApplication *that = const_cast<QApplication *>(this);
-        const QStringList keys = QInputContextFactory::keys();
-        // Try hbim and coefep first, then try others.
-        if (keys.contains("hbim")) {
-            that->d_func()->inputContext = QInputContextFactory::create(QLatin1String("hbim"), that);
-        } else if (keys.contains("coefep")) {
-            that->d_func()->inputContext = QInputContextFactory::create(QLatin1String("coefep"), that);
-        } else {
-            for (int c = 0; c < keys.size() && !d->inputContext; ++c) {
-                that->d_func()->inputContext = QInputContextFactory::create(keys[c], that);
-            }
-        }
+        that->d_func()->inputContext = QInputContextFactory::create(QString::fromLatin1("coefep"), that);
     }
 #endif
     return d->inputContext;

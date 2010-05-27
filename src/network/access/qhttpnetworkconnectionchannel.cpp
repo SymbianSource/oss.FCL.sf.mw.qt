@@ -285,8 +285,8 @@ bool QHttpNetworkConnectionChannel::sendRequest()
         }
 
         // HTTP pipelining
-        //connection->d_func()->fillPipeline(socket);
-        //socket->flush();
+        connection->d_func()->fillPipeline(socket);
+        socket->flush();
 
         // ensure we try to receive a reply in all cases, even if _q_readyRead_ hat not been called
         // this is needed if the sends an reply before we have finished sending the request. In that
@@ -314,6 +314,13 @@ void QHttpNetworkConnectionChannel::_q_receiveReply()
         qWarning() << "QHttpNetworkConnectionChannel::_q_receiveReply() called without QHttpNetworkReply,"
                 << socket->bytesAvailable() << "bytes on socket.";
         close();
+        return;
+    }
+
+    // only run when the QHttpNetworkConnection is not currently being destructed, e.g.
+    // this function is called from _q_disconnected which is called because
+    // of ~QHttpNetworkConnectionPrivate
+    if (!qobject_cast<QHttpNetworkConnection*>(connection)) {
         return;
     }
 
@@ -384,7 +391,7 @@ void QHttpNetworkConnectionChannel::_q_receiveReply()
                 if (!replyPrivate->expectContent()) {
                     replyPrivate->state = QHttpNetworkReplyPrivate::AllDoneState;
                     allDone();
-                    return;
+                    break;
                 }
             }
             break;
