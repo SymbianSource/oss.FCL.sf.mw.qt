@@ -1,0 +1,11 @@
+This is a snapshot of the Qt port of WebKit from
+
+        git://gitorious.org/qtwebkit/qtwebkit.git
+
+The commit imported was from the
+
+        qtwebkit/qtwebkit-4.6 branch/tag
+
+and has the sha1 checksum
+
+        6ed0b6197addffc7dacbdb3e49db711420a2c47a

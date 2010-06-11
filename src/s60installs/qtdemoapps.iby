@@ -1,0 +1,116 @@
+#ifndef QTDEMOAPPS_IBY
+#define QTDEMOAPPS_IBY
+
+// A subset of Qt demo & example applications
+
+// Note that star requires OpenVG and the Qt OpenVG paint engine
+S60_APP_EXE(star)
+S60_APP_RESOURCE(star)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\star_reg.rsc   \private\10003a3f\import\apps\star_reg.rsc
+
+S60_APP_EXE(wiggly)
+S60_APP_RESOURCE(wiggly)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\wiggly_reg.rsc   \private\10003a3f\import\apps\wiggly_reg.rsc
+
+S60_APP_EXE(animatedtiles)
+S60_APP_RESOURCE(animatedtiles)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\animatedtiles_reg.rsc   \private\10003a3f\import\apps\animatedtiles_reg.rsc
+
+S60_APP_EXE(collidingmice)
+S60_APP_RESOURCE(collidingmice)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\collidingmice_reg.rsc   \private\10003a3f\import\apps\collidingmice_reg.rsc
+
+S60_APP_EXE(addressbook)
+S60_APP_RESOURCE(addressbook)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\addressbook_reg.rsc   \private\10003a3f\import\apps\addressbook_reg.rsc
+
+S60_APP_EXE(svgviewer)
+S60_APP_RESOURCE(svgviewer)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\svgviewer_reg.rsc   \private\10003a3f\import\apps\svgviewer_reg.rsc
+
+S60_APP_EXE(analogclock)
+S60_APP_RESOURCE(analogclock)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\analogclock_reg.rsc   \private\10003a3f\import\apps\analogclock_reg.rsc
+
+S60_APP_EXE(imagegestures)
+S60_APP_RESOURCE(imagegestures)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\imagegestures_reg.rsc   \private\10003a3f\import\apps\imagegestures_reg.rsc
+
+S60_APP_EXE(qftp)
+S60_APP_RESOURCE(qftp)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\qftp_reg.rsc   \private\10003a3f\import\apps\qftp_reg.rsc
+
+S60_APP_EXE(masterdetail)
+S60_APP_RESOURCE(masterdetail)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\masterdetail_reg.rsc   \private\10003a3f\import\apps\masterdetail_reg.rsc
+
+S60_APP_EXE(previewer)
+S60_APP_RESOURCE(previewer)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\previewer_reg.rsc   \private\10003a3f\import\apps\previewer_reg.rsc
+
+// 
+
+S60_APP_EXE(fluidlauncher)
+S60_APP_RESOURCE(fluidlauncher)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\fluidlauncher_reg.rsc   \private\10003a3f\import\apps\fluidlauncher_reg.rsc
+
+S60_APP_EXE(deform)
+S60_APP_RESOURCE(deform)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\deform_reg.rsc   \private\10003a3f\import\apps\deform_reg.rsc
+
+S60_APP_EXE(standarddialogs)
+S60_APP_RESOURCE(standarddialogs)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\standarddialogs_reg.rsc   \private\10003a3f\import\apps\standarddialogs_reg.rsc
+
+S60_APP_EXE(pathstroke)
+S60_APP_RESOURCE(pathstroke)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\pathstroke_reg.rsc   \private\10003a3f\import\apps\pathstroke_reg.rsc
+
+S60_APP_EXE(gradients)
+S60_APP_RESOURCE(gradients)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\gradients_reg.rsc   \private\10003a3f\import\apps\gradients_reg.rsc
+
+S60_APP_EXE(moveblocks)
+S60_APP_RESOURCE(moveblocks)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\moveblocks_reg.rsc   \private\10003a3f\import\apps\moveblocks_reg.rsc
+
+S60_APP_EXE(stickman)
+S60_APP_RESOURCE(stickman)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\stickman_reg.rsc   \private\10003a3f\import\apps\stickman_reg.rsc
+
+S60_APP_EXE(fridgemagnets)
+S60_APP_RESOURCE(fridgemagnets)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\fridgemagnets_reg.rsc   \private\10003a3f\import\apps\fridgemagnets_reg.rsc
+
+S60_APP_EXE(blurpicker)
+S60_APP_RESOURCE(blurpicker)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\blurpicker_reg.rsc   \private\10003a3f\import\apps\blurpicker_reg.rsc
+
+S60_APP_EXE(knobs)
+S60_APP_RESOURCE(knobs)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\knobs_reg.rsc   \private\10003a3f\import\apps\knobs_reg.rsc
+
+S60_APP_EXE(states)
+S60_APP_RESOURCE(states)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\states_reg.rsc   \private\10003a3f\import\apps\states_reg.rsc
+
+S60_APP_EXE(saxbookmarks)
+S60_APP_RESOURCE(saxbookmarks)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\saxbookmarks_reg.rsc   \private\10003a3f\import\apps\saxbookmarks_reg.rsc
+
+S60_APP_EXE(defaultprototypes)
+S60_APP_RESOURCE(defaultprototypes)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\defaultprototypes_reg.rsc   \private\10003a3f\import\apps\defaultprototypes_reg.rsc
+
+S60_APP_EXE(queuedcustomtype)
+S60_APP_RESOURCE(queuedcustomtype)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\queuedcustomtype_reg.rsc   \private\10003a3f\import\apps\queuedcustomtype_reg.rsc
+
+// Webkit test apps
+
+S60_APP_EXE(anomaly)
+S60_APP_RESOURCE(anomaly)
+data=\epoc32\data\Z\private\10003a3f\import\Apps\anomaly_reg.rsc   \private\10003a3f\import\apps\anomaly_reg.rsc
+
+
+#endif // QTDEMOAPPS_IBY

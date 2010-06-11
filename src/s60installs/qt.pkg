@@ -1,0 +1,71 @@
+; Language
+&EN
+
+; SIS header: name, uid, version
+#{"Qt"},(0x2001E61C),4,6,3,TYPE=SA,RU,NR
+
+; Manual PKG pre-rules from PRO files
+; Default HW/platform dependencies
+[0x101F7961],0,0,0,{"S60ProductID"}
+[0x102032BE],0,0,0,{"S60ProductID"}
+[0x102752AE],0,0,0,{"S60ProductID"}
+[0x1028315F],0,0,0,{"S60ProductID"}
+ 
+; Localised Vendor name
+%{"Nokia, Qt"}
+ 
+; Unique Vendor name
+:"Nokia, Qt"
+ 
+; Dependencies of Qt libraries
+
+; DEPLOYMENT
+"/epoc32/data/z/resource/apps/s60main.rsc"    - "!:\resource\apps\s60main.rsc"
+"/epoc32/release/armv5/urel/QtCore.dll"    - "!:\sys\bin\QtCore.dll"
+"/epoc32/release/armv5/urel/QtXml.dll"    - "!:\sys\bin\QtXml.dll"
+"/epoc32/release/armv5/urel/QtGui.dll"    - "!:\sys\bin\QtGui.dll"
+"/epoc32/release/armv5/urel/QtNetwork.dll"    - "!:\sys\bin\QtNetwork.dll"
+"/epoc32/release/armv5/urel/QtTest.dll"    - "!:\sys\bin\QtTest.dll"
+"/epoc32/release/armv5/urel/QtSql.dll"    - "!:\sys\bin\QtSql.dll"
+"/epoc32/release/armv5/urel/QtSvg.dll"    - "!:\sys\bin\QtSvg.dll"
+"/epoc32/release/armv5/urel/phonon.dll"    - "!:\sys\bin\phonon.dll"
+"/epoc32/release/armv5/urel/QtScript.dll"    - "!:\sys\bin\QtScript.dll"
+"/epoc32/release/armv5/urel/QtXmlPatterns.dll"    - "!:\sys\bin\QtXmlPatterns.dll"
+"/epoc32/release/armv5/urel/QtOpenVG.dll"    - "!:\sys\bin\QtOpenVG.dll"
+"/epoc32/release/armv5/urel/QtMultimedia.dll"    - "!:\sys\bin\QtMultimedia.dll"
+
+"/epoc32/release/armv5/urel/qjpeg.dll"    - "!:\sys\bin\qjpeg.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qjpeg.qtplugin"    - "!:\resource\qt\plugins\imageformats\qjpeg.qtplugin"
+"/epoc32/release/armv5/urel/qgif.dll"    - "!:\sys\bin\qgif.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qgif.qtplugin"    - "!:\resource\qt\plugins\imageformats\qgif.qtplugin"
+"/epoc32/release/armv5/urel/qmng.dll"    - "!:\sys\bin\qmng.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qmng.qtplugin"    - "!:\resource\qt\plugins\imageformats\qmng.qtplugin"
+"/epoc32/release/armv5/urel/qtiff.dll"    - "!:\sys\bin\qtiff.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qtiff.qtplugin"    - "!:\resource\qt\plugins\imageformats\qtiff.qtplugin"
+"/epoc32/release/armv5/urel/qico.dll"    - "!:\sys\bin\qico.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qico.qtplugin"    - "!:\resource\qt\plugins\imageformats\qico.qtplugin"
+"/epoc32/release/armv5/urel/qsvg.dll"    - "!:\sys\bin\qsvg.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qsvg.qtplugin"    - "!:\resource\qt\plugins\imageformats\qsvg.qtplugin"
+"/epoc32/release/armv5/urel/qcncodecs.dll"    - "!:\sys\bin\qcncodecs.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qcncodecs.qtplugin"    - "!:\resource\qt\plugins\codecs\qcncodecs.qtplugin"
+"/epoc32/release/armv5/urel/qjpcodecs.dll"    - "!:\sys\bin\qjpcodecs.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qjpcodecs.qtplugin"    - "!:\resource\qt\plugins\codecs\qjpcodecs.qtplugin"
+"/epoc32/release/armv5/urel/qtwcodecs.dll"    - "!:\sys\bin\qtwcodecs.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qtwcodecs.qtplugin"    - "!:\resource\qt\plugins\codecs\qtwcodecs.qtplugin"
+"/epoc32/release/armv5/urel/qkrcodecs.dll"    - "!:\sys\bin\qkrcodecs.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qkrcodecs.qtplugin"    - "!:\resource\qt\plugins\codecs\qkrcodecs.qtplugin"
+"/epoc32/release/armv5/urel/qvggraphicssystem.dll"    - "!:\sys\bin\qvggraphicssystem.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qvggraphicssystem.qtplugin"    - "!:\resource\qt\plugins\graphicssystems\qvggraphicssystem.qtplugin"
+"/epoc32/release/armv5/urel/qsvgicon.dll"    - "!:\sys\bin\qsvgicon.dll"
+"/sf/mw/qt/src/s60installs/qmakepluginstubs/qsvgicon.qtplugin"    - "!:\resource\qt\plugins\iconengines\qsvgicon.qtplugin"
+
+; Manual PKG post-rules from PRO files
+IF package(0x1028315F)
+ "/epoc32/release/armv5/urel/qts60plugin_5_0.dll" - "!:\sys\bin\qts60plugin_5_0.dll"
+ELSEIF package(0x102752AE)
+ "/epoc32/release/armv5/urel/qts60plugin_3_2.dll" - "!:\sys\bin\qts60plugin_3_2.dll"
+ELSEIF package(0x102032BE)
+ "/epoc32/release/armv5/urel/qts60plugin_3_1.dll" - "!:\sys\bin\qts60plugin_3_1.dll"
+ELSE
+ "/epoc32/release/armv5/urel/qts60plugin_5_0.dll" - "!:\sys\bin\qts60plugin_5_0.dll"
+ENDIF
