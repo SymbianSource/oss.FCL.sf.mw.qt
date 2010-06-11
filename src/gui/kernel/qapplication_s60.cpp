@@ -440,7 +440,7 @@ void QSymbianControl::translateAdvancedPointerEvent(const TAdvancedPointerEvent 
                 state |= Qt::TouchPointPrimary;
             touchPoint.setState(state);
 
-            QPointF screenPos = QPointF(event->iPosition.iX, event->iPosition.iY);
+            QPointF screenPos = qwidget->mapToGlobal(QPoint(event->iPosition.iX, event->iPosition.iY));
             touchPoint.setScreenPos(screenPos);
             touchPoint.setNormalizedPos(QPointF(screenPos.x() / screenGeometry.width(),
                                                 screenPos.y() / screenGeometry.height()));
@@ -642,10 +642,12 @@ TKeyResponse QSymbianControl::OfferKeyEvent(const TKeyEvent& keyEvent, TEventCod
 
                 QPoint pos = QCursor::pos();
                 TPointerEvent fakeEvent;
+                fakeEvent.iType = (TPointerEvent::TType)(-1);
                 TInt x = pos.x();
                 TInt y = pos.y();
                 if (type == EEventKeyUp) {
-                    if (keyCode == Qt::Key_Select)
+                    if (keyCode == Qt::Key_Select &&
+                        (S60->virtualMousePressedKeys & QS60Data::Select))
                         fakeEvent.iType = TPointerEvent::EButton1Up;
                     S60->virtualMouseAccel = 1;
                     S60->virtualMouseLastKey = 0;
@@ -694,8 +696,7 @@ TKeyResponse QSymbianControl::OfferKeyEvent(const TKeyEvent& keyEvent, TEventCod
                         // example for drag'n'drop), Symbian starts producing spurious up and
                         // down messages for some keys. Therefore, make sure we have a clean slate
                         // of pressed keys before starting a new button press.
-                        if (S60->virtualMousePressedKeys != 0) {
-                            S60->virtualMousePressedKeys |= QS60Data::Select;
+                        if (S60->virtualMousePressedKeys & QS60Data::Select) {
                             return EKeyWasConsumed;
                         } else {
                             S60->virtualMousePressedKeys |= QS60Data::Select;
@@ -718,7 +719,8 @@ TKeyResponse QSymbianControl::OfferKeyEvent(const TKeyEvent& keyEvent, TEventCod
                 fakeEvent.iModifiers = keyEvent.iModifiers;
                 fakeEvent.iPosition = cpos;
                 fakeEvent.iParentPosition = epos;
-                HandlePointerEvent(fakeEvent);
+                if(fakeEvent.iType != -1)
+                    HandlePointerEvent(fakeEvent);
                 return EKeyWasConsumed;
             }
             else {
@@ -991,15 +993,6 @@ void QSymbianControl::FocusChanged(TDrawNow /* aDrawNow */)
             const TBool isFullscreen = qwidget->windowState() & Qt::WindowFullScreen;
             const TBool cbaVisibilityHint = qwidget->windowFlags() & Qt::WindowSoftkeysVisibleHint;
             buttonGroup->MakeVisible(visible || (isFullscreen && cbaVisibilityHint));
-
-            // Responsiviness
-            CEikCba *cba = static_cast<CEikCba *>( buttonGroup->ButtonGroup() ); // downcast from MEikButtonGroup
-            TUint cbaFlags = cba->ButtonGroupFlags();
-            if(qwidget->windowFlags() & Qt::WindowSoftkeysRespondHint)
-                cbaFlags |= EAknCBAFlagRespondWhenInvisible;
-            else
-                cbaFlags &= ~EAknCBAFlagRespondWhenInvisible;
-            cba->SetButtonGroupFlags(cbaFlags);
         }
 #endif
     } else if (QApplication::activeWindow() == qwidget->window()) {

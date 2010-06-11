@@ -400,6 +400,9 @@ void QWidgetPrivate::create_sys(WId window, bool /* initializeWindow */, bool de
         if (!desktop)
           s60UpdateIsOpaque();
 
+        if (!desktop)
+            s60UpdateIsOpaque(); // must be called after setWinId()
+
     } else if (q->testAttribute(Qt::WA_NativeWindow) || paintOnScreen()) { // create native child widget
 
         QScopedPointer<QSymbianControl> control( q_check_ptr(new QSymbianControl(q)) );
@@ -1123,15 +1126,6 @@ void QWidget::setWindowState(Qt::WindowStates newstate)
         if (buttonGroup) {
             // Visibility
             buttonGroup->MakeVisible(visible || (isFullscreen && cbaRequested));
-
-            // Responsiviness
-            CEikCba *cba = static_cast<CEikCba *>( buttonGroup->ButtonGroup() ); // downcast from MEikButtonGroup
-            TUint cbaFlags = cba->ButtonGroupFlags();
-            if(windowFlags() & Qt::WindowSoftkeysRespondHint)
-                cbaFlags |= EAknCBAFlagRespondWhenInvisible;
-            else
-                cbaFlags &= ~EAknCBAFlagRespondWhenInvisible;
-            cba->SetButtonGroupFlags(cbaFlags);
         }
 #endif // Q_WS_S60
 

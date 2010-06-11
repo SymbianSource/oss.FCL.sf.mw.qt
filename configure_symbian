@@ -668,9 +668,9 @@ CFG_FONTCONFIG=auto
 CFG_QWS_FREETYPE=no
 CFG_LIBFREETYPE=no
 CFG_SQL_AVAILABLE=
-QT_DEFAULT_BUILD_PARTS="libs tools examples demos docs translations"
+QT_DEFAULT_BUILD_PARTS="libs tools examples demos"
 #QTP change for lRelease app. Need for Symbian
-CFG_BUILD_PARTS="translations"
+CFG_BUILD_PARTS=""
 CFG_NOBUILD_PARTS=""
 CFG_RELEASE_QMAKE=no
 CFG_PHONON=yes
@@ -4346,7 +4346,7 @@ if true; then ###[ '!' -f "$outpath/bin/qmake" ];
 
     #mkspecs/default is used as a (gasp!) default mkspec so QMAKESPEC needn't be set once configured
     rm -rf mkspecs/default
-    cp -a `echo $XQMAKESPEC | sed "s,^${relpath}/mkspecs/,,"` mkspecs/default
+    cp -a mkspecs/`echo $XQMAKESPEC | sed "s,^${relpath}/mkspecs/,,"` mkspecs/default
 
     # fix makefiles
     for mkfile in GNUmakefile Makefile; do
@@ -7565,6 +7565,11 @@ for part in $CFG_BUILD_PARTS; do
     *) ;;
     esac
 done
+
+#For symbian release we need add translations to PRT_ROOTS
+if [ "$PLATFORM_SYMBIAN" != "$XPLATFORM" ]; then
+    PART_ROOTS="$PART_ROOTS tools/linguist/lrelease"
+fi
 
 if [ "$CFG_DEV" = "yes" ]; then
     PART_ROOTS="$PART_ROOTS tests"

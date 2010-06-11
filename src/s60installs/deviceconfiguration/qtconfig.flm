@@ -78,9 +78,9 @@ GUARD:=done_$(call sanitise,$(TARGETDIR)/qmake$(DOTEXE))
 ifeq ($($(GUARD)),)
 $(GUARD):=1
 ifneq ($(filter linux,$(HOSTPLATFORM)),)
-ALL:: $(QT_TOOLS) $(TARGET_TOOLS)
+EXPORT:: $(QT_TOOLS) $(TARGET_TOOLS)
 else
-ALL:: $(TARGET_TOOLS)
+EXPORT:: $(TARGET_TOOLS)
 endif
 $(eval $(call QtConfiguration))
 $(eval $(call whatmacro,$(TARGET_TOOLS)))

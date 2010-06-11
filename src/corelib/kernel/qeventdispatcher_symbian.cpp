@@ -47,6 +47,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <net/if.h>
+
 QT_BEGIN_NAMESPACE
 
 #ifdef SYMBIAN_GRAPHICS_WSERV_QT_EFFECTS
@@ -569,13 +571,17 @@ void QSelectThread::updateActivatedNotifiers(QSocketNotifier::Type type, fd_set 
              * check if socket is in exception set
              * then signal RequestComplete for it
              */
-            qWarning("exception on %d [will close the socket handle - hack]", i.key()->socket());
+            qWarning("exception on %d [will do setdefaultif(0) - hack]", i.key()->socket());
             // quick fix; there is a bug
             // when doing read on socket
             // errors not preoperly mapped
             // after offline-ing the device
             // on some devices we do get exception
-            ::close(i.key()->socket());
+            // close all exiting sockets
+            // and reset default IAP
+            if(::setdefaultif(0) != KErrNone) // well we can't do much about it
+                qWarning("setdefaultif(0) failed");
+
             toRemove.append(i.key());
             TRequestStatus *status = i.value();
             QEventDispatcherSymbian::RequestComplete(d->threadData->symbian_thread_handle, status, KErrNone);
@@ -642,8 +648,8 @@ public:
     QIdleDetectorThread()
     : m_state(STATE_RUN), m_stop(false)
     {
-        qt_symbian_throwIfError(m_lock.CreateLocal());
-        TInt err = m_idleDetectorThread.Create(KNullDesC(), &idleDetectorThreadFunc, 1024, &User::Allocator(), this);
+        qt_symbian_throwIfError(m_lock.CreateLocal(0));
+        TInt err = m_idleDetectorThread.Create(KNullDesC(), &idleDetectorThreadFunc, 1024, NULL, this);
         if (err != KErrNone)
             m_lock.Close();
         qt_symbian_throwIfError(err);
@@ -694,7 +700,7 @@ private:
     enum IdleStates {STATE_KICKED, STATE_RUN} m_state;
     bool m_stop;
     RThread m_idleDetectorThread;
-    RFastLock m_lock;
+    RSemaphore m_lock;
 };
 
 Q_GLOBAL_STATIC(QIdleDetectorThread, idleDetectorThread);
