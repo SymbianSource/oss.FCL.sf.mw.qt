@@ -450,7 +450,7 @@ EXPORTS
 	_ZTI16QSqlCachedResult @ 449 NONAME
 	_ZTI16QSqlDriverPlugin @ 450 NONAME
 	_ZTI24QSqlRelationalTableModel @ 451 NONAME
-	_ZTI26QSqlDriverFactoryInterface @ 452 NONAME
+	_ZTI26QSqlDriverFactoryInterface @ 452 NONAME ABSENT
 	_ZTV10QSqlDriver @ 453 NONAME
 	_ZTV10QSqlResult @ 454 NONAME
 	_ZTV13QSQLiteDriver @ 455 NONAME

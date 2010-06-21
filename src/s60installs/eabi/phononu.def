@@ -497,7 +497,7 @@ EXPORTS
 	_ZTIN6Phonon18MediaSourcePrivateE @ 496 NONAME
 	_ZTIN6Phonon19AbstractAudioOutputE @ 497 NONAME
 	_ZTIN6Phonon19AbstractMediaStreamE @ 498 NONAME
-	_ZTIN6Phonon19AbstractVideoOutputE @ 499 NONAME
+	_ZTIN6Phonon19AbstractVideoOutputE @ 499 NONAME ABSENT
 	_ZTIN6Phonon26AbstractMediaStreamPrivateE @ 500 NONAME
 	_ZTIN6Phonon6EffectE @ 501 NONAME
 	_ZTIN6Phonon9MediaNodeE @ 502 NONAME
@@ -516,7 +516,7 @@ EXPORTS
 	_ZTVN6Phonon18MediaSourcePrivateE @ 515 NONAME
 	_ZTVN6Phonon19AbstractAudioOutputE @ 516 NONAME
 	_ZTVN6Phonon19AbstractMediaStreamE @ 517 NONAME
-	_ZTVN6Phonon19AbstractVideoOutputE @ 518 NONAME
+	_ZTVN6Phonon19AbstractVideoOutputE @ 518 NONAME ABSENT
 	_ZTVN6Phonon26AbstractMediaStreamPrivateE @ 519 NONAME
 	_ZTVN6Phonon6EffectE @ 520 NONAME
 	_ZTVN6Phonon9MediaNodeE @ 521 NONAME
@@ -534,14 +534,14 @@ EXPORTS
 	_ZThn8_N6Phonon19AbstractAudioOutputD1Ev @ 533 NONAME
 	_ZThn8_N6Phonon6EffectD0Ev @ 534 NONAME
 	_ZThn8_N6Phonon6EffectD1Ev @ 535 NONAME
-	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE0EEE @ 536 NONAME
-	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE1EEE @ 537 NONAME
-	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE2EEE @ 538 NONAME
-	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE3EEE @ 539 NONAME
-	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE4EEE @ 540 NONAME
-	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE0EEE @ 541 NONAME
-	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE1EEE @ 542 NONAME
-	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE2EEE @ 543 NONAME
-	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE3EEE @ 544 NONAME
-	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE4EEE @ 545 NONAME
+	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE0EEE @ 536 NONAME ABSENT
+	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE1EEE @ 537 NONAME ABSENT
+	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE2EEE @ 538 NONAME ABSENT
+	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE3EEE @ 539 NONAME ABSENT
+	_ZTIN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE4EEE @ 540 NONAME ABSENT
+	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE0EEE @ 541 NONAME ABSENT
+	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE1EEE @ 542 NONAME ABSENT
+	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE2EEE @ 543 NONAME ABSENT
+	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE3EEE @ 544 NONAME ABSENT
+	_ZTVN6Phonon22ObjectDescriptionModelILNS_21ObjectDescriptionTypeE4EEE @ 545 NONAME ABSENT
 
