@@ -261,7 +261,7 @@ EXPORTS
 	_ZTI20QAbstractVideoBuffer @ 260 NONAME
 	_ZTI21QAbstractVideoSurface @ 261 NONAME
 	_ZTI24QAbstractAudioDeviceInfo @ 262 NONAME
-	_ZTI28QAudioEngineFactoryInterface @ 263 NONAME
+	_ZTI28QAudioEngineFactoryInterface @ 263 NONAME ABSENT
 	_ZTV11QAudioInput @ 264 NONAME
 	_ZTV12QAudioOutput @ 265 NONAME
 	_ZTV17QImageVideoBuffer @ 266 NONAME

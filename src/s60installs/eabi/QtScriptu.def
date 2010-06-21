@@ -329,7 +329,7 @@ EXPORTS
 	_ZTI18QScriptEngineAgent @ 328 NONAME
 	_ZTI22QScriptExtensionPlugin @ 329 NONAME
 	_ZTI25QScriptEngineAgentPrivate @ 330 NONAME
-	_ZTI25QScriptExtensionInterface @ 331 NONAME
+	_ZTI25QScriptExtensionInterface @ 331 NONAME ABSENT
 	_ZTI28QScriptClassPropertyIterator @ 332 NONAME
 	_ZTV12QScriptClass @ 333 NONAME
 	_ZTV13QScriptEngine @ 334 NONAME
