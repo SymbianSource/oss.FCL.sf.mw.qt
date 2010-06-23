@@ -533,7 +533,8 @@ public:
         Zambia = 239,
         Zimbabwe = 240,
         SerbiaAndMontenegro = 241,
-        LastCountry = SerbiaAndMontenegro
+        LatinAmericaAndTheCaribbean = 246,
+        LastCountry = LatinAmericaAndTheCaribbean
     };
 
     enum MeasurementSystem { MetricSystem, ImperialSystem };

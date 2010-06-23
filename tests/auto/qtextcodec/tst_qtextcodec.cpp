@@ -1987,8 +1987,6 @@ static int loadAndConvertMIB(int mib)
 
 void tst_QTextCodec::threadSafety()
 {
-    QList<QByteArray> codecList = QTextCodec::availableCodecs();
-    QList<int> mibList = QTextCodec::availableMibs();
 #ifndef QT_NO_CONCURRENT
     QThreadPool::globalInstance()->setMaxThreadCount(12);
 
@@ -1999,6 +1997,8 @@ void tst_QTextCodec::threadSafety()
 
     QCOMPARE(res.results(), codecList);
     QCOMPARE(res2.results(), mibList);
+#else
+    QSKIP("This function is not yet supported with QT_NO_CONCURRENT defined.", SkipAll);
 #endif
 }
 

@@ -1620,7 +1620,9 @@ void SymbianMakefileGenerator::writeLocFile(QStringList &symbianLangCodes)
         t << "#define STRING_r_caption \"" << fixedTarget  << "\"" << endl;
         t << "#endif" << endl;
     } else {
-            t << "#if LANGUAGE_01" << endl;    
+            t << "#if LANGUAGE_SC" << endl;    
+            t << "#include <" << "01/" << translationFileName  << "_01.loc>" << endl;
+            t << "#elif LANGUAGE_01" << endl;       
             t << "#include <" << "01/" << translationFileName  << "_01.loc>" << endl;
             foreach(QString lang, symbianLangCodes) {
                 if (lang.localeAwareCompare("01") != 0) {

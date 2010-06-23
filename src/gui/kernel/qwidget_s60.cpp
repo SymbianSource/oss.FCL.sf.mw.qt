@@ -358,6 +358,7 @@ void QWidgetPrivate::create_sys(WId window, bool /* initializeWindow */, bool de
     } else if (topLevel) {
         if (!q->testAttribute(Qt::WA_Moved) && !q->testAttribute(Qt::WA_DontShowOnScreen))
             data.crect.moveTopLeft(QPoint(clientRect.iTl.iX, clientRect.iTl.iY));
+
         QScopedPointer<QSymbianControl> control( q_check_ptr(new QSymbianControl(q)) );
         QT_TRAP_THROWING(control->ConstructL(true, desktop));
         control->SetMopParent(static_cast<CEikAppUi*>(S60->appUi()));
@@ -397,8 +398,6 @@ void QWidgetPrivate::create_sys(WId window, bool /* initializeWindow */, bool de
         // We wait until the control is fully constructed before calling setWinId, because
         // this generates a WinIdChanged event.
         setWinId(control.take());
-        if (!desktop)
-          s60UpdateIsOpaque();
 
         if (!desktop)
             s60UpdateIsOpaque(); // must be called after setWinId()
@@ -488,11 +487,8 @@ void QWidgetPrivate::show_sys()
                 && !S60->buttonGroupContainer() && !S60->statusPane()) {
 
             bool isFullscreen = q->windowState() & Qt::WindowFullScreen;
-            bool cbaRequested = q->windowFlags() & Qt::WindowSoftkeysVisibleHint;
 
-            // If the window is fullscreen and has not explicitly requested that the CBA be visible
-            // we delay the creation even more.
-            if ((!isFullscreen || cbaRequested) && !q->testAttribute(Qt::WA_DontShowOnScreen)) {
+            if (!q->testAttribute(Qt::WA_DontShowOnScreen)) {
 
                 // Create the status pane and CBA here
                 CEikAppUi *ui = static_cast<CEikAppUi *>(S60->appUi());
