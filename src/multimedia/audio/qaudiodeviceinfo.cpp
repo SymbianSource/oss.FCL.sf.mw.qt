@@ -43,7 +43,6 @@
 #include <QtMultimedia/qaudioengine.h>
 #include <QtMultimedia/qaudiodeviceinfo.h>
 
-#include <QtCore/qmap.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -106,8 +105,8 @@ public:
 
     The values supported by the the device for each of these
     parameters can be fetched with
-    supportedByteOrders(), supportedChannels(), supportedCodecs(),
-    supportedFrequencies(), supportedSampleSizes(), and
+    supportedByteOrders(), supportedChannelCounts(), supportedCodecs(),
+    supportedSampleRates(), supportedSampleSizes(), and
     supportedSampleTypes(). The combinations supported are dependent on the platform,
     audio plugins installed and the audio device capabilities. If you need a specific format, you can check if
     the device supports it with isFormatSupported(), or fetch a
@@ -239,66 +238,7 @@ QAudioFormat QAudioDeviceInfo::preferredFormat() const
 
 QAudioFormat QAudioDeviceInfo::nearestFormat(const QAudioFormat &settings) const
 {
-    if (isFormatSupported(settings))
-        return settings;
-
-    QAudioFormat nearest = settings;
-
-    nearest.setCodec(QLatin1String("audio/pcm"));
-
-    if (nearest.sampleType() == QAudioFormat::Unknown) {
-        QAudioFormat preferred = preferredFormat();
-        nearest.setSampleType(preferred.sampleType());
-    }
-
-    QMap<int,int> testFrequencies;
-    QList<int> frequenciesAvailable = supportedFrequencies();
-    QMap<int,int> testSampleSizes;
-    QList<int> sampleSizesAvailable = supportedSampleSizes();
-
-    // Get sorted sampleSizes (equal to and ascending values only)
-    if (sampleSizesAvailable.contains(settings.sampleSize()))
-        testSampleSizes.insert(0,settings.sampleSize());
-    sampleSizesAvailable.removeAll(settings.sampleSize());
-    foreach (int size, sampleSizesAvailable) {
-        int larger  = (size > settings.sampleSize()) ? size : settings.sampleSize();
-        int smaller = (size > settings.sampleSize()) ? settings.sampleSize() : size;
-        if (size >= settings.sampleSize()) {
-            int diff = larger - smaller;
-            testSampleSizes.insert(diff, size);
-        }
-    }
-
-    // Get sorted frequencies (equal to and ascending values only)
-    if (frequenciesAvailable.contains(settings.frequency()))
-        testFrequencies.insert(0,settings.frequency());
-    frequenciesAvailable.removeAll(settings.frequency());
-    foreach (int frequency, frequenciesAvailable) {
-        int larger  = (frequency > settings.frequency()) ? frequency : settings.frequency();
-        int smaller = (frequency > settings.frequency()) ? settings.frequency() : frequency;
-        if (frequency >= settings.frequency()) {
-            int diff = larger - smaller;
-            testFrequencies.insert(diff, frequency);
-        }
-    }
-
-    // Try to find nearest
-    // Check ascending frequencies, ascending sampleSizes
-    QMapIterator<int, int> sz(testSampleSizes);
-    while (sz.hasNext()) {
-        sz.next();
-        nearest.setSampleSize(sz.value());
-        QMapIterator<int, int> i(testFrequencies);
-        while (i.hasNext()) {
-            i.next();
-            nearest.setFrequency(i.value());
-            if (isFormatSupported(nearest))
-                return nearest;
-        }
-    }
-
-    //Fallback
-    return preferredFormat();
+    return isNull() ? QAudioFormat() : d->info->nearestFormat(settings);
 }
 
 /*!
@@ -319,7 +259,20 @@ QStringList QAudioDeviceInfo::supportedCodecs() const
 }
 
 /*!
-    Returns a list of supported frequencies.
+    Returns a list of supported sample rates.
+
+    \since 4.7
+*/
+
+QList<int> QAudioDeviceInfo::supportedSampleRates() const
+{
+    return supportedFrequencies();
+}
+
+/*!
+    \obsolete
+
+    Use supportedSampleRates() instead.
 */
 
 QList<int> QAudioDeviceInfo::supportedFrequencies() const
@@ -328,7 +281,20 @@ QList<int> QAudioDeviceInfo::supportedFrequencies() const
 }
 
 /*!
-    Returns a list of supported channels.
+    Returns a list of supported channel counts.
+
+    \since 4.7
+*/
+
+QList<int> QAudioDeviceInfo::supportedChannelCounts() const
+{
+    return supportedChannels();
+}
+
+/*!
+    \obsolete
+
+    Use supportedChannelCount() instead.
 */
 
 QList<int> QAudioDeviceInfo::supportedChannels() const

@@ -44,8 +44,8 @@
 #include "private/qnet_unix_p.h"
 #include "qiodevice.h"
 #include "qhostaddress.h"
+#include "qelapsedtimer.h"
 #include "qvarlengtharray.h"
-#include "qdatetime.h"
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -851,7 +851,11 @@ qint64 QNativeSocketEnginePrivate::nativeWrite(const char *data, qint64 len)
     // Symbian does not support signals natively and Open C returns EINTR when moving to offline
     writtenBytes = ::write(socketDescriptor, data, len);
 #else
-    writtenBytes = qt_safe_write(socketDescriptor, data, len);
+    // loop while ::write() returns -1 and errno == EINTR, in case
+    // of an interrupting signal.
+    do {
+        writtenBytes = qt_safe_write(socketDescriptor, data, len);
+    } while (writtenBytes < 0 && errno == EINTR);
 #endif
 
     if (writtenBytes < 0) {
@@ -895,7 +899,9 @@ qint64 QNativeSocketEnginePrivate::nativeRead(char *data, qint64 maxSize)
 #ifdef Q_OS_SYMBIAN
     r = ::read(socketDescriptor, data, maxSize);
 #else
-    r = qt_safe_read(socketDescriptor, data, maxSize);
+    do {
+        r = qt_safe_read(socketDescriptor, data, maxSize);
+    } while (r == -1 && errno == EINTR);
 #endif
 
     if (r < 0) {
@@ -1011,7 +1017,7 @@ int QNativeSocketEnginePrivate::nativeSelect(int timeout, bool checkRead, bool c
 #ifndef Q_OS_SYMBIAN
     ret = qt_safe_select(socketDescriptor + 1, &fdread, &fdwrite, 0, timeout < 0 ? 0 : &tv);
 #else
-    QTime timer;
+    QElapsedTimer timer;
     timer.start();
 
     do {

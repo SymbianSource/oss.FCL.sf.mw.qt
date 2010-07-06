@@ -186,9 +186,6 @@ bool QSystemTrayIconSys::winEvent( MSG *m, long *result )
                         gpos.ry() = maxY;
                         q->contextMenu()->move(gpos);
                     }
-
-                    q->contextMenu()->activateWindow();
-                    //Must be activated for proper keyboardfocus and menu closing on windows:
                 }
                 emit q->activated(QSystemTrayIcon::Context);
                 break;

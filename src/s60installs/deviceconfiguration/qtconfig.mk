@@ -23,9 +23,9 @@ endif
 CONFIGURE_ROOT := $(subst src\s60installs\deviceconfiguration,,$(EXTENSION_ROOT))
 
 
-TARGETDIR := $(EPOC_ROOT)$(INSTALLTOOLSPATH)
+TARGETDIR := $(EPOC_ROOT)$(INSTALLPATH)
 SOURCEDIR := $(QT_ROOT)bin/
-TARGET_TOOLS := $(EPOC_ROOT)$(QMAKEPATH)qmake$(DOTEXE) $(TARGETDIR)moc$(DOTEXE) $(TARGETDIR)rcc$(DOTEXE) $(TARGETDIR)uic$(DOTEXE)
+TARGET_TOOLS := $(EPOC_ROOT)$(QMAKEPATH)qmake$(DOTEXE) $(TARGETDIR)moc$(DOTEXE) $(TARGETDIR)rcc$(DOTEXE) $(TARGETDIR)uic$(DOTEXE) $(TARGETDIR)/lrelease$(DOTEXE)
 SOURCE_TOOLS := $(SOURCEDIR)qmake$(DOTEXE) $(SOURCEDIR)moc$(DOTEXE) $(SOURCEDIR)rcc$(DOTEXE) $(SOURCEDIR)uic$(DOTEXE)
 
 XPLATFORM:=symbian-abld
@@ -37,7 +37,7 @@ $(SOURCEDIR)qmake$(DOTEXE): $(QT_ROOT)configure$(DOTEXE)
 	echo Configuring Qt for build on $(CONF_PLATFORM) with $(XPLATFORM) as build setup
 	cd $(CONFIGURE_ROOT) && set INCLUDE=  && set LIB=  && $(QT_ROOT)configure$(DOTEXE) -platform $(CONF_PLATFORM) -xplatform $(XPLATFORM) $(OPTIONS)
 	perl $(QT_ROOT)/bin/syncqt -base-dir $(QT_ROOT) -copy -oneway -outdir $(EPOC_ROOT)epoc32/include/ -outsubdir mw
-	$(COPY) $(EPOC_ROOT)epoc32/gcc_mingw/bin/mingwm10.dll $(EPOC_ROOT)$(INSTALLTOOLSPATH)mingwm10.dll
+	$(COPY) $(EPOC_ROOT)epoc32/gcc_mingw/bin/mingwm10.dll $(EPOC_ROOT)$(INSTALLPATH)mingwm10.dll
 	$(COPY) $(EPOC_ROOT)epoc32/gcc_mingw/bin/mingwm10.dll $(QT_ROOT)bin/mingwm10.dll
 	perl $(EPOCROOT)epoc32/tools/emkdir.pl $(EPOC_ROOT)epoc32/tools/qt/mkspecs
 	xcopy /s $(CONFIGURE_ROOT)\mkspecs $(EPOCROOT)epoc32\tools\qt\mkspecs

@@ -123,9 +123,11 @@ static PtrWTClose ptrWTClose = 0;
 static PtrWTInfo ptrWTInfo = 0;
 static PtrWTQueueSizeGet ptrWTQueueSizeGet = 0;
 static PtrWTQueueSizeSet ptrWTQueueSizeSet = 0;
+#ifndef QT_NO_TABLETEVENT
 static void init_wintab_functions();
 static void qt_tablet_init();
 static void qt_tablet_cleanup();
+#endif // QT_NO_TABLETEVENT
 extern HCTX qt_tablet_context;
 extern bool qt_tablet_tilt_support;
 
@@ -136,6 +138,8 @@ QWidget* qt_get_tablet_widget()
 }
 
 extern bool qt_is_gui_used;
+
+#ifndef QT_NO_TABLETEVENT
 static void init_wintab_functions()
 {
 #if defined(Q_OS_WINCE)
@@ -227,6 +231,7 @@ static void qt_tablet_cleanup()
     delete qt_tablet_widget;
     qt_tablet_widget = 0;
 }
+#endif // QT_NO_TABLETEVENT
 
 const QString qt_reg_winclass(QWidget *w);                // defined in qapplication_win.cpp
 
@@ -243,7 +248,7 @@ static QCursor *mouseGrbCur = 0;
 static QWidget *keyboardGrb = 0;
 static HHOOK   journalRec  = 0;
 
-extern "C" LRESULT CALLBACK QtWndProc(HWND, UINT, WPARAM, LPARAM);
+extern "C" LRESULT QT_WIN_CALLBACK QtWndProc(HWND, UINT, WPARAM, LPARAM);
 
 #define XCOORD_MAX 16383
 #define WRECT_MAX 16383
@@ -512,8 +517,10 @@ void QWidgetPrivate::create_sys(WId window, bool initializeWindow, bool destroyO
         DestroyWindow(destroyw);
     }
 
+#ifndef QT_NO_TABLETEVENT
     if (q != qt_tablet_widget && QWidgetPrivate::mapper)
         qt_tablet_init();
+#endif // QT_NO_TABLETEVENT
 
     if (q->testAttribute(Qt::WA_DropSiteRegistered))
         registerDropSite(true);
@@ -825,7 +832,7 @@ QCursor *qt_grab_cursor()
 
 // The procedure does nothing, but is required for mousegrabbing to work
 #ifndef Q_WS_WINCE
-LRESULT CALLBACK qJournalRecordProc(int nCode, WPARAM wParam, LPARAM lParam)
+LRESULT QT_WIN_CALLBACK qJournalRecordProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     return CallNextHookEx(journalRec, nCode, wParam, lParam);
 }
@@ -1094,6 +1101,21 @@ void QWidgetPrivate::show_sys()
         return;
     }
 
+    if (data.window_flags & Qt::Window) {
+        QTLWExtra *extra = topData();
+        if (!extra->hotkeyRegistered) {
+            // Try to set the hotkey using information from STARTUPINFO
+            STARTUPINFO startupInfo;
+            GetStartupInfo(&startupInfo);
+            // If STARTF_USEHOTKEY is set, hStdInput is the virtual keycode
+            if (startupInfo.dwFlags & 0x00000200) {
+                WPARAM hotKey = (WPARAM)startupInfo.hStdInput;
+                SendMessage(data.winid, WM_SETHOTKEY, hotKey, 0);
+            }
+            extra->hotkeyRegistered = 1;
+        }
+    }
+
     int sm = SW_SHOWNORMAL;
     bool fakedMaximize = false;
     if (q->isWindow()) {
@@ -1141,6 +1163,11 @@ void QWidgetPrivate::show_sys()
             data.window_state |= Qt::WindowMinimized;
         if (IsZoomed(q->internalWinId()))
             data.window_state |= Qt::WindowMaximized;
+        // This is to resolve the problem where popups are opened from the
+        // system tray and not being implicitly activated
+        if (q->windowType() == Qt::Popup &&
+            (!q->parentWidget() || !q->parentWidget()->isActiveWindow()))
+            q->activateWindow();
     }
 
     winSetupGestures();
@@ -1687,6 +1714,7 @@ void QWidgetPrivate::deleteSysExtra()
 
 void QWidgetPrivate::createTLSysExtra()
 {
+    extra->topextra->hotkeyRegistered = 0;
     extra->topextra->savedFlags = 0;
     extra->topextra->winIconBig = 0;
     extra->topextra->winIconSmall = 0;

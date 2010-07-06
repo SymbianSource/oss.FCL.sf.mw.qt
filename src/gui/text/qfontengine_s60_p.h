@@ -58,10 +58,6 @@
 #include "qsize.h"
 #include <openfont.h>
 
-#ifdef SYMBIAN_GDI_GLYPHDATA
-#define Q_SYMBIAN_HAS_FONTTABLE_API
-#endif
-
 class CFont;
 
 QT_BEGIN_NAMESPACE
@@ -70,22 +66,20 @@ QT_BEGIN_NAMESPACE
 class QSymbianTypeFaceExtras
 {
 public:
-    QSymbianTypeFaceExtras(CFont* cFont, COpenFont *openFont = 0);
-    ~QSymbianTypeFaceExtras();
+    QSymbianTypeFaceExtras(CFont* fontOwner, COpenFont *font);
 
     QByteArray getSfntTable(uint tag) const;
     bool getSfntTableData(uint tag, uchar *buffer, uint *length) const;
-    const uchar *cmap() const;
+    const unsigned char *cmap() const;
     CFont *fontOwner() const;
 
 private:
-    CFont* m_cFont;
+    COpenFont *m_font;
+    mutable MOpenFontTrueTypeExtension *m_trueTypeExtension;
+    mutable const unsigned char *m_cmap;
     mutable bool m_symbolCMap;
     mutable QByteArray m_cmapTable;
-#ifndef Q_SYMBIAN_HAS_FONTTABLE_API
-    COpenFont *m_openFont;
-    mutable MOpenFontTrueTypeExtension *m_trueTypeExtension;
-#endif // Q_SYMBIAN_HAS_FONTTABLE_API
+    CFont* m_fontOwner;
 };
 
 class QFontEngineS60 : public QFontEngine

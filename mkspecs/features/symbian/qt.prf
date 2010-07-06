@@ -51,7 +51,8 @@ contains(CONFIG, qt):!contains(TARGET.UID3, 0x2001E61C):!contains(TARGET.UID3, 0
 isEmpty(TARGET.EPOCSTACKSIZE):TARGET.EPOCSTACKSIZE = 0x14000
 isEmpty(TARGET.EPOCHEAPSIZE):TARGET.EPOCHEAPSIZE = 0x020000 0x800000
 
-#QTP: add userinclude and app layer includes (temporarily only) 
-MMP_RULES+="USERINCLUDE  ."
-INCLUDEPATH += $$APP_LAYER_SYSTEMINCLUDE
-
+# Workaround for the fact that Gnupoc and Symbian chose different approaches to
+# the letter casing of headers.
+contains(CONFIG, is_using_gnupoc) {
+    INCLUDEPATH += $${PWD}/../../common/symbian/header-wrappers
+}

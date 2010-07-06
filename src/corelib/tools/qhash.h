@@ -299,6 +299,7 @@ public:
     inline void detach() { if (d->ref != 1) detach_helper(); }
     inline bool isDetached() const { return d->ref == 1; }
     inline void setSharable(bool sharable) { if (!sharable) detach(); d->sharable = sharable; }
+    inline bool isSharedWith(const QHash<Key, T> &other) const { return d == other.d; }
 
     void clear();
 
@@ -624,6 +625,7 @@ template <class Key, class T>
 Q_OUTOFLINE_TEMPLATE QList<Key> QHash<Key, T>::uniqueKeys() const
 {
     QList<Key> res;
+    res.reserve(size()); // May be too much, but assume short lifetime
     const_iterator i = begin();
     if (i != end()) {
         for (;;) {
@@ -643,6 +645,7 @@ template <class Key, class T>
 Q_OUTOFLINE_TEMPLATE QList<Key> QHash<Key, T>::keys() const
 {
     QList<Key> res;
+    res.reserve(size());
     const_iterator i = begin();
     while (i != end()) {
         res.append(i.key());
@@ -687,6 +690,7 @@ template <class Key, class T>
 Q_OUTOFLINE_TEMPLATE QList<T> QHash<Key, T>::values() const
 {
     QList<T> res;
+    res.reserve(size());
     const_iterator i = begin();
     while (i != end()) {
         res.append(i.value());
@@ -927,7 +931,7 @@ public:
     { return QHash<Key, T>::insertMulti(key, value); }
 
     inline QMultiHash &operator+=(const QMultiHash &other)
-    { this->unite(other); return *this; }
+    { unite(other); return *this; }
     inline QMultiHash operator+(const QMultiHash &other) const
     { QMultiHash result = *this; result += other; return result; }
 
@@ -1002,7 +1006,12 @@ Q_INLINE_TEMPLATE int QMultiHash<Key, T>::remove(const Key &key, const T &value)
     typename QHash<Key, T>::iterator end(QHash<Key, T>::end());
     while (i != end && i.key() == key) {
         if (i.value() == value) {
-            i = this->erase(i);
+#if defined(Q_CC_RVCT)
+            // RVCT has problems with scoping, apparently.
+            i = QHash<Key, T>::erase(i);
+#else
+            i = erase(i);
+#endif
             ++n;
         } else {
             ++i;

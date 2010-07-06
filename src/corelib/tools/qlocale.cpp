@@ -129,6 +129,11 @@ inline bool isascii(int c)
 }
 #endif
 
+#if defined(Q_OS_SYMBIAN)
+void qt_symbianUpdateSystemPrivate();
+void qt_symbianInitSystemLocale();
+#endif
+
 /******************************************************************************
 ** Helpers for accessing Qt locale database
 */
@@ -471,7 +476,7 @@ static QString winToQtFormat(const QString &sys_fmt)
             if (text == QLatin1String("'"))
                 result += QLatin1String("''");
             else
-                result += QLatin1Char('\'') + text + QLatin1Char('\'');
+                result += QString(QLatin1Char('\'') + text + QLatin1Char('\''));
             continue;
         }
 
@@ -687,8 +692,8 @@ QVariant QSystemLocale::query(QueryType type, QVariant in = QVariant()) const
 
     case DateTimeFormatLong:
     case DateTimeFormatShort:
-        return query(type == DateTimeFormatLong ? DateFormatLong : DateFormatShort).toString()
-            + QLatin1Char(' ') + query(type == DateTimeFormatLong ? TimeFormatLong : TimeFormatShort).toString();
+        return QString(query(type == DateTimeFormatLong ? DateFormatLong : DateFormatShort).toString()
+            + QLatin1Char(' ') + query(type == DateTimeFormatLong ? TimeFormatLong : TimeFormatShort).toString());
     case DayNameLong:
     case DayNameShort:
         return winDayName(in.toInt(), (type == DayNameShort));
@@ -704,8 +709,8 @@ QVariant QSystemLocale::query(QueryType type, QVariant in = QVariant()) const
     case DateTimeToStringShort:
     case DateTimeToStringLong: {
         const QDateTime dt = in.toDateTime();
-        return winDateToString(dt.date(), type == DateTimeToStringShort ? DATE_SHORTDATE : DATE_LONGDATE)
-            + QLatin1Char(' ') + winTimeToString(dt.time()); }
+        return QString(winDateToString(dt.date(), type == DateTimeToStringShort ? DATE_SHORTDATE : DATE_LONGDATE)
+            + QLatin1Char(' ') + winTimeToString(dt.time())); }
 
     case ZeroDigit:
         locale_info = LOCALE_SNATIVEDIGITS;
@@ -749,7 +754,6 @@ struct WindowsToISOListElt {
     char iso_name[6];
 };
 
-/* NOTE: This array should be sorted by the first column! */
 static const WindowsToISOListElt windows_to_iso_list[] = {
     { 0x0401, "ar_SA" },
     { 0x0402, "bg\0  " },
@@ -1414,6 +1418,9 @@ static const QSystemLocale *systemLocale()
 {
     if (_systemLocale)
         return _systemLocale;
+#if defined(Q_OS_SYMBIAN)
+    qt_symbianInitSystemLocale();
+#endif
     return QSystemLocale_globalSystemLocale();
 }
 
@@ -1423,6 +1430,10 @@ void QLocalePrivate::updateSystemPrivate()
     if (!system_lp)
         system_lp = globalLocalePrivate();
     *system_lp = *sys_locale->fallbackLocale().d();
+
+#if defined(Q_OS_SYMBIAN)
+    qt_symbianUpdateSystemPrivate();
+#endif
 
     QVariant res = sys_locale->query(QSystemLocale::LanguageId, QVariant());
     if (!res.isNull())
@@ -1577,7 +1588,7 @@ QDataStream &operator>>(QDataStream &ds, QLocale &l)
     This constructor converts the locale name to a language/country
     pair; it does not use the system locale database.
 
-    QLocale's data is based on Common Locale Data Repository v1.6.1.
+    QLocale's data is based on Common Locale Data Repository v1.8.1.
 
     The double-to-string and string-to-double conversion functions are
     covered by the following licenses:
@@ -1778,6 +1789,55 @@ QDataStream &operator>>(QDataStream &ds, QLocale &l)
     \value Hawaiian
     \value Tyap
     \value Chewa
+    \value Filipino
+    \value SwissGerman
+    \value SichuanYi
+    \value Kpelle
+    \value LowGerman
+    \value SouthNdebele
+    \value NorthernSotho
+    \value NorthernSami
+    \value Taroko
+    \value Gusii
+    \value Taita
+    \value Fulah
+    \value Kikuyu
+    \value Samburu
+    \value Sena
+    \value NorthNdebele
+    \value Rombo
+    \value Tachelhit
+    \value Kabyle
+    \value Nyankole
+    \value Bena
+    \value Vunjo
+    \value Bambara
+    \value Embu
+    \value Cherokee
+    \value Morisyen
+    \value Makonde
+    \value Langi
+    \value Ganda
+    \value Bemba
+    \value Kabuverdianu
+    \value Meru
+    \value Kalenjin
+    \value Nama
+    \value Machame
+    \value Colognian
+    \value Masai
+    \value Soga
+    \value Luyia
+    \value Asu
+    \value Teso
+    \value Saho
+    \value KoyraChiini
+    \value Rwa
+    \value Luo
+    \value Chiga
+    \value CentralMoroccoTamazight
+    \value KoyraboroSenni
+    \value Shambala
     \omitvalue LastLanguage
 
     \sa language()
@@ -2030,6 +2090,11 @@ QDataStream &operator>>(QDataStream &ds, QLocale &l)
     \value Yugoslavia
     \value Zambia
     \value Zimbabwe
+    \value SerbiaAndMontenegro
+    \value Montenegro
+    \value Serbia
+    \value SaintBarthelemy
+    \value SaintMartin
     \omitvalue LastCountry
 
     \sa country()
@@ -2924,7 +2989,7 @@ QDate QLocale::toDate(const QString &string, FormatType format) const
 #ifndef QT_NO_DATESTRING
 QDateTime QLocale::toDateTime(const QString &string, FormatType format) const
 {
-    return toDateTime(string, dateFormat(format));
+    return toDateTime(string, dateTimeFormat(format));
 }
 #endif
 
@@ -3154,7 +3219,7 @@ QString QLocale::toString(double i, char f, int prec) const
     On Windows and Mac, this locale will use the decimal/grouping characters and date/time
     formats specified in the system configuration panel.
 
-    \sa QTextCodec::locale() c()
+    \sa c()
 */
 
 QLocale QLocale::system()
@@ -4300,6 +4365,7 @@ bool QLocalePrivate::validateChars(const QString &str, NumberMode numMode, QByte
 
     const bool scientific = numMode == DoubleScientificMode;
     bool lastWasE = false;
+    bool lastWasDigit = false;
     int eCnt = 0;
     int decPointCnt = 0;
     bool dec = false;
@@ -4314,6 +4380,7 @@ bool QLocalePrivate::validateChars(const QString &str, NumberMode numMode, QByte
                 if (dec && decDigits != -1 && decDigits < ++decDigitCnt)
                     return false;
             }
+            lastWasDigit = true;
         } else {
             switch (c) {
                 case '.':
@@ -4351,7 +4418,10 @@ bool QLocalePrivate::validateChars(const QString &str, NumberMode numMode, QByte
                     break;
 
                 case ',':
-                    return false;
+                    //it can only be placed after a digit which is before the decimal point
+                    if (!lastWasDigit || decPointCnt > 0)
+                        return false;
+                    break;
 
                 case 'e':
                     if (scientific) {
@@ -4369,10 +4439,12 @@ bool QLocalePrivate::validateChars(const QString &str, NumberMode numMode, QByte
                     // If it's not a valid digit, it shall be Invalid.
                     return false;
             }
+            lastWasDigit = false;
         }
 
         lastWasE = c == 'e';
-        buff->append(c);
+        if (c != ',')
+            buff->append(c);
     }
 
     return true;

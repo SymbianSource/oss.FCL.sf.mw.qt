@@ -50,20 +50,20 @@
 #include "qapplication.h"
 
 #include <w32std.h>
-#include <AknsConstants.h>
+#include <aknsconstants.h>
 #include <aknconsts.h>
-#include <AknsItemID.h>
-#include <AknsUtils.h>
-#include <AknsDrawUtils.h>
-#include <AknsSkinInstance.h>
-#include <AknsBasicBackgroundControlContext.h>
+#include <aknsitemid.h>
+#include <aknsutils.h>
+#include <aknsdrawutils.h>
+#include <aknsskininstance.h>
+#include <aknsbasicbackgroundcontrolcontext.h>
 #include <avkon.mbg>
 #include <AknFontAccess.h>
 #include <AknLayoutFont.h>
 #include <AknUtils.h>
 #include <aknnavi.h>
 #include <gulicon.h>
-#include <AknBitmapAnimation.h>
+#include <aknbitmapanimation.h>
 
 #if !defined(QT_NO_STYLE_S60) || defined(QT_PLUGIN)
 

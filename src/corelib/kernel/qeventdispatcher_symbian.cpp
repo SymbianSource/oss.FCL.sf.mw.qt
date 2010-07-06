@@ -100,40 +100,25 @@ static inline int qt_socket_select(int nfds, fd_set *readfds, fd_set *writefds, 
 class QSelectMutexGrabber
 {
 public:
-    QSelectMutexGrabber(int fd, QMutex *threadMutex, QMutex *selectCallMutex)
-        : m_threadMutex(threadMutex), m_selectCallMutex(selectCallMutex), bHasThreadLock(false)
+    QSelectMutexGrabber(int fd, QMutex *mutex)
+        : m_mutex(mutex)
     {
-        // see if selectThread is waiting m_waitCond
-        // if yes ... dont write to pipe
-        if (m_threadMutex->tryLock()) {
-            bHasThreadLock = true;
+        if (m_mutex->tryLock())
             return;
-        }
-
-        // still check that SelectThread
-        // is in select call
-        if (m_selectCallMutex->tryLock()) {
-            m_selectCallMutex->unlock();
-            return;
-        }
 
         char dummy = 0;
         qt_pipe_write(fd, &dummy, 1);
 
-        m_threadMutex->lock();
-        bHasThreadLock = true;
+        m_mutex->lock();
     }
 
     ~QSelectMutexGrabber()
     {
-        if(bHasThreadLock)
-            m_threadMutex->unlock();
+        m_mutex->unlock();
     }
 
 private:
-    QMutex *m_threadMutex;
-    QMutex *m_selectCallMutex;
-    bool bHasThreadLock;
+    QMutex *m_mutex;
 };
 
 /*
@@ -415,12 +400,7 @@ void QSelectThread::run()
 
         int ret;
         int savedSelectErrno;
-        {
-            // helps fighting the race condition between
-            // selctthread and new socket requests (cancel, restart ...)
-            QMutexLocker locker(&m_selectCallMutex);
-            ret = qt_socket_select(maxfd, &readfds, &writefds, &exceptionfds, 0);
-        }
+        ret = qt_socket_select(maxfd, &readfds, &writefds, &exceptionfds, 0);
         savedSelectErrno = errno;
 
         char buffer;
@@ -484,9 +464,9 @@ void QSelectThread::run()
                 } // end for
 
                 // traversed all, so update
-                updateActivatedNotifiers(QSocketNotifier::Exception, &exceptionfds);
                 updateActivatedNotifiers(QSocketNotifier::Read, &readfds);
                 updateActivatedNotifiers(QSocketNotifier::Write, &writefds);
+                updateActivatedNotifiers(QSocketNotifier::Exception, &exceptionfds);
 
                 break;
             case EINTR: // Should never occur on Symbian, but this is future proof!
@@ -496,9 +476,9 @@ void QSelectThread::run()
                 break;
             }
         } else {
-            updateActivatedNotifiers(QSocketNotifier::Exception, &exceptionfds);
             updateActivatedNotifiers(QSocketNotifier::Read, &readfds);
             updateActivatedNotifiers(QSocketNotifier::Write, &writefds);
+            updateActivatedNotifiers(QSocketNotifier::Exception, &exceptionfds);
         }
 
         m_waitCond.wait(&m_mutex);
@@ -515,9 +495,7 @@ void QSelectThread::requestSocketEvents ( QSocketNotifier *notifier, TRequestSta
         start();
     }
 
-    QMutexLocker locker(&m_grabberMutex);
-
-    QSelectMutexGrabber lock(m_pipeEnds[1], &m_mutex, &m_selectCallMutex);
+    QSelectMutexGrabber lock(m_pipeEnds[1], &m_mutex);
 
     Q_ASSERT(!m_AOStatuses.contains(notifier));
 
@@ -528,9 +506,7 @@ void QSelectThread::requestSocketEvents ( QSocketNotifier *notifier, TRequestSta
 
 void QSelectThread::cancelSocketEvents ( QSocketNotifier *notifier )
 {
-    QMutexLocker locker(&m_grabberMutex);
-
-    QSelectMutexGrabber lock(m_pipeEnds[1], &m_mutex, &m_selectCallMutex);
+    QSelectMutexGrabber lock(m_pipeEnds[1], &m_mutex);
 
     m_AOStatuses.remove(notifier);
 
@@ -539,9 +515,7 @@ void QSelectThread::cancelSocketEvents ( QSocketNotifier *notifier )
 
 void QSelectThread::restart()
 {
-    QMutexLocker locker(&m_grabberMutex);
-
-    QSelectMutexGrabber lock(m_pipeEnds[1], &m_mutex, &m_selectCallMutex);
+    QSelectMutexGrabber lock(m_pipeEnds[1], &m_mutex);
 
     m_waitCond.wakeAll();
 }
@@ -737,6 +711,7 @@ const int baseDelay = 1000; // minimum delay time used when backing off to allow
 
 QEventDispatcherSymbian::QEventDispatcherSymbian(QObject *parent)
     : QAbstractEventDispatcher(parent),
+      m_selectThread(0),
       m_activeScheduler(0),
       m_wakeUpAO(0),
       m_completeDeferredAOs(0),
@@ -768,11 +743,19 @@ void QEventDispatcherSymbian::startingUp()
     wakeUp();
 }
 
+QSelectThread& QEventDispatcherSymbian::selectThread() {
+    if (!m_selectThread)
+        m_selectThread = new QSelectThread;
+    return *m_selectThread;
+}
+
 void QEventDispatcherSymbian::closingDown()
 {
-    if (m_selectThread.isRunning()) {
-        m_selectThread.stop();
+    if (m_selectThread && m_selectThread->isRunning()) {
+        m_selectThread->stop();
     }
+    delete m_selectThread;
+    m_selectThread = 0;
 
     delete m_completeDeferredAOs;
     delete m_wakeUpAO;
@@ -1028,12 +1011,13 @@ void QEventDispatcherSymbian::registerSocketNotifier ( QSocketNotifier * notifie
 {
     QSocketActiveObject *socketAO = q_check_ptr(new QSocketActiveObject(this, notifier));
     m_notifiers.insert(notifier, socketAO);
-    m_selectThread.requestSocketEvents(notifier, &socketAO->iStatus);
+    selectThread().requestSocketEvents(notifier, &socketAO->iStatus);
 }
 
 void QEventDispatcherSymbian::unregisterSocketNotifier ( QSocketNotifier * notifier )
 {
-    m_selectThread.cancelSocketEvents(notifier);
+    if (m_selectThread)
+        m_selectThread->cancelSocketEvents(notifier);
     if (m_notifiers.contains(notifier)) {
         QSocketActiveObject *sockObj = *m_notifiers.find(notifier);
         m_deferredSocketEvents.removeAll(sockObj);
@@ -1044,7 +1028,7 @@ void QEventDispatcherSymbian::unregisterSocketNotifier ( QSocketNotifier * notif
 
 void QEventDispatcherSymbian::reactivateSocketNotifier(QSocketNotifier *notifier)
 {
-    m_selectThread.requestSocketEvents(notifier, &m_notifiers[notifier]->iStatus);
+    selectThread().requestSocketEvents(notifier, &m_notifiers[notifier]->iStatus);
 }
 
 void QEventDispatcherSymbian::registerTimer ( int timerId, int interval, QObject * object )
@@ -1127,3 +1111,5 @@ void CQtActiveScheduler::Error(TInt aError) const
 }
 
 QT_END_NAMESPACE
+
+#include "moc_qeventdispatcher_symbian_p.cpp"

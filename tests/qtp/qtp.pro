@@ -10,6 +10,6 @@ SUBDIRS = \
 	qtp_svgviewer \
 	qtp_wiggly
 
-contains(QT_CONFIG, webkit): SUBDIRS += qtp_anomaly
+#contains(QT_CONFIG, webkit): SUBDIRS += qtp_anomaly
 contains(QT_CONFIG, openvg): SUBDIRS += qtp_star
 

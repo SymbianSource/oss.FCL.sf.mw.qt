@@ -33,7 +33,7 @@ contains(QT_CONFIG, egl) {
         qwindowsurface_vgegl.cpp
 }
 
-symbian: DEFINES += QVG_RECREATE_ON_SIZE_CHANGE QVG_SCISSOR_CLIP QVG_BUFFER_SCROLLING 
+symbian: DEFINES += QVG_RECREATE_ON_SIZE_CHANGE QVG_BUFFER_SCROLLING
 
 include(../qbase.pri)
 

@@ -67,6 +67,7 @@
 //   #include <private/qpolygonclipper_p.h>
 //   #include <private/qrasterizer_p.h>
 #include <private/qimage_p.h>
+#include <private/qstatictext_p.h>
 
 #include "qpaintengine_raster_p.h"
 //   #include "qbezier_p.h"
@@ -250,6 +251,11 @@ static void qt_debug_path(const QPainterPath &path)
 }
 #endif
 
+QRasterPaintEnginePrivate::QRasterPaintEnginePrivate() :
+    QPaintEngineExPrivate(),
+    cachedLines(0)
+{
+}
 
 
 /*!
@@ -335,25 +341,12 @@ void QRasterPaintEngine::init()
     d->hdc = 0;
 #endif
 
-    d->rasterPoolSize = 8192;
-    d->rasterPoolBase =
-#if defined(Q_WS_WIN64)
-        // We make use of setjmp and longjmp in qgrayraster.c which requires
-        // 16-byte alignment, hence we hardcode this requirement here..
-        (unsigned char *) _aligned_malloc(d->rasterPoolSize, sizeof(void*) * 2);
-#else
-        (unsigned char *) malloc(d->rasterPoolSize);
-#endif
-    Q_CHECK_PTR(d->rasterPoolBase);
-
     // The antialiasing raster.
     d->grayRaster.reset(new QT_FT_Raster);
     Q_CHECK_PTR(d->grayRaster.data());
     if (qt_ft_grays_raster.raster_new(0, d->grayRaster.data()))
         QT_THROW(std::bad_alloc()); // an error creating the raster is caused by a bad malloc
 
-
-    qt_ft_grays_raster.raster_reset(*d->grayRaster.data(), d->rasterPoolBase, d->rasterPoolSize);
 
     d->rasterizer.reset(new QRasterizer);
     d->rasterBuffer.reset(new QRasterBuffer());
@@ -435,12 +428,6 @@ void QRasterPaintEngine::init()
 QRasterPaintEngine::~QRasterPaintEngine()
 {
     Q_D(QRasterPaintEngine);
-
-#if defined(Q_WS_WIN64)
-    _aligned_free(d->rasterPoolBase);
-#else
-    free(d->rasterPoolBase);
-#endif
 
     qt_ft_grays_raster.raster_done(*d->grayRaster.data());
 }
@@ -1724,9 +1711,10 @@ void QRasterPaintEngine::stroke(const QVectorPath &path, const QPen &pen)
         if (patternLength > 0) {
             int n = qFloor(dashOffset / patternLength);
             dashOffset -= n * patternLength;
-            while (dashOffset > pattern.at(dashIndex)) {
+            while (dashOffset >= pattern.at(dashIndex)) {
                 dashOffset -= pattern.at(dashIndex);
-                dashIndex = (dashIndex + 1) % pattern.size();
+                if (++dashIndex >= pattern.size())
+                    dashIndex = 0;
                 inDash = !inDash;
             }
         }
@@ -1737,7 +1725,6 @@ void QRasterPaintEngine::stroke(const QVectorPath &path, const QPen &pen)
         const QLineF *lines = reinterpret_cast<const QLineF *>(path.points());
 
         for (int i = 0; i < lineCount; ++i) {
-            dashOffset = s->lastPen.dashOffset();
             if (lines[i].p1() == lines[i].p2()) {
                 if (s->lastPen.capStyle() != Qt::FlatCap) {
                     QPointF p = lines[i].p1();
@@ -2551,7 +2538,7 @@ void QRasterPaintEngine::drawImage(const QRectF &r, const QImage &img, const QRe
     int sr_t = qFloor(sr.top());
     int sr_b = qCeil(sr.bottom()) - 1;
 
-    if (!s->flags.antialiased && sr_l == sr_r && sr_t == sr_b) {
+    if (s->matrix.type() <= QTransform::TxScale && !s->flags.antialiased && sr_l == sr_r && sr_t == sr_b) {
         // as fillRect will apply the aliased coordinate delta we need to
         // subtract it here as we don't use it for image drawing
         QTransform old = s->matrix;
@@ -3002,27 +2989,22 @@ void QRasterPaintEngine::alphaPenBlt(const void* src, int bpl, int depth, int rx
         blend(current, spans, &s->penData);
 }
 
-void QRasterPaintEngine::drawCachedGlyphs(const QPointF &p, const QTextItemInt &ti)
+void QRasterPaintEngine::drawCachedGlyphs(int numGlyphs, const glyph_t *glyphs,
+                                          const QFixedPoint *positions, QFontEngine *fontEngine)
 {
     Q_D(QRasterPaintEngine);
     QRasterPaintEngineState *s = state();
 
-    QVarLengthArray<QFixedPoint> positions;
-    QVarLengthArray<glyph_t> glyphs;
-    QTransform matrix = s->matrix;
-    matrix.translate(p.x(), p.y());
-    ti.fontEngine->getGlyphPositions(ti.glyphs, matrix, ti.flags, glyphs, positions);
-
-    QFontEngineGlyphCache::Type glyphType = ti.fontEngine->glyphFormat >= 0 ? QFontEngineGlyphCache::Type(ti.fontEngine->glyphFormat) : d->glyphCacheType;
+    QFontEngineGlyphCache::Type glyphType = fontEngine->glyphFormat >= 0 ? QFontEngineGlyphCache::Type(fontEngine->glyphFormat) : d->glyphCacheType;
 
     QImageTextureGlyphCache *cache =
-        (QImageTextureGlyphCache *) ti.fontEngine->glyphCache(0, glyphType, s->matrix);
+        static_cast<QImageTextureGlyphCache *>(fontEngine->glyphCache(0, glyphType, s->matrix));
     if (!cache) {
         cache = new QImageTextureGlyphCache(glyphType, s->matrix);
-        ti.fontEngine->setGlyphCache(0, cache);
+        fontEngine->setGlyphCache(0, cache);
     }
 
-    cache->populate(ti, glyphs, positions);
+    cache->populate(fontEngine, numGlyphs, glyphs, positions);
 
     const QImage &image = cache->image();
     int bpl = image.bytesPerLine();
@@ -3040,7 +3022,7 @@ void QRasterPaintEngine::drawCachedGlyphs(const QPointF &p, const QTextItemInt &
     const QFixed offs = QFixed::fromReal(aliasedCoordinateDelta);
 
     const uchar *bits = image.bits();
-    for (int i=0; i<glyphs.size(); ++i) {
+    for (int i=0; i<numGlyphs; ++i) {
         const QTextureGlyphCache::Coord &c = cache->coords.value(glyphs[i]);
         int x = qFloor(positions[i].x + offs) + c.baseLineX - margin;
         int y = qFloor(positions[i].y + offs) - c.baseLineY - margin;
@@ -3218,6 +3200,18 @@ QRasterPaintEnginePrivate::getPenFunc(const QRectF &rect,
 }
 
 /*!
+   \reimp
+*/
+void QRasterPaintEngine::drawStaticTextItem(QStaticTextItem *textItem)
+{
+    ensurePen();
+    ensureState();
+
+    drawCachedGlyphs(textItem->numGlyphs, textItem->glyphs, textItem->glyphPositions,
+                     textItem->fontEngine);
+}
+
+/*!
     \reimp
 */
 void QRasterPaintEngine::drawTextItem(const QPointF &p, const QTextItem &textItem)
@@ -3265,7 +3259,17 @@ void QRasterPaintEngine::drawTextItem(const QPointF &p, const QTextItem &textIte
         drawCached = false;
 #endif
     if (drawCached) {
-        drawCachedGlyphs(p, ti);
+        QRasterPaintEngineState *s = state();
+
+        QVarLengthArray<QFixedPoint> positions;
+        QVarLengthArray<glyph_t> glyphs;
+
+        QTransform matrix = s->matrix;
+        matrix.translate(p.x(), p.y());
+
+        ti.fontEngine->getGlyphPositions(ti.glyphs, matrix, ti.flags, glyphs, positions);
+
+        drawCachedGlyphs(glyphs.size(), glyphs.constData(), positions.constData(), ti.fontEngine);
         return;
     }
 
@@ -3372,7 +3376,7 @@ void QRasterPaintEngine::drawTextItem(const QPointF &p, const QTextItem &textIte
     };
 
     for(int i = 0; i < glyphs.size(); i++) {
-        QFontEngineFT::Glyph *glyph = gset->glyph_data.value(glyphs[i]);
+        QFontEngineFT::Glyph *glyph = gset->getGlyph(glyphs[i]);
 
         if (!glyph || glyph->format != neededFormat) {
             if (!lockedFace)
@@ -3608,13 +3612,14 @@ void QRasterPaintEnginePrivate::rasterizeLine_dashed(QLineF line,
         } else {
             *dashOffset = 0;
             *inDash = !(*inDash);
-            *dashIndex = (*dashIndex + 1) % pattern.size();
+            if (++*dashIndex >= pattern.size())
+                *dashIndex = 0;
             length -= dash;
             l.setLength(dash);
             line.setP1(l.p2());
         }
 
-        if (rasterize && dash != 0)
+        if (rasterize && dash > 0)
             rasterizer->rasterizeLine(l.p1(), l.p2(), width / dash, squareCap);
     }
 }
@@ -4071,6 +4076,22 @@ void QRasterPaintEnginePrivate::rasterize(QT_FT_Outline *outline,
         return;
     }
 
+    const int rasterPoolInitialSize = 8192;
+    int rasterPoolSize = rasterPoolInitialSize;
+    unsigned char *rasterPoolBase;
+#if defined(Q_WS_WIN64)
+    rasterPoolBase =
+        // We make use of setjmp and longjmp in qgrayraster.c which requires
+        // 16-byte alignment, hence we hardcode this requirement here..
+        (unsigned char *) _aligned_malloc(rasterPoolSize, sizeof(void*) * 2);
+#else
+    unsigned char rasterPoolOnStack[rasterPoolInitialSize];
+    rasterPoolBase = rasterPoolOnStack;
+#endif
+    Q_CHECK_PTR(rasterPoolBase);
+
+    qt_ft_grays_raster.raster_reset(*grayRaster.data(), rasterPoolBase, rasterPoolSize);
+
     void *data = userData;
 
     QT_FT_BBox clip_box = { deviceRect.x(),
@@ -4103,13 +4124,14 @@ void QRasterPaintEnginePrivate::rasterize(QT_FT_Outline *outline,
             int new_size = rasterPoolSize * 2;
             if (new_size > 1024 * 1024) {
                 qWarning("QPainter: Rasterization of primitive failed");
-                return;
+                break;
             }
 
 #if defined(Q_WS_WIN64)
             _aligned_free(rasterPoolBase);
 #else
-            free(rasterPoolBase);
+            if (rasterPoolBase != rasterPoolOnStack) // initially on the stack
+                free(rasterPoolBase);
 #endif
 
             rasterPoolSize = new_size;
@@ -4130,6 +4152,13 @@ void QRasterPaintEnginePrivate::rasterize(QT_FT_Outline *outline,
             done = true;
         }
     }
+
+#if defined(Q_WS_WIN64)
+    _aligned_free(rasterPoolBase);
+#else
+    if (rasterPoolBase != rasterPoolOnStack) // initially on the stack
+        free(rasterPoolBase);
+#endif
 }
 
 void QRasterPaintEnginePrivate::recalculateFastImages()

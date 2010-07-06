@@ -43,6 +43,7 @@
 #include "property.h"
 #include "option.h"
 #include "cachekeys.h"
+#include "generators/metamakefile.h"
 
 #include <qdatetime.h>
 #include <qfile.h>
@@ -121,7 +122,7 @@ enum TestFunc { T_REQUIRES=1, T_GREATERTHAN, T_LESSTHAN, T_EQUALS,
                 T_EXISTS, T_EXPORT, T_CLEAR, T_UNSET, T_EVAL, T_CONFIG, T_SYSTEM,
                 T_RETURN, T_BREAK, T_NEXT, T_DEFINED, T_CONTAINS, T_INFILE,
                 T_COUNT, T_ISEMPTY, T_INCLUDE, T_LOAD, T_DEBUG, T_ERROR,
-                T_MESSAGE, T_WARNING, T_IF };
+                T_MESSAGE, T_WARNING, T_IF, T_OPTION };
 QMap<QString, TestFunc> qmake_testFunctions()
 {
     static QMap<QString, TestFunc> *qmake_test_functions = 0;
@@ -155,6 +156,7 @@ QMap<QString, TestFunc> qmake_testFunctions()
         qmake_test_functions->insert("error", T_ERROR);
         qmake_test_functions->insert("message", T_MESSAGE);
         qmake_test_functions->insert("warning", T_WARNING);
+        qmake_test_functions->insert("option", T_OPTION);
     }
     return *qmake_test_functions;
 }
@@ -184,9 +186,7 @@ static QString remove_quotes(const QString &arg)
 static QString varMap(const QString &x)
 {
     QString ret(x);
-    if(ret.startsWith("TMAKE")) //tmake no more!
-        ret = "QMAKE" + ret.mid(5);
-    else if(ret == "INTERFACES")
+    if(ret == "INTERFACES")
         ret = "FORMS";
     else if(ret == "QMAKE_POST_BUILD")
         ret = "QMAKE_POST_LINK";
@@ -220,6 +220,11 @@ static QString varMap(const QString &x)
         ret = "QMAKE_FRAMEWORKPATH";
     else if(ret == "QMAKE_FRAMEWORKDIR_FLAGS")
         ret = "QMAKE_FRAMEWORKPATH_FLAGS";
+    else
+        return ret;
+    warn_msg(WarnDeprecated, "%s:%d: Variable %s is deprecated; use %s instead.",
+             parser.file.toLatin1().constData(), parser.line_no,
+             x.toLatin1().constData(), ret.toLatin1().constData());
     return ret;
 }
 
@@ -278,7 +283,7 @@ static QStringList split_arg_list(QString params)
     return args;
 }
 
-static QStringList split_value_list(const QString &vals, bool do_semicolon=false)
+static QStringList split_value_list(const QString &vals)
 {
     QString build;
     QStringList ret;
@@ -289,7 +294,6 @@ static QStringList split_value_list(const QString &vals, bool do_semicolon=false
     const ushort SINGLEQUOTE = '\'';
     const ushort DOUBLEQUOTE = '"';
     const ushort BACKSLASH = '\\';
-    const ushort SEMICOLON = ';';
 
     ushort unicode;
     const QChar *vals_data = vals.data();
@@ -309,8 +313,7 @@ static QStringList split_value_list(const QString &vals, bool do_semicolon=false
             ++parens;
         }
 
-        if(!parens && quote.isEmpty() && ((do_semicolon && unicode == SEMICOLON) ||
-                                           vals_data[x] == Option::field_sep)) {
+        if(!parens && quote.isEmpty() && (vals_data[x] == Option::field_sep)) {
             ret << build;
             build.clear();
         } else {
@@ -509,69 +512,6 @@ static void qmake_error_msg(const QString &msg)
             msg.toLatin1().constData());
 }
 
-enum isForSymbian_enum {
-    isForSymbian_NOT_SET = -1,
-    isForSymbian_FALSE = 0,
-    isForSymbian_ABLD = 1,
-    isForSymbian_SBSV2 = 2,
-};
-
-static isForSymbian_enum isForSymbian_value = isForSymbian_NOT_SET;
-
-// Checking for symbian build is primarily determined from the qmake spec,
-// but if that is not specified, detect if symbian is the default spec
-// by checking the MAKEFILE_GENERATOR variable value.
-static void init_symbian(const QMap<QString, QStringList>& vars)
-{
-    if (isForSymbian_value != isForSymbian_NOT_SET)
-        return;
-
-    QString spec = QFileInfo(Option::mkfile::qmakespec).fileName();
-    if (spec.startsWith("symbian-abld", Qt::CaseInsensitive)) {
-        isForSymbian_value = isForSymbian_ABLD;
-    } else if (spec.startsWith("symbian-sbsv2", Qt::CaseInsensitive)) {
-        isForSymbian_value = isForSymbian_SBSV2;
-    } else {
-        QStringList generatorList = vars["MAKEFILE_GENERATOR"];
-
-        if (!generatorList.isEmpty()) {
-            QString generator = generatorList.first();
-            if (generator.startsWith("SYMBIAN_ABLD"))
-                isForSymbian_value = isForSymbian_ABLD;
-            else if (generator.startsWith("SYMBIAN_SBSV2"))
-                isForSymbian_value = isForSymbian_SBSV2;
-            else
-                isForSymbian_value = isForSymbian_FALSE;
-        } else {
-            isForSymbian_value = isForSymbian_FALSE;
-        }
-    }
-
-    // Force recursive on Symbian, as non-recursive is not really a viable option there
-    if (isForSymbian_value != isForSymbian_FALSE)
-        Option::recursive = true;
-}
-
-bool isForSymbian()
-{
-    // If isForSymbian_value has not been initialized explicitly yet,
-    // call initializer with dummy map to check qmake spec.
-    if (isForSymbian_value == isForSymbian_NOT_SET)
-        init_symbian(QMap<QString, QStringList>());
-
-    return (isForSymbian_value != isForSymbian_FALSE);
-}
-
-bool isForSymbianSbsv2()
-{
-    // If isForSymbian_value has not been initialized explicitly yet,
-    // call initializer with dummy map to check qmake spec.
-    if (isForSymbian_value == isForSymbian_NOT_SET)
-        init_symbian(QMap<QString, QStringList>());
-
-    return (isForSymbian_value == isForSymbian_SBSV2);
-}
-
 /*
    1) environment variable QMAKEFEATURES (as separated by colons)
    2) property variable QMAKEFEATURES (as separated by colons)
@@ -597,25 +537,15 @@ QStringList qmake_feature_paths(QMakeProperty *prop=0)
             concat << base_concat + QDir::separator() + "macx";
             concat << base_concat + QDir::separator() + "unix";
             break;
+        default: // Can't happen, just make the compiler shut up
         case Option::TARG_UNIX_MODE:
-            {
-                if (isForSymbian())
-                    concat << base_concat + QDir::separator() + "symbian";
-                else
-                    concat << base_concat + QDir::separator() + "unix";
-                break;
-            }
+            concat << base_concat + QDir::separator() + "unix";
+            break;
         case Option::TARG_WIN_MODE:
-            {
-                if (isForSymbian())
-                    concat << base_concat + QDir::separator() + "symbian";
-                else
-                    concat << base_concat + QDir::separator() + "win32";
-                break;
-            }
-        case Option::TARG_MAC9_MODE:
-            concat << base_concat + QDir::separator() + "mac";
-            concat << base_concat + QDir::separator() + "mac9";
+            concat << base_concat + QDir::separator() + "win32";
+            break;
+        case Option::TARG_SYMBIAN_MODE:
+            concat << base_concat + QDir::separator() + "symbian";
             break;
         }
         concat << base_concat;
@@ -629,9 +559,9 @@ QStringList qmake_feature_paths(QMakeProperty *prop=0)
         feature_roots += splitPathList(prop->value("QMAKEFEATURES"));
     if(!Option::mkfile::cachefile.isEmpty()) {
         QString path;
-        int last_slash = Option::mkfile::cachefile.lastIndexOf(Option::dir_sep);
+        int last_slash = Option::mkfile::cachefile.lastIndexOf(QDir::separator());
         if(last_slash != -1)
-            path = Option::fixPathToLocalOS(Option::mkfile::cachefile.left(last_slash));
+            path = Option::fixPathToLocalOS(Option::mkfile::cachefile.left(last_slash), false);
         for(QStringList::Iterator concat_it = concat.begin();
             concat_it != concat.end(); ++concat_it)
             feature_roots << (path + (*concat_it));
@@ -687,38 +617,6 @@ QStringList qmake_mkspec_paths()
     return ret;
 }
 
-class QMakeProjectEnv
-{
-    QStringList envs;
-public:
-    QMakeProjectEnv() { }
-    QMakeProjectEnv(QMakeProject *p) { execute(p->variables()); }
-    QMakeProjectEnv(const QMap<QString, QStringList> &values) { execute(values); }
-
-    void execute(QMakeProject *p) { execute(p->variables()); }
-    void execute(const QMap<QString, QStringList> &values) {
-#ifdef Q_OS_UNIX
-        for(QMap<QString, QStringList>::ConstIterator it = values.begin(); it != values.end(); ++it) {
-            const QString var = it.key(), val = it.value().join(" ");
-            if(!var.startsWith(".")) {
-                const QString env_var = Option::sysenv_mod + var;
-                if(!putenv(strdup(QString(env_var + "=" + val).toAscii().data())))
-                    envs.append(env_var);
-            }
-        }
-#else
-        Q_UNUSED(values);
-#endif
-    }
-    ~QMakeProjectEnv() {
-#ifdef Q_OS_UNIX
-        for(QStringList::ConstIterator it = envs.begin();it != envs.end(); ++it) {
-            putenv(strdup(QString(*it + "=").toAscii().data()));
-        }
-#endif
-    }
-};
-
 QMakeProject::~QMakeProject()
 {
     if(own_prop)
@@ -748,6 +646,7 @@ QMakeProject::init(QMakeProperty *p, const QMap<QString, QStringList> *vars)
         prop = p;
         own_prop = false;
     }
+    recursive = false;
     reset();
 }
 
@@ -1227,7 +1126,7 @@ QMakeProject::parse(const QString &t, QMap<QString, QStringList> &place, int num
         QStringList vallist;
         {
             //doVariableReplace(vals, place);
-            QStringList tmp = split_value_list(vals, (var == "DEPENDPATH" || var == "INCLUDEPATH"));
+            QStringList tmp = split_value_list(vals);
             for(int i = 0; i < tmp.size(); ++i)
                 vallist += doVariableReplaceExpand(tmp[i], place);
         }
@@ -1317,8 +1216,7 @@ QMakeProject::read(const QString &file, QMap<QString, QStringList> &place)
     reset();
 
     const QString oldpwd = qmake_getpwd();
-    QString filename = Option::fixPathToLocalOS(file);
-    doVariableReplace(filename, place);
+    QString filename = Option::fixPathToLocalOS(file, false);
     bool ret = false, using_stdin = false;
     QFile qfile;
     if(!strcmp(filename.toLatin1(), "-")) {
@@ -1362,16 +1260,7 @@ bool
 QMakeProject::read(uchar cmd)
 {
     if(cfile.isEmpty()) {
-        //find out where qmake (myself) lives
-        if (!base_vars.contains("QMAKE_QMAKE")) {
-            if (!Option::qmake_abslocation.isNull())
-                base_vars["QMAKE_QMAKE"] = QStringList(Option::qmake_abslocation);
-            else
-                base_vars["QMAKE_QMAKE"] = QStringList("qmake");
-        }
-
         // hack to get the Option stuff in there
-        base_vars["QMAKE_EXT_OBJ"] = QStringList(Option::obj_ext);
         base_vars["QMAKE_EXT_CPP"] = Option::cpp_ext;
         base_vars["QMAKE_EXT_C"] = Option::c_ext;
         base_vars["QMAKE_EXT_H"] = Option::h_ext;
@@ -1457,16 +1346,12 @@ QMakeProject::read(uchar cmd)
             while(qmakespec.endsWith(QString(QChar(QDir::separator()))))
                 qmakespec.truncate(qmakespec.length()-1);
             QString spec = qmakespec + QDir::separator() + "qmake.conf";
-            if(!QFile::exists(spec) &&
-               QFile::exists(qmakespec + QDir::separator() + "tmake.conf"))
-                spec = qmakespec + QDir::separator() + "tmake.conf";
             debug_msg(1, "QMAKESPEC conf: reading %s", spec.toLatin1().constData());
             if(!read(spec, base_vars)) {
                 fprintf(stderr, "Failure to read QMAKESPEC conf file %s.\n", spec.toLatin1().constData());
                 return false;
             }
-
-            init_symbian(base_vars);
+            validateModes();
 
             if(Option::mkfile::do_cache && !Option::mkfile::cachefile.isEmpty()) {
                 debug_msg(1, "QMAKECACHE file: reading %s", Option::mkfile::cachefile.toLatin1().constData());
@@ -1590,6 +1475,46 @@ QMakeProject::read(uchar cmd)
     return true;
 }
 
+void QMakeProject::validateModes()
+{
+    if (Option::host_mode == Option::HOST_UNKNOWN_MODE
+        || Option::target_mode == Option::TARG_UNKNOWN_MODE) {
+        Option::HOST_MODE host_mode;
+        Option::TARG_MODE target_mode;
+        const QStringList &gen = base_vars.value("MAKEFILE_GENERATOR");
+        if (gen.isEmpty()) {
+            fprintf(stderr, "%s:%d: Using OS scope before setting MAKEFILE_GENERATOR\n",
+                            parser.file.toLatin1().constData(), parser.line_no);
+        } else if (MetaMakefileGenerator::modesForGenerator(gen.first(),
+                                                            &host_mode, &target_mode)) {
+            if (Option::host_mode == Option::HOST_UNKNOWN_MODE) {
+                Option::host_mode = host_mode;
+                Option::applyHostMode();
+            }
+
+            if (Option::target_mode == Option::TARG_UNKNOWN_MODE) {
+                const QStringList &tgt = base_vars.value("TARGET_PLATFORM");
+                if (!tgt.isEmpty()) {
+                    const QString &os = tgt.first();
+                    if (os == "unix")
+                        Option::target_mode = Option::TARG_UNIX_MODE;
+                    else if (os == "macx")
+                        Option::target_mode = Option::TARG_MACX_MODE;
+                    else if (os == "symbian")
+                        Option::target_mode = Option::TARG_SYMBIAN_MODE;
+                    else if (os == "win32")
+                        Option::target_mode = Option::TARG_WIN_MODE;
+                    else
+                        fprintf(stderr, "Unknown target platform specified: %s\n",
+                                os.toLatin1().constData());
+                } else {
+                    Option::target_mode = target_mode;
+                }
+            }
+        }
+    }
+}
+
 bool
 QMakeProject::isActiveConfig(const QString &x, bool regex, QMap<QString, QStringList> *place)
 {
@@ -1602,31 +1527,26 @@ QMakeProject::isActiveConfig(const QString &x, bool regex, QMap<QString, QString
     else if(x == "false")
         return false;
 
+    if (x == "unix") {
+        validateModes();
+        return Option::target_mode == Option::TARG_UNIX_MODE
+               || Option::target_mode == Option::TARG_MACX_MODE
+               || Option::target_mode == Option::TARG_SYMBIAN_MODE;
+    } else if (x == "macx" || x == "mac") {
+        validateModes();
+        return Option::target_mode == Option::TARG_MACX_MODE;
+    } else if (x == "symbian") {
+        validateModes();
+        return Option::target_mode == Option::TARG_SYMBIAN_MODE;
+    } else if (x == "win32") {
+        validateModes();
+        return Option::target_mode == Option::TARG_WIN_MODE;
+    }
+
+    //mkspecs
     static QString spec;
     if(spec.isEmpty())
         spec = QFileInfo(Option::mkfile::qmakespec).fileName();
-
-    // Symbian is an exception to how scopes are resolved. Since we do not
-    // have a separate target mode for Symbian, but we expect the scope to resolve
-    // on other platforms we base it entirely on the mkspec. This means that
-    // using a mkspec starting with 'symbian*' will resolve both the 'symbian'
-    // and the 'unix' (because of Open C) scopes to true.
-    if(isForSymbian() && (x == "symbian" || x == "unix"))
-        return true;
-
-    //mkspecs
-    if((Option::target_mode == Option::TARG_MACX_MODE ||
-        Option::target_mode == Option::TARG_UNIX_MODE) && x == "unix")
-        return !isForSymbian();
-    else if(Option::target_mode == Option::TARG_MACX_MODE && x == "macx")
-        return !isForSymbian();
-    else if(Option::target_mode == Option::TARG_MAC9_MODE && x == "mac9")
-        return !isForSymbian();
-    else if((Option::target_mode == Option::TARG_MAC9_MODE || Option::target_mode == Option::TARG_MACX_MODE) &&
-            x == "mac")
-        return !isForSymbian();
-    else if(Option::target_mode == Option::TARG_WIN_MODE && x == "win32")
-        return !isForSymbian();
     QRegExp re(x, Qt::CaseSensitive, QRegExp::Wildcard);
     if((regex && re.exactMatch(spec)) || (!regex && spec == x))
         return true;
@@ -1718,7 +1638,7 @@ QMakeProject::doProjectInclude(QString file, uchar flags, QMap<QString, QStringL
         if(file.indexOf(Option::dir_sep) == -1 || !QFile::exists(file)) {
             static QStringList *feature_roots = 0;
             if(!feature_roots) {
-                init_symbian(base_vars);
+                validateModes();
                 feature_roots = new QStringList(qmake_feature_paths(prop));
                 qmakeAddCacheClear(qmakeDeleteCacheClear_QStringList, (void**)&feature_roots);
             }
@@ -1887,7 +1807,11 @@ QMakeProject::doProjectExpand(QString func, QList<QStringList> args_list,
     for(int i = 0; i < args_list.size(); ++i)
         args += args_list[i].join(QString(Option::field_sep));
 
-    ExpandFunc func_t = qmake_expandFunctions().value(func.toLower());
+    QString lfunc = func.toLower();
+    if (!lfunc.isSharedWith(func))
+        warn_msg(WarnDeprecated, "%s:%d: Using uppercased builtin functions is deprecated.",
+                 parser.file.toLatin1().constData(), parser.line_no);
+    ExpandFunc func_t = qmake_expandFunctions().value(lfunc);
     debug_msg(1, "Running project expand: %s(%s) [%d]",
               func.toLatin1().constData(), args.join("::").toLatin1().constData(), func_t);
 
@@ -2141,7 +2065,6 @@ QMakeProject::doProjectExpand(QString func, QList<QStringList> args_list,
             fprintf(stderr, "%s:%d system(execut) requires one argument.\n",
                     parser.file.toLatin1().constData(), parser.line_no);
         } else {
-            QMakeProjectEnv env(place);
             char buff[256];
             bool singleLine = true;
             if(args.count() > 1)
@@ -2301,8 +2224,7 @@ QMakeProject::doProjectExpand(QString func, QList<QStringList> args_list,
             fprintf(stderr, "%s:%d: size(var) requires one argument.\n",
                     parser.file.toLatin1().constData(), parser.line_no);
         } else {
-            //QString target = args[0];
-            int size = values(args[0]).size();
+            int size = values(args[0], place).size();
             ret += QString::number(size);
         }
         break; }
@@ -2428,12 +2350,9 @@ QMakeProject::doProjectTest(QString func, QList<QStringList> args_list, QMap<QSt
                 if(d_off == d_len-1)
                     test += *(d+d_off);
                 if(!test.isEmpty()) {
-                    const bool success = doProjectTest(test, place);
-                    test = "";
-                    if(or_op)
-                        ret = ret || success;
-                    else
-                        ret = ret && success;
+                    if (or_op != ret)
+                        ret = doProjectTest(test, place);
+                    test.clear();
                 }
                 if(*(d+d_off) == QLatin1Char(':')) {
                     or_op = false;
@@ -2536,8 +2455,7 @@ QMakeProject::doProjectTest(QString func, QList<QStringList> args_list, QMap<QSt
             }
         }
         return false; }
-    case T_SYSTEM: {
-        bool setup_env = true;
+    case T_SYSTEM:
         if(args.count() < 1 || args.count() > 2) {
             fprintf(stderr, "%s:%d: system(exec) requires one argument.\n", parser.file.toLatin1().constData(),
                     parser.line_no);
@@ -2545,13 +2463,11 @@ QMakeProject::doProjectTest(QString func, QList<QStringList> args_list, QMap<QSt
         }
         if(args.count() == 2) {
             const QString sarg = args[1];
-            setup_env = (sarg.toLower() == "true" || sarg.toInt());
+            if (sarg.toLower() == "true" || sarg.toInt())
+                warn_msg(WarnParser, "%s:%d: system()'s second argument is now hard-wired to false.\n",
+                         parser.file.toLatin1().constData(), parser.line_no);
         }
-        QMakeProjectEnv env;
-        if(setup_env)
-            env.execute(place);
-        bool ret = system(args[0].toLatin1().constData()) == 0;
-        return ret; }
+        return system(args[0].toLatin1().constData()) == 0;
     case T_RETURN:
         if(function_blocks.isEmpty()) {
             fprintf(stderr, "%s:%d unexpected return()\n",
@@ -2566,8 +2482,6 @@ QMakeProject::doProjectTest(QString func, QList<QStringList> args_list, QMap<QSt
     case T_BREAK:
         if(iterator)
             iterator->cause_break = true;
-        else if(!scope_blocks.isEmpty())
-            scope_blocks.top().ignore = true;
         else
             fprintf(stderr, "%s:%d unexpected break()\n",
                     parser.file.toLatin1().constData(), parser.line_no);
@@ -2782,6 +2696,21 @@ QMakeProject::doProjectTest(QString func, QList<QStringList> args_list, QMap<QSt
             exit(2);
 #endif
         return true; }
+    case T_OPTION:
+        if (args.count() != 1) {
+            fprintf(stderr, "%s:%d: option() requires one argument.\n",
+                    parser.file.toLatin1().constData(), parser.line_no);
+            return false;
+        }
+        if (args.first() == "recursive") {
+            recursive = true;
+        } else {
+            fprintf(stderr, "%s:%d: unrecognized option() argument '%s'.\n",
+                    parser.file.toLatin1().constData(), parser.line_no,
+                    args.first().toLatin1().constData());
+            return false;
+        }
+        return true;
     default:
         fprintf(stderr, "%s:%d: Unknown test function: %s\n", parser.file.toLatin1().constData(), parser.line_no,
                 func.toLatin1().constData());
@@ -3081,8 +3010,6 @@ QStringList &QMakeProject::values(const QString &_var, QMap<QString, QStringList
             QString orig_template = place["TEMPLATE"].first(), real_template;
             if(!Option::user_template_prefix.isEmpty() && !orig_template.startsWith(Option::user_template_prefix))
                 real_template = Option::user_template_prefix + orig_template;
-            if(real_template.endsWith(".t"))
-                real_template = real_template.left(real_template.length()-2);
             if(!real_template.isEmpty()) {
                 var = ".BUILTIN." + var;
                 place[var] = QStringList(real_template);
@@ -3166,12 +3093,46 @@ QStringList &QMakeProject::values(const QString &_var, QMap<QString, QStringList
     } else if (var == QLatin1String("QMAKE_DIR_SEP")) {
         if (place[var].isEmpty())
             return values("DIR_SEPARATOR", place);
+    } else if (var == QLatin1String("QMAKE_EXT_OBJ")) {
+        if (place[var].isEmpty()) {
+            var = ".BUILTIN." + var;
+            place[var] = QStringList(Option::obj_ext);
+        }
+    } else if (var == QLatin1String("QMAKE_QMAKE")) {
+        if (place[var].isEmpty()) {
+            if (!Option::qmake_abslocation.isNull())
+                place[var] = QStringList(Option::qmake_abslocation);
+            else
+                place[var] = QStringList(Option::fixPathToTargetOS(
+                        QLibraryInfo::location(QLibraryInfo::BinariesPath) + "/qmake", false));
+        }
     } else if (var == QLatin1String("EPOCROOT")) {
         if (place[var].isEmpty())
             place[var] = QStringList(epocRoot());
     }
+#if defined(Q_OS_WIN32) && defined(Q_CC_MSVC)
+      else if(var.startsWith(QLatin1String("QMAKE_TARGET."))) {
+            QString ret, type = var.mid(13);
+            if(type == "arch") {
+                QString paths = qgetenv("PATH");
+                QString vcBin64 = qgetenv("VCINSTALLDIR").append("\\bin\\amd64");
+                QString vcBinX86_64 = qgetenv("VCINSTALLDIR").append("\\bin\\x86_amd64");
+                if(paths.contains(vcBin64,Qt::CaseInsensitive) || paths.contains(vcBinX86_64,Qt::CaseInsensitive))
+                    ret = "x86_64";
+                else
+                    ret = "x86";
+            }
+            place[var] = QStringList(ret);
+    }
+#endif
     //qDebug("REPLACE [%s]->[%s]", qPrintable(var), qPrintable(place[var].join("::")));
     return place[var];
+}
+
+bool QMakeProject::isEmpty(const QString &v)
+{
+    QMap<QString, QStringList>::ConstIterator it = vars.constFind(varMap(v));
+    return it == vars.constEnd() || it->isEmpty();
 }
 
 QT_END_NAMESPACE

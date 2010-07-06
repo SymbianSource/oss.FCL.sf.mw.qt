@@ -64,6 +64,8 @@
 
 #include "qdbusthreaddebug_p.h"
 
+#ifndef QT_NO_DBUS
+
 QT_BEGIN_NAMESPACE
 
 static bool isDebugging;
@@ -523,7 +525,7 @@ qDBusSignalFilter(DBusConnection *connection, DBusMessage *message, void *data)
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
     QDBusMessage amsg = QDBusMessagePrivate::fromDBusMessage(message);
-    qDBusDebug() << d << "got message (signal):" << amsg;
+    qDBusDebug() << d << "got message:" << amsg;
 
     return d->handleMessage(amsg) ?
         DBUS_HANDLER_RESULT_HANDLED :
@@ -758,6 +760,7 @@ bool QDBusConnectionPrivate::activateCall(QObject* object, int flags, const QDBu
     if (!object)
         return false;
 
+#ifndef QT_NO_PROPERTIES
     Q_ASSERT_X(QThread::currentThread() == object->thread(),
                "QDBusConnection: internal threading error",
                "function called for an object that is in another thread!!");
@@ -816,6 +819,8 @@ bool QDBusConnectionPrivate::activateCall(QObject* object, int flags, const QDBu
         deliverCall(object, flags, msg, cacheIt->metaTypes, cacheIt->slotIdx);
         return true;
     }
+#endif // QT_NO_PROPERTIES
+    return false;
 }
 
 void QDBusConnectionPrivate::deliverCall(QObject *object, int /*flags*/, const QDBusMessage &msg,
@@ -1687,30 +1692,14 @@ static void qDBusResultReceived(DBusPendingCall *pending, void *user_data)
 void QDBusConnectionPrivate::waitForFinished(QDBusPendingCallPrivate *pcall)
 {
     Q_ASSERT(pcall->pending);
-    Q_ASSERT(!pcall->autoDelete);
-    //Q_ASSERT(pcall->mutex.isLocked()); // there's no such function
-
-    if (pcall->waitingForFinished) {
-        // another thread is already waiting
-        pcall->waitForFinishedCondition.wait(&pcall->mutex);
-    } else {
-        pcall->waitingForFinished = true;
-        pcall->mutex.unlock();
-
-        {
-            QDBusDispatchLocker locker(PendingCallBlockAction, this);
-            q_dbus_pending_call_block(pcall->pending);
-            // QDBusConnectionPrivate::processFinishedCall() is called automatically
-        }
-        pcall->mutex.lock();
-    }
+    QDBusDispatchLocker locker(PendingCallBlockAction, this);
+    q_dbus_pending_call_block(pcall->pending);
+    // QDBusConnectionPrivate::processFinishedCall() is called automatically
 }
 
 void QDBusConnectionPrivate::processFinishedCall(QDBusPendingCallPrivate *call)
 {
     QDBusConnectionPrivate *connection = const_cast<QDBusConnectionPrivate *>(call->connection);
-
-    QMutexLocker locker(&call->mutex);
 
     QDBusMessage &msg = call->replyMessage;
     if (call->pending) {
@@ -1741,12 +1730,6 @@ void QDBusConnectionPrivate::processFinishedCall(QDBusPendingCallPrivate *call)
             qDBusDebug() << "Deliver failed!";
     }
 
-    if (call->pending)
-        q_dbus_pending_call_unref(call->pending);
-    call->pending = 0;
-
-    locker.unlock();
-
     // Are there any watchers?
     if (call->watcherHelper)
         call->watcherHelper->emitSignals(msg, call->sentMessage);
@@ -1754,10 +1737,12 @@ void QDBusConnectionPrivate::processFinishedCall(QDBusPendingCallPrivate *call)
     if (msg.type() == QDBusMessage::ErrorMessage)
         emit connection->callWithCallbackFailed(QDBusError(msg), call->sentMessage);
 
-    if (call->autoDelete) {
-        Q_ASSERT(!call->waitingForFinished); // can't wait on a call with autoDelete!
+    if (call->pending)
+        q_dbus_pending_call_unref(call->pending);
+    call->pending = 0;
+
+    if (call->autoDelete)
         delete call;
-    }
 }
 
 int QDBusConnectionPrivate::send(const QDBusMessage& message)
@@ -1899,14 +1884,17 @@ QDBusPendingCallPrivate *QDBusConnectionPrivate::sendWithReplyAsync(const QDBusM
 {
     if (isServiceRegisteredByThread(message.service())) {
         // special case for local calls
-        QDBusPendingCallPrivate *pcall = new QDBusPendingCallPrivate(message, this);
+        QDBusPendingCallPrivate *pcall = new QDBusPendingCallPrivate;
+        pcall->sentMessage = message;
         pcall->replyMessage = sendWithReplyLocal(message);
+        pcall->connection = this;
 
         return pcall;
     }
 
     checkThread();
-    QDBusPendingCallPrivate *pcall = new QDBusPendingCallPrivate(message, this);
+    QDBusPendingCallPrivate *pcall = new QDBusPendingCallPrivate;
+    pcall->sentMessage = message;
     pcall->ref = 0;
 
     QDBusError error;
@@ -1930,6 +1918,7 @@ QDBusPendingCallPrivate *QDBusConnectionPrivate::sendWithReplyAsync(const QDBusM
             q_dbus_message_unref(msg);
 
             pcall->pending = pending;
+            pcall->connection = this;
             q_dbus_pending_call_set_notify(pending, qDBusResultReceived, pcall, 0);
 
             return pcall;
@@ -2343,3 +2332,5 @@ void QDBusConnectionPrivate::postEventToThread(int action, QObject *object, QEve
 }
 
 QT_END_NAMESPACE
+
+#endif // QT_NO_DBUS

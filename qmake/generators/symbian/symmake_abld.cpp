@@ -71,14 +71,11 @@ SymbianAbldMakefileGenerator::~SymbianAbldMakefileGenerator() { }
 void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, bool deploymentOnly)
 {
     QString gnuMakefileName = QLatin1String("Makefile_") + uid3;
-    removeSpecialCharacters(gnuMakefileName);
+    removeEpocSpecialCharacters(gnuMakefileName);
     gnuMakefileName.append(".mk");
 
     QFile ft(gnuMakefileName);
     if (ft.open(QIODevice::WriteOnly)) {
-        if (Option::mkfile::listgen) {
-            generatePrint(fileInfo(ft.fileName()).absoluteFilePath());
-        }
         generatedFiles << ft.fileName();
         QTextStream t(&ft);
 
@@ -152,7 +149,15 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
         t << "CLEAN: " << cleanDeps << endl;
         t << "endif" << endl << endl;
         t << "CLEANLIB: " DO_NOTHING_TARGET << endl << endl;
-
+        
+		//QTP: org 47 start
+		/*t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
+        t << "FREEZE: " DO_NOTHING_TARGET << endl << endl;
+        t << "SAVESPACE: " DO_NOTHING_TARGET << endl << endl;
+        t << "RELEASABLES: " DO_NOTHING_TARGET << endl << endl;*/
+		//QTP: org 47 end
+		
+        //QTP: loc change start
         QStringList trFileNames;
         if (!project->values("SYMBIANTRANSLATIONS").isEmpty()) {
             QString translationFilename = project->first("TRANSLATIONS");
@@ -166,8 +171,8 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
                 t << "create_qm : " << endl;
                 foreach (const QString &symbianTrans, symbianTranslations) {
                     QString translationTsFilename(translationFilename);
-                    translationTsFilename.chop(3);
-                    translationTsFilename.insert(0,symbianTrPath);
+                    translationFilename = fileInfo(translationFilename).completeBaseName();
+                    translationTsFilename.insert(0, symbianTrPath);
                     translationTsFilename.append(QString::fromLatin1("_"));
                     translationTsFilename.append(symbianTrans);
                     QString translationQmFilename(translationTsFilename);
@@ -176,26 +181,26 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
                     // output path for armv5 qm files./epoc32/data/z/resource/qt/translations/
                     translationQmFilename.append(QString::fromLatin1(".qm"));
 
-										// input path for ts files. /epoc32/include/platform/qt/translations/
+					// input path for ts files. /epoc32/include/platform/qt/translations/
                     QString translationTsSrcFilename(translationFilename);
-                    translationTsSrcFilename.chop(3);
-                    translationTsSrcFilename.insert(0,symbianTrSrcPath);
+                    translationFilename = fileInfo(translationFilename).completeBaseName();
+                    translationTsSrcFilename.insert(0, symbianTrSrcPath);
                     translationTsSrcFilename.append(QString::fromLatin1("_"));
                     translationTsSrcFilename.append(symbianTrans);	
                     translationTsSrcFilename.append(QString::fromLatin1(".ts"));
                     	
-										// output path for winscw qm files. /epoc32/release/winscw/udeb/z/resource/qt/translations/
+					// output path for winscw qm files. /epoc32/release/winscw/udeb/z/resource/qt/translations/
                     QString translationQmWinscwUdebFilename(translationFilename);
-                    translationQmWinscwUdebFilename.chop(3);
-                    translationQmWinscwUdebFilename.insert(0,symbianWinscwUdebQmPath);
+                    translationFilename = fileInfo(translationFilename).completeBaseName();
+                    translationQmWinscwUdebFilename.insert(0, symbianWinscwUdebQmPath);
                     translationQmWinscwUdebFilename.append(QString::fromLatin1("_"));
                     translationQmWinscwUdebFilename.append(symbianTrans);
                     translationQmWinscwUdebFilename.append(QString::fromLatin1(".qm"));                    	
 
-										// output path for winscw qm files. /epoc32/release/winscw/urel/z/resource/qt/translations/
+					// output path for winscw qm files. /epoc32/release/winscw/urel/z/resource/qt/translations/
                     QString translationQmWinscwUrelFilename(translationFilename);
-                    translationQmWinscwUrelFilename.chop(3);
-                    translationQmWinscwUrelFilename.insert(0,symbianWinscwUrelQmPath);
+                    translationFilename = fileInfo(translationFilename).completeBaseName();
+                    translationQmWinscwUrelFilename.insert(0, symbianWinscwUrelQmPath);
                     translationQmWinscwUrelFilename.append(QString::fromLatin1("_"));
                     translationQmWinscwUrelFilename.append(symbianTrans);	
                     translationQmWinscwUrelFilename.append(QString::fromLatin1(".qm"));  
@@ -211,25 +216,29 @@ void SymbianAbldMakefileGenerator::writeMkFile(const QString& wrapperFileName, b
                     trFileNames.append(translationQmWinscwUrelFilename);
                 }
                 t << endl;
-            }
-            else
-            t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
+            } else { 
+                t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
+			}   	
         } else {
             t << "RESOURCE: " DO_NOTHING_TARGET << endl << endl;
         }
+       
+        
         t << "FREEZE: " DO_NOTHING_TARGET << endl << endl;
         t << "SAVESPACE: " DO_NOTHING_TARGET << endl << endl;
-
-        if (!project->values("SYMBIANTRANSLATIONS").isEmpty()) {
+        
+         if (!project->values("SYMBIANTRANSLATIONS").isEmpty()) {
             t << "RELEASABLES: list_qm" << endl << endl;
             t << "list_qm : " << endl;
             foreach (const QString &trFilename, trFileNames) {
                 t << "\t@echo " << trFilename << endl;
-              }
+            }
             t << endl;
         } else {
             t << "RELEASABLES: " DO_NOTHING_TARGET << endl << endl;
         }
+        //QTP: loc change end
+        
         t << "ifeq \"$(PLATFORM)\" \"WINSCW\"" << endl;
         t << "FINAL: " << finalDepsWinscw << endl;
         t << "else" << endl;
@@ -276,23 +285,28 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
     t << "# ==============================================================================" << "\n" << endl;
     t << endl;
 
-    t << "MAKEFILE          = " << wrapperFile.fileName() << endl;
-    t << "QMAKE             = " << Option::fixPathToTargetOS(var("QMAKE_QMAKE")) << endl;
+    t << "MAKEFILE          = " << fileInfo(wrapperFile.fileName()).fileName() << endl;
+    t << "QMAKE             = " << var("QMAKE_QMAKE") << endl;
     t << "DEL_FILE          = " << var("QMAKE_DEL_FILE") << endl;
     t << "DEL_DIR           = " << var("QMAKE_DEL_DIR") << endl;
     t << "MOVE              = " << var("QMAKE_MOVE") << endl;
     t << "CHK_DIR_EXISTS    = " << var("QMAKE_CHK_DIR_EXISTS") << endl;
     t << "MKDIR             = " << var("QMAKE_MKDIR") << endl;
+#ifdef Q_OS_WIN32
     t << "XCOPY             = xcopy /d /f /h /r /y /i" << endl;
     t << "ABLD              = ABLD.BAT" << endl;
+#else
+    t << "XCOPY             = cp -u -v" << endl;
+    t << "ABLD              = abld" << endl;
+#endif
     t << "DEBUG_PLATFORMS   = " << debugPlatforms.join(" ") << endl;
     t << "RELEASE_PLATFORMS = " << releasePlatforms.join(" ") << endl;
     t << "MAKE              = make" << endl;
     t << endl;
     t << "ifeq (WINS,$(findstring WINS, $(PLATFORM)))" << endl;
-    t << "ZDIR=$(EPOCROOT)epoc32\\release\\$(PLATFORM)\\$(CFG)\\Z" << endl;
+    t << "ZDIR=$(EPOCROOT)" << QDir::toNativeSeparators("epoc32/release/$(PLATFORM)/$(CFG)/z") << endl;
     t << "else" << endl;
-    t << "ZDIR=$(EPOCROOT)epoc32\\data\\z" << endl;
+    t << "ZDIR=$(EPOCROOT)" << QDir::toNativeSeparators("epoc32/data/z") << endl;
     t << "endif" << endl;
     t << endl;
     t << "DEFINES" << '\t' << " = "
@@ -386,14 +400,16 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
         // generate command lines like this ...
         // -@ if NOT EXIST  ".\somedir"         mkdir ".\somedir"
         QStringList dirsToClean;
+        QString dirExists = var("QMAKE_CHK_DIR_EXISTS");
+        QString mkdir = var("QMAKE_MKDIR");
         for (QMap<QString, QStringList>::iterator it = systeminclude.begin(); it != systeminclude.end(); ++it) {
             QStringList values = it.value();
             for (int i = 0; i < values.size(); ++i) {
                 if (values.at(i).endsWith("/" QT_EXTRA_INCLUDE_DIR)) {
                     QString fixedValue(QDir::toNativeSeparators(values.at(i)));
                     dirsToClean << fixedValue;
-                    t << "\t-@ if NOT EXIST \""  << fixedValue << "\" mkdir \""
-                      << fixedValue << "\"" << endl;
+                    t << "\t-@ " << dirExists << " \""  << fixedValue << "\" "
+                      << mkdir << " \"" << fixedValue << "\"" << endl;
                 }
             }
         }
@@ -402,7 +418,7 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
         // Note: EXTENSION_CLEAN will get called many times when doing reallyclean
         //       This is why the "2> NUL" gets appended to generated clean targets in makefile.cpp.
         t << EXTENSION_CLEAN ": " COMPILER_CLEAN_TARGET << endl;
-        generateCleanCommands(t, dirsToClean, var("QMAKE_DEL_DIR"), " /S /Q ", "", "");
+        generateCleanCommands(t, dirsToClean, var("QMAKE_DEL_TREE"), "", "", "");
         t << endl;
 
         t << PRE_TARGETDEPS_TARGET ":"
@@ -450,10 +466,6 @@ void SymbianAbldMakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, bool
     // Deploymend targets for both emulator and rom deployment
     writeDeploymentTargets(t, false);
     writeDeploymentTargets(t, true);
-
-    writeSisTargets(t);
-
-    writeStoreBuildTarget(t);
 
     generateDistcleanTargets(t);
 
@@ -506,7 +518,7 @@ bool SymbianAbldMakefileGenerator::writeDeploymentTargets(QTextStream &t, bool i
         + privateDirUid;
     DeploymentList depList;
 
-    initProjectDeploySymbian(project, depList, remoteTestPath, false,
+    initProjectDeploySymbian(project, depList, remoteTestPath, false, true,
         QLatin1String(isRom ? ROM_DEPLOYMENT_PLATFORM : EMULATOR_DEPLOYMENT_PLATFORM),
         QString(), generatedDirs, generatedFiles);
 
@@ -542,32 +554,13 @@ bool SymbianAbldMakefileGenerator::writeDeploymentTargets(QTextStream &t, bool i
     return true;
 }
 
-void SymbianAbldMakefileGenerator::writeStoreBuildTarget(QTextStream &t)
-{
-    t << STORE_BUILD_TARGET ":" << endl;
-    t << "\t@echo # ============================================================================== > " MAKE_CACHE_NAME << endl;
-    t << "\t@echo # This file is generated by make and should not be modified by the user >> " MAKE_CACHE_NAME << endl;
-    t << "\t@echo #  Name        : " << MAKE_CACHE_NAME << " >> " MAKE_CACHE_NAME << endl;
-    t << "\t@echo #  Part of     : " << project->values("TARGET").join(" ") << " >> " MAKE_CACHE_NAME << endl;
-    t << "\t@echo #  Description : This file is used to cache last build target for >> " MAKE_CACHE_NAME << endl;
-    t << "\t@echo #                make sis target. >> " MAKE_CACHE_NAME << endl;
-    t << "\t@echo #  Version     :  >> " MAKE_CACHE_NAME << endl;
-    t << "\t@echo # >> " MAKE_CACHE_NAME << endl;
-    t << "\t@echo # ============================================================================== >> " MAKE_CACHE_NAME <<  endl;
-    t << "\t@echo. >> " MAKE_CACHE_NAME <<  endl;
-    t << "\t@echo QT_SIS_TARGET ?= $(QT_SIS_TARGET) >> " MAKE_CACHE_NAME << endl;
-    t << endl;
-
-    generatedFiles << MAKE_CACHE_NAME;
-}
-
 void SymbianAbldMakefileGenerator::writeBldInfMkFilePart(QTextStream& t, bool addDeploymentExtension)
 {
     // Normally emulator deployment gets done via regular makefile, but since subdirs
     // do not get that, special deployment only makefile is generated for them if needed.
     if (targetType != TypeSubdirs || addDeploymentExtension) {
         QString gnuMakefileName = QLatin1String("Makefile_") + uid3;
-        removeSpecialCharacters(gnuMakefileName);
+        removeEpocSpecialCharacters(gnuMakefileName);
         gnuMakefileName.append(".mk");
         t << "gnumakefile " << gnuMakefileName << endl;
     }

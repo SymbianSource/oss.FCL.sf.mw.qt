@@ -55,15 +55,14 @@ WebView::WebView(QWidget *parent)
 
 void WebView::paintEvent(QPaintEvent *event)
 {
-    QPainter painter(this);
     if (inLoading && loadingTime.elapsed() < 750) {
+        QPainter painter(this);
         painter.setBrush(Qt::white);
         painter.setPen(Qt::NoPen);
         foreach (const QRect &rect, event->region().rects()) {
             painter.drawRect(rect);
         }
     } else {
-	    painter.fillRect(event->rect() , Qt::white);
         QWebView::paintEvent(event);
     }
 }

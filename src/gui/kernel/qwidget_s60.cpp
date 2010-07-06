@@ -487,8 +487,11 @@ void QWidgetPrivate::show_sys()
                 && !S60->buttonGroupContainer() && !S60->statusPane()) {
 
             bool isFullscreen = q->windowState() & Qt::WindowFullScreen;
+            bool cbaRequested = q->windowFlags() & Qt::WindowSoftkeysVisibleHint;
 
-            if (!q->testAttribute(Qt::WA_DontShowOnScreen)) {
+            // If the window is fullscreen and has not explicitly requested that the CBA be visible
+            // we delay the creation even more.
+            if ((!isFullscreen || cbaRequested) && !q->testAttribute(Qt::WA_DontShowOnScreen)) {
 
                 // Create the status pane and CBA here
                 CEikAppUi *ui = static_cast<CEikAppUi *>(S60->appUi());

@@ -5,6 +5,4 @@ requires(contains(QT_CONFIG,private_tests))
 
 QT = core network
 
-symbian: {
-  INCLUDEPATH += $$MW_LAYER_SYSTEMINCLUDE
-}
+symbian: TARGET.CAPABILITY = NetworkServices

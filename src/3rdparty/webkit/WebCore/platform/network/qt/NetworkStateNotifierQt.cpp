@@ -23,7 +23,9 @@
 #include "NetworkStateNotifierPrivate.h"
 #include "qnetworkconfigmanager.h"
 
+#if defined(QT_MOBILITY_BEARER)
 using namespace QtMobility;
+#endif
 
 namespace WebCore {
 

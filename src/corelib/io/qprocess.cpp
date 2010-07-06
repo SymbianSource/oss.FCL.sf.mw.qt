@@ -88,7 +88,7 @@ QT_END_NAMESPACE
 #include "qprocess_p.h"
 
 #include <qbytearray.h>
-#include <qdatetime.h>
+#include <qelapsedtimer.h>
 #include <qcoreapplication.h>
 #include <qsocketnotifier.h>
 #include <qtimer.h>
@@ -1649,7 +1649,7 @@ bool QProcess::waitForBytesWritten(int msecs)
     if (d->processState == QProcess::NotRunning)
         return false;
     if (d->processState == QProcess::Starting) {
-        QTime stopWatch;
+        QElapsedTimer stopWatch;
         stopWatch.start();
         bool started = waitForStarted(msecs);
         if (!started)
@@ -1686,7 +1686,7 @@ bool QProcess::waitForFinished(int msecs)
     if (d->processState == QProcess::NotRunning)
         return false;
     if (d->processState == QProcess::Starting) {
-        QTime stopWatch;
+        QElapsedTimer stopWatch;
         stopWatch.start();
         bool started = waitForStarted(msecs);
         if (!started)
@@ -2022,7 +2022,7 @@ void QProcess::start(const QString &program, OpenMode mode)
     \note Terminating running processes from other processes will typically
     cause a panic in Symbian due to platform security.
 
-    \sa \l {Symbian Platform Security Requirements}
+    \sa {Symbian Platform Security Requirements}
     \sa kill()
 */
 void QProcess::terminate()
@@ -2040,7 +2040,7 @@ void QProcess::terminate()
     On Symbian, this function requires platform security capability
     \c PowerMgmt. If absent, the process will panic with KERN-EXEC 46.
 
-    \sa \l {Symbian Platform Security Requirements}
+    \sa {Symbian Platform Security Requirements}
     \sa terminate()
 */
 void QProcess::kill()

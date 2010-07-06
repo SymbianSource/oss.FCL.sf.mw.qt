@@ -24,15 +24,7 @@ qtconfig.meta /epoc32/tools/makefile_templates/qt/qtconfig.meta
 ../../../mkspecs/symbian-sbsv2/flm/qt/qt.xml /epoc32/tools/makefile_templates/qt/
 ../../../mkspecs/symbian-sbsv2/flm/qt/ts2qm.flm /epoc32/tools/makefile_templates/qt/
 
-#ifdef SBSV2
-wrappers/qmake.bat  /epoc32/tools/qmake.bat
-wrappers/qmake      /epoc32/tools/qmake
-#else
-wrappers/qmake_abld.bat  /epoc32/tools/qmake.bat
-wrappers/qmake_abld      /epoc32/tools/qmake
-#endif
-
-wrappers/qt.conf    /epoc32/tools/qt/qt.conf
+qt.conf    /epoc32/tools/qt.conf
 
 /* export platform specific configuration */
 
@@ -46,17 +38,6 @@ environment.prf /epoc32/tools/qt/mkspecs/features/
 ../../../content/apps/qt.sisx               CRML_EXPORT_PATH(../content/sis/,uda_content)
 ../../../content/apps/qt_stub.sis          /epoc32/data/z/system/install/qt_stub.sis
 
-../../../confml/qtwebkit.confml                  CONFML_EXPORT_PATH(qtwebkit.confml,uda_content)
-../../../implml/qtwebkit_copy.implml             CRML_EXPORT_PATH(qtwebkit_copy.implml,uda_content)
-../../../content/apps/qtwebkit.sisx         CRML_EXPORT_PATH(../content/sis/,uda_content)
-../../../content/apps/qtwebkit_stub.sis    /epoc32/data/z/system/install/qtwebkit_stub.sis
-//tools
-../../../bin/createpackage.bat         /epoc32/tools/createpackage.bat
-../../../bin/createpackage.pl          /epoc32/tools/createpackage.pl
-../../../bin/patch_capabilities.bat    /epoc32/tools/patch_capabilities.bat
-../../../bin/patch_capabilities.pl     /epoc32/tools/patch_capabilities.pl
-
-
 PRJ_MMPFILES
 
 
@@ -66,5 +47,5 @@ PRJ_TESTMMPFILES
 PRJ_EXTENSIONS
 START EXTENSION qt/qtconfig
 OPTION QT_ROOT ..
-OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process -nomake examples -nomake demos -nomake tools
+OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process -nomake examples -nomake demos -nomake tools -no-declarative
 END

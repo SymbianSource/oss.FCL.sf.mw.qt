@@ -89,9 +89,9 @@ static QFixed alignLine(QTextEngine *eng, const QScriptLine &line)
         if (align & Qt::AlignJustify && eng->option.textDirection() == Qt::RightToLeft)
             align = Qt::AlignRight;
         if (align & Qt::AlignRight)
-            x = line.width - (line.textAdvance + leadingSpaceWidth(eng, line));
+            x = line.width - (line.textWidth + leadingSpaceWidth(eng, line));
         else if (align & Qt::AlignHCenter)
-            x = (line.width - line.textAdvance)/2;
+            x = (line.width - line.textWidth)/2;
     }
     return x;
 }
@@ -305,7 +305,7 @@ Qt::LayoutDirection QTextInlineObject::textDirection() const
     Once the layout is done, these lines can be drawn on a paint
     device.
 
-    Here's some pseudo code that presents the layout phase:
+    Here's some code snippet that presents the layout phase:
     \snippet doc/src/snippets/code/src_gui_text_qtextlayout.cpp 0
 
     The text can be drawn by calling the layout's draw() function:
@@ -1568,6 +1568,20 @@ bool QTextLine::leadingIncluded() const
 qreal QTextLine::naturalTextWidth() const
 {
     return eng->lines[i].textWidth.toReal();
+}
+
+/*! \since 4.7
+  Returns the horizontal advance of the text. The advance of the text
+  is the distance from its position to the next position at which
+  text would naturally be drawn.
+
+  By adding the advance to the position of the text line and using this
+  as the position of a second text line, you will be able to position
+  the two lines side-by-side without gaps in-between.
+*/
+qreal QTextLine::horizontalAdvance() const
+{
+    return eng->lines[i].textAdvance.toReal();
 }
 
 /*!
