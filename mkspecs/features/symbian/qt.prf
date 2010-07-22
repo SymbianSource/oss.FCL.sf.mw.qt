@@ -31,9 +31,16 @@ contains(CONFIG, qt):!contains(TARGET.UID3, 0x2001E61C):!contains(TARGET.UID3, 0
 
     # Projects linking to webkit need dependency to webkit
     contains(QT, webkit): {
+        # these can be overridden by mkspecs/modules/qt_webkit.pri
+        isEmpty(QT_WEBKIT_MAJOR_VERSION) {
+            QT_WEBKIT_MAJOR_VERSION = $${QT_MAJOR_VERSION}
+            QT_WEBKIT_MINOR_VERSION = $${QT_MINOR_VERSION}
+            QT_WEBKIT_PATCH_VERSION = $${QT_PATCH_VERSION}
+        }
+
         pkg_depends_webkit += \
             "; Dependency to Qt Webkit" \
-            "(0x200267C2), $${QT_MAJOR_VERSION}, $${QT_MINOR_VERSION}, $${QT_PATCH_VERSION},  {\"QtWebKit\"}"
+            "(0x200267C2), $${QT_WEBKIT_MAJOR_VERSION}, $${QT_WEBKIT_MINOR_VERSION}, $${QT_WEBKIT_PATCH_VERSION},  {\"QtWebKit\"}"
     } else {
         default_deployment.pkg_prerules -= pkg_depends_webkit
     }
@@ -44,7 +51,8 @@ contains(CONFIG, qt):!contains(TARGET.UID3, 0x2001E61C):!contains(TARGET.UID3, 0
 isEmpty(TARGET.EPOCSTACKSIZE):TARGET.EPOCSTACKSIZE = 0x14000
 isEmpty(TARGET.EPOCHEAPSIZE):TARGET.EPOCHEAPSIZE = 0x020000 0x800000
 
-INCLUDEPATH += $$APP_LAYER_SYSTEMINCLUDE
-
-#QTP: add userinclude 
-MMP_RULES+="USERINCLUDE  ."
+# Workaround for the fact that Gnupoc and Symbian chose different approaches to
+# the letter casing of headers.
+contains(CONFIG, is_using_gnupoc) {
+    INCLUDEPATH += $${PWD}/../../common/symbian/header-wrappers
+}

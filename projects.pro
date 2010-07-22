@@ -40,6 +40,8 @@ for(PROJECT, $$list($$lower($$unique(QT_BUILD_PARTS)))) {
        SUBDIRS += examples
     } else:isEqual(PROJECT, demos) {
        SUBDIRS += demos
+    } else:isEqual(PROJECT, tests) {
+       SUBDIRS += tests
     } else:isEqual(PROJECT, libs) {
        include(src/src.pro)
     } else:isEqual(PROJECT, docs) {
@@ -48,7 +50,7 @@ for(PROJECT, $$list($$lower($$unique(QT_BUILD_PARTS)))) {
        contains(QT_BUILD_PARTS, tools) {
           include(translations/translations.pri)  # ts targets
        } else {
-          !wince*:!symbian:SUBDIRS += tools/linguist/lrelease
+          !wince*:SUBDIRS += tools/linguist/lrelease
        }
        SUBDIRS += translations                    # qm build step
     } else:isEqual(PROJECT, qmake) {
@@ -112,7 +114,8 @@ win32 {
 }
 symbian {
   confclean.depends += distclean
-  confclean.commands += \
+  contains(QMAKE_HOST.os, "Windows") {
+    confclean.commands += \
             (cd src\tools\moc && $(MAKE) distclean) $$escape_expand(\n\t) \
             (cd src\tools\rcc && $(MAKE) distclean) $$escape_expand(\n\t) \
             (cd src\tools\uic && $(MAKE) distclean) $$escape_expand(\n\t) \
@@ -121,7 +124,17 @@ symbian {
             -$(DEL_FILE) mkspecs\qconfig.pri $$escape_expand(\n\t) \
             -$(DEL_FILE) .qmake.cache $$escape_expand(\n\t) \
             (cd qmake && $(MAKE) distclean)
-            
+  } else {
+    confclean.commands += \
+            (cd src/tools/moc && $(MAKE) distclean) $$escape_expand(\n\t) \
+            (cd src/tools/rcc && $(MAKE) distclean) $$escape_expand(\n\t) \
+            (cd src/tools/uic && $(MAKE) distclean) $$escape_expand(\n\t) \
+            -$(DEL_FILE) src/corelib/global/qconfig.h $$escape_expand(\n\t) \
+            -$(DEL_FILE) src/corelib/global/qconfig.cpp $$escape_expand(\n\t) \
+            -$(DEL_FILE) mkspecs/qconfig.pri $$escape_expand(\n\t) \
+            -$(DEL_FILE) .qmake.cache $$escape_expand(\n\t) \
+            (cd qmake && $(MAKE) distclean)
+  }
 }
 QMAKE_EXTRA_TARGETS += confclean
 qmakeclean.commands += (cd qmake && $(MAKE) clean)
@@ -153,6 +166,10 @@ unix {
    DEFAULT_QMAKESPEC = $$QMAKESPEC
    DEFAULT_QMAKESPEC ~= s,^.*mkspecs/,,g
    mkspecs.commands += $(DEL_FILE) $(INSTALL_ROOT)$$mkspecs.path/default; $(SYMLINK) $$DEFAULT_QMAKESPEC $(INSTALL_ROOT)$$mkspecs.path/default
+}
+win32:!equals(QT_BUILD_TREE, $$QT_SOURCE_TREE) {
+    # When shadow building on Windows, the default mkspec only exists in the build tree.
+    mkspecs.files += $$QT_BUILD_TREE/mkspecs/default
 }
 INSTALLS += mkspecs
 

@@ -48,7 +48,7 @@
 #include <private/qapplication_p.h>
 #include <private/qmenu_p.h>
 #include <private/qmenubar_p.h>
-#include <qt_s60_p.h>
+#include <private/qt_s60_p.h>
 #include <QtCore/qlibrary.h>
 
 #ifdef Q_WS_S60
@@ -149,8 +149,12 @@ static void qt_symbian_insert_action(QSymbianMenuAction* action, QList<SymbianMe
                 "Too many menu actions");
 
         const int underlineShortCut = QApplication::style()->styleHint(QStyle::SH_UnderlineShortcut);
-        QString iconText = action->action->iconText();
-        TPtrC menuItemText = qt_QString2TPtrC( underlineShortCut ? action->action->text() : iconText);
+        QString actionText;
+        if (underlineShortCut)
+            actionText = action->action->text().left(CEikMenuPaneItem::SData::ENominalTextLength);
+        else
+            actionText = action->action->iconText().left(CEikMenuPaneItem::SData::ENominalTextLength);
+        TPtrC menuItemText = qt_QString2TPtrC(actionText);
         if (action->action->menu()) {
             SymbianMenuItem* menuItem = new SymbianMenuItem();
             menuItem->menuItemData.iCascadeId = action->command;

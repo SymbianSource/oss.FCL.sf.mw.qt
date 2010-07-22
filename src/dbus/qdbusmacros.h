@@ -48,8 +48,10 @@
 
 #if defined(QDBUS_MAKEDLL)
 # define QDBUS_EXPORT Q_DECL_EXPORT
-#else
+#elif defined(QT_SHARED)
 # define QDBUS_EXPORT Q_DECL_IMPORT
+#else
+# define QDBUS_EXPORT
 #endif
 
 #ifndef Q_MOC_RUN
@@ -64,10 +66,13 @@
 #endif
 
 // prevent syncqt complaints
+#ifndef QT_NO_DBUS
+
 QT_BEGIN_HEADER
 QT_BEGIN_NAMESPACE
 QT_MODULE(DBus)
 QT_END_NAMESPACE
 QT_END_HEADER
 
+#endif // QT_NO_DBUS
 #endif

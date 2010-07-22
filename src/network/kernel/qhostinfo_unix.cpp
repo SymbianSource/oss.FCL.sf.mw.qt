@@ -44,6 +44,7 @@
 #include "qplatformdefs.h"
 
 #include "qhostinfo_p.h"
+#include "private/qnativesocketengine_p.h"
 #include "qiodevice.h"
 #include <qbytearray.h>
 #include <qlibrary.h>
@@ -193,7 +194,9 @@ QHostInfo QHostInfoAgent::fromName(const QString &hostName)
     results.setHostName(hostName);
     if (aceHostname.isEmpty()) {
         results.setError(QHostInfo::HostNotFound);
-        results.setErrorString(hostName.isEmpty() ? QObject::tr("No host name given") : QObject::tr("Invalid hostname"));
+        results.setErrorString(hostName.isEmpty() ?
+                               QCoreApplication::translate("QHostInfoAgent", "No host name given") :
+                               QCoreApplication::translate("QHostInfoAgent", "Invalid hostname"));
         return results;
     }
 

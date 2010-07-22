@@ -91,12 +91,13 @@ static void createPluginStub(const QFileInfo& info,
                              QStringList& generatedDirs,
                              QStringList& generatedFiles)
 {
-    QDir().mkpath(QLatin1String(PLUGIN_STUB_DIR));
-    if (!generatedDirs.contains(PLUGIN_STUB_DIR))
-        generatedDirs << PLUGIN_STUB_DIR;
+    QString pluginStubDir = Option::output_dir + QLatin1Char('/') + QLatin1String(PLUGIN_STUB_DIR);
+    QDir().mkpath(pluginStubDir);
+    if (!generatedDirs.contains(pluginStubDir))
+        generatedDirs << pluginStubDir;
     // Plugin stubs must have different name from the actual plugins, because
     // the toolchain for creating ROM images cannot handle non-binary .dll files properly.
-    QFile stubFile(QLatin1String(PLUGIN_STUB_DIR "/") + info.completeBaseName() + "." SUFFIX_QTPLUGIN);
+    QFile stubFile(pluginStubDir + QLatin1Char('/') + info.completeBaseName() + QLatin1Char('.') + QLatin1String(SUFFIX_QTPLUGIN));
     if (stubFile.open(QIODevice::WriteOnly)) {
         if (!generatedFiles.contains(stubFile.fileName()))
             generatedFiles << stubFile.fileName();
@@ -155,6 +156,7 @@ void initProjectDeploySymbian(QMakeProject* project,
                               DeploymentList &deploymentList,
                               const QString &testPath,
                               bool deployBinaries,
+                              bool epocBuild,
                               const QString &platform,
                               const QString &build,
                               QStringList& generatedDirs,
@@ -264,7 +266,11 @@ void initProjectDeploySymbian(QMakeProject* project,
                     if (isBinary(info)) {
                         if (deployBinaries) {
                             // Executables and libraries are deployed to \sys\bin
-                            QFileInfo targetPath(epocRoot() + "epoc32/release/" + platform + "/" + build + "/");
+                            QFileInfo targetPath;
+                            if (epocBuild)
+                                targetPath.setFile(epocRoot() + "epoc32/release/" + platform + "/" + build + "/");
+                            else
+                                targetPath.setFile(info.path() + QDir::separator());
                             if(devicePathHasDriveLetter) {
                                 deploymentList.append(CopyItem(
                                     Option::fixPathToLocalOS(targetPath.absolutePath() + "/" + info.fileName(),

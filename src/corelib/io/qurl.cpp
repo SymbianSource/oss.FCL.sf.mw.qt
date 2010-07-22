@@ -167,6 +167,13 @@
     regardless of the Qt::FormattingOptions used.
 */
 
+/*!
+ \fn uint qHash(const QUrl &url)
+ \since 4.7
+ \relates QUrl
+
+ Computes a hash key from the normalized version of \a url.
+ */
 #include "qplatformdefs.h"
 #include "qurl.h"
 #include "private/qunicodetables_p.h"
@@ -338,6 +345,7 @@ public:
     bool hasQuery;
     bool hasFragment;
     bool isValid;
+    bool isHostValid;
 
     char valueDelimiter;
     char pairDelimiter;
@@ -2990,7 +2998,9 @@ bool qt_check_std3rules(const QChar *uc, int len)
         // only LDH is present
         if (c == '-' || (c >= '0' && c <= '9')
             || (c >= 'A' && c <= 'Z')
-            || (c >= 'a' && c <= 'z'))
+            || (c >= 'a' && c <= 'z')
+            //underscore is not supposed to be allowed, but other browser accept it (QTBUG-7434)
+            || c == '_')
             continue;
 
         return false;
@@ -3129,10 +3139,11 @@ static void toPunycodeHelper(const QChar *s, int ucLength, QString *output)
 
 
 static const char * const idn_whitelist[] = {
-    "ac", "at",
-    "br",
+    "ac", "ar", "at",
+    "biz", "br",
     "cat", "ch", "cl", "cn",
     "de", "dk",
+    "es",
     "fi",
     "gr",
     "hu",
@@ -3146,6 +3157,9 @@ static const char * const idn_whitelist[] = {
     "se", "sh",
     "th", "tm", "tw",
     "vn",
+    "xn--mgbaam7a8h",           // UAE
+    "xn--mgberp4a5d4ar",        // Saudi Arabia
+    "xn--wgbh1c"                // Egypt
 };
 
 static QStringList *user_idn_whitelist = 0;
@@ -3304,6 +3318,7 @@ static QString qt_ACE_do(const QString &domain, AceOperation op)
             qt_nameprep(&result, prevLen);
             labelLength = result.length() - prevLen;
             register int toReserve = labelLength + 4 + 6; // "xn--" plus some extra bytes
+            aceForm.resize(0);
             if (toReserve > aceForm.capacity())
                 aceForm.reserve(toReserve);
             toPunycodeHelper(result.constData() + prevLen, result.size() - prevLen, &aceForm);
@@ -3340,6 +3355,7 @@ QUrlPrivate::QUrlPrivate()
     ref = 1;
     port = -1;
     isValid = false;
+    isHostValid = true;
     parsingMode = QUrl::TolerantMode;
     valueDelimiter = '=';
     pairDelimiter = '&';
@@ -3366,6 +3382,7 @@ QUrlPrivate::QUrlPrivate(const QUrlPrivate &copy)
       hasQuery(copy.hasQuery),
       hasFragment(copy.hasFragment),
       isValid(copy.isValid),
+      isHostValid(copy.isHostValid),
       valueDelimiter(copy.valueDelimiter),
       pairDelimiter(copy.pairDelimiter),
       stateFlags(copy.stateFlags),
@@ -3396,6 +3413,8 @@ QString QUrlPrivate::canonicalHost() const
             that->host = host.toLower();
     } else {
         that->host = qt_ACE_do(host, NormalizeAce);
+        if (that->host.isNull())
+            that->isHostValid = false;
     }
     return that->host;
 }
@@ -3472,8 +3491,13 @@ QString QUrlPrivate::authority(QUrl::FormattingOptions options) const
 
 void QUrlPrivate::setAuthority(const QString &auth)
 {
-    if (auth.isEmpty())
+    isHostValid = true;
+    if (auth.isEmpty()) {
+        setUserInfo(QString());
+        host.clear();
+        port = -1;
         return;
+    }
 
     // find the port section of the authority by searching from the
     // end towards the beginning for numbers until a ':' is reached.
@@ -4162,7 +4186,7 @@ bool QUrl::isValid() const
     if (!QURL_HASFLAG(d->stateFlags, QUrlPrivate::Parsed)) d->parse();
     if (!QURL_HASFLAG(d->stateFlags, QUrlPrivate::Validated)) d->validate();
 
-    return d->isValid;
+    return d->isValid && d->isHostValid;
 }
 
 /*!
@@ -4414,7 +4438,6 @@ void QUrl::setAuthority(const QString &authority)
     if (!QURL_HASFLAG(d->stateFlags, QUrlPrivate::Parsed)) d->parse();
     detach();
     QURL_UNSETFLAG(d->stateFlags, QUrlPrivate::Validated | QUrlPrivate::Normalized);
-
     d->setAuthority(authority);
 }
 
@@ -4635,6 +4658,7 @@ void QUrl::setHost(const QString &host)
     if (!d) d = new QUrlPrivate;
     if (!QURL_HASFLAG(d->stateFlags, QUrlPrivate::Parsed)) d->parse();
     detach();
+    d->isHostValid = true;
     QURL_UNSETFLAG(d->stateFlags, QUrlPrivate::Validated | QUrlPrivate::Normalized | QUrlPrivate::HostCanonicalized);
 
     d->host = host;
@@ -5544,6 +5568,12 @@ QUrl QUrl::resolved(const QUrl &relative) const
     removeDotsFromPath(&t.d->encodedPath);
     t.d->path.clear();
 
+#if defined(QURL_DEBUG)
+    qDebug("QUrl(\"%s\").resolved(\"%s\") = \"%s\"",
+           toEncoded().constData(),
+           relative.toEncoded().constData(),
+           t.toEncoded().constData());
+#endif
     return t;
 }
 
@@ -6365,7 +6395,7 @@ QUrl QUrl::fromUserInput(const QString &userInput)
         return QUrl::fromLocalFile(trimmedString);
 
     QUrl url = QUrl::fromEncoded(trimmedString.toUtf8(), QUrl::TolerantMode);
-    QUrl urlPrepended = QUrl::fromEncoded((QLatin1String("http://") + trimmedString).toUtf8(), QUrl::TolerantMode);
+    QUrl urlPrepended = QUrl::fromEncoded("http://" + trimmedString.toUtf8(), QUrl::TolerantMode);
 
     // Check the most common case of a valid url with scheme and host
     // We check if the port would be valid by adding the scheme to handle the case host:port

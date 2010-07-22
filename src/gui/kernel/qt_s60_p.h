@@ -62,6 +62,7 @@
 #include "QtGui/qevent.h"
 #include "qpointer.h"
 #include "qapplication.h"
+#include "qelapsedtimer.h"
 #include <w32std.h>
 #include <coecntrl.h>
 #include <eikenv.h>
@@ -102,16 +103,21 @@ public:
     int defaultDpiX;
     int defaultDpiY;
     WId curWin;
-    int virtualMouseLastKey;
     enum PressedKeys {
         Select = 0x1,
         Right = 0x2,
         Down = 0x4,
         Left = 0x8,
-        Up = 0x10
+        Up = 0x10,
+        LeftUp = 0x20,
+        RightUp = 0x40,
+        RightDown = 0x80,
+        LeftDown = 0x100
     };
     int virtualMousePressedKeys; // of the above type, but avoids casting problems
-    int virtualMouseAccel;
+    int virtualMouseAccelDX;
+    int virtualMouseAccelDY;
+    QElapsedTimer virtualMouseAccelTimeout;
     int virtualMouseMaxAccel;
 #ifndef Q_SYMBIAN_FIXED_POINTER_CURSORS
     int brokenPointerCursors : 1;
@@ -155,7 +161,7 @@ class QLongTapTimer;
 
 class QSymbianControl : public CCoeControl, public QAbstractLongTapObserver
 #ifdef Q_WS_S60
-, public MAknFadedComponent
+, public MAknFadedComponent, public MEikStatusPaneObserver
 #endif
 {
 public:
@@ -183,6 +189,7 @@ public:
 
 #ifdef Q_WS_S60
     void FadeBehindPopup(bool fade){ popupFader.FadeBehindPopup( this, this, fade); }
+    void HandleStatusPaneSizeChange();
 
 protected: // from MAknFadedComponent
     TInt CountFadedComponents() {return 1;}
@@ -221,6 +228,7 @@ private:
 private:
     QWidget *qwidget;
     QLongTapTimer* m_longTapDetector;
+    QElapsedTimer m_doubleClickTimer;
     bool m_ignoreFocusChanged : 1;
     bool m_symbianPopupIsOpen : 1;
 
@@ -245,7 +253,7 @@ inline void QS60Data::updateScreenSize()
     S60->screenWidthInTwips = params.iTwipsSize.iWidth;
     S60->screenHeightInTwips = params.iTwipsSize.iHeight;
 
-    S60->virtualMouseMaxAccel = qMax(S60->screenHeightInPixels, S60->screenWidthInPixels) / 20;
+    S60->virtualMouseMaxAccel = qMax(S60->screenHeightInPixels, S60->screenWidthInPixels) / 10;
 
     TReal inches = S60->screenHeightInTwips / (TReal)KTwipsPerInch;
     S60->defaultDpiY = S60->screenHeightInPixels / inches;

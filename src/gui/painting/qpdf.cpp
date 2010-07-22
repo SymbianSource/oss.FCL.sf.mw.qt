@@ -971,12 +971,17 @@ void QPdfBaseEngine::drawPoints (const QPointF *points, int pointCount)
     if (!points)
         return;
 
+    Q_D(QPdfBaseEngine);
     QPainterPath p;
     for (int i=0; i!=pointCount;++i) {
         p.moveTo(points[i]);
         p.lineTo(points[i] + QPointF(0, 0.001));
     }
+
+    bool hadBrush = d->hasBrush;
+    d->hasBrush = false;
     drawPath(p);
+    d->hasBrush = hadBrush;
 }
 
 void QPdfBaseEngine::drawLines (const QLineF *lines, int lineCount)
@@ -984,12 +989,16 @@ void QPdfBaseEngine::drawLines (const QLineF *lines, int lineCount)
     if (!lines)
         return;
 
+    Q_D(QPdfBaseEngine);
     QPainterPath p;
     for (int i=0; i!=lineCount;++i) {
         p.moveTo(lines[i].p1());
         p.lineTo(lines[i].p2());
     }
+    bool hadBrush = d->hasBrush;
+    d->hasBrush = false;
     drawPath(p);
+    d->hasBrush = hadBrush;
 }
 
 void QPdfBaseEngine::drawRects (const QRectF *rects, int rectCount)
@@ -1415,6 +1424,7 @@ void QPdfBaseEngine::setProperty(PrintEnginePropertyKey key, const QVariant &val
     case PPK_FullPage:
         d->fullPage = value.toBool();
         break;
+    case PPK_CopyCount: // fallthrough
     case PPK_NumberOfCopies:
         d->copies = value.toInt();
         break;
@@ -1503,6 +1513,17 @@ QVariant QPdfBaseEngine::property(PrintEnginePropertyKey key) const
         break;
     case PPK_FullPage:
         ret = d->fullPage;
+        break;
+    case PPK_CopyCount:
+        ret = d->copies;
+        break;
+    case PPK_SupportsMultipleCopies:
+#if !defined(QT_NO_CUPS) && !defined(QT_NO_LIBRARY)
+        if (QCUPSSupport::isAvailable())
+            ret = true;
+        else
+#endif
+            ret = false;
         break;
     case PPK_NumberOfCopies:
 #if !defined(QT_NO_CUPS) && !defined(QT_NO_LIBRARY)

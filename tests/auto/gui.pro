@@ -78,7 +78,6 @@ SUBDIRS=\
     qgraphicswidget \
     qgridlayout \
     qgroupbox \
-    qguard \
     qguivariant \
     qheaderview \
     qhelpcontentmodel \
@@ -159,6 +158,7 @@ SUBDIRS=\
     qstandarditem \
     qstandarditemmodel \
     qstatemachine \
+    qstatictext \
     qstatusbar \
     qstringlistmodel \
     qstyle \

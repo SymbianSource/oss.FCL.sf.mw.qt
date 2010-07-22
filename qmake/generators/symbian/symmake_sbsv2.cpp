@@ -147,8 +147,8 @@ void SymbianSbsv2MakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, boo
     t << "#" << endl;
     t << "# ==============================================================================" << "\n" << endl;
     t << endl;
-    t << "MAKEFILE          = " << wrapperFile.fileName() << endl;
-    t << "QMAKE             = " << Option::fixPathToTargetOS(var("QMAKE_QMAKE")) << endl;
+    t << "MAKEFILE          = " << fileInfo(wrapperFile.fileName()).fileName() << endl;
+    t << "QMAKE             = " << var("QMAKE_QMAKE") << endl;
     t << "DEL_FILE          = " << var("QMAKE_DEL_FILE") << endl;
     t << "DEL_DIR           = " << var("QMAKE_DEL_DIR") << endl;
     t << "CHK_DIR_EXISTS    = " << var("QMAKE_CHK_DIR_EXISTS") << endl;
@@ -256,8 +256,6 @@ void SymbianSbsv2MakefileGenerator::writeWrapperMakefile(QFile& wrapperFile, boo
         writeSubTargets(t, subtargets, SubTargetSkipDefaultVariables|SubTargetSkipDefaultTargets);
         qDeleteAll(subtargets);
     }
-
-    writeSisTargets(t);
 
     generateDistcleanTargets(t);
 
@@ -387,7 +385,8 @@ void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t
     }
 
     t << endl;
-
+    
+    //loc change starts
     QString translationFilename = project->first("TRANSLATIONS");
     if (!project->values("SYMBIANTRANSLATIONS").isEmpty() && !translationFilename.isEmpty()) {
         QStringList symbianTranslations = project->values("SYMBIANTRANSLATIONS");
@@ -396,40 +395,40 @@ void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t
         QString symbianWinscwUdebQmPath = project->first("SYMBIANWINSCWUDEBTRANSLATIONDIR");  
         QString symbianWinscwUrelQmPath = project->first("SYMBIANWINSCWURELTRANSLATIONDIR");  
         foreach (const QString &symbianTrans, symbianTranslations) {
-                    QString translationTsFilename(translationFilename);
-                    translationTsFilename.chop(3);
-                    translationTsFilename.insert(0,symbianTrPath);
-                    translationTsFilename.append(QString::fromLatin1("_"));
-                    translationTsFilename.append(symbianTrans);
-                    QString translationQmFilename(translationTsFilename);
+            QString translationTsFilename(translationFilename);
+            translationTsFilename = fileInfo(translationTsFilename).completeBaseName();
+            translationTsFilename.insert(0, symbianTrPath);
+            translationTsFilename.append(QString::fromLatin1("_"));
+            translationTsFilename.append(symbianTrans);
+            QString translationQmFilename(translationTsFilename);
 
-                    translationTsFilename.append(QString::fromLatin1(".ts"));
-                    // output path for armv5 qm files./epoc32/data/z/resource/qt/translations/
-                    translationQmFilename.append(QString::fromLatin1(".qm"));
+            translationTsFilename.append(QString::fromLatin1(".ts"));
+            // output path for armv5 qm files./epoc32/data/z/resource/qt/translations/
+            translationQmFilename.append(QString::fromLatin1(".qm"));
 
-										// input path for ts files. /epoc32/include/platform/qt/translations/
-                    QString translationTsSrcFilename(translationFilename);
-                    translationTsSrcFilename.chop(3);
-                    translationTsSrcFilename.insert(0,symbianTrSrcPath);
-                    translationTsSrcFilename.append(QString::fromLatin1("_"));
-                    translationTsSrcFilename.append(symbianTrans);	
-                    translationTsSrcFilename.append(QString::fromLatin1(".ts"));
+			// input path for ts files. /epoc32/include/platform/qt/translations/
+            QString translationTsSrcFilename(translationFilename);
+            translationTsSrcFilename = fileInfo(translationTsSrcFilename).completeBaseName();
+            translationTsSrcFilename.insert(0, symbianTrSrcPath);
+            translationTsSrcFilename.append(QString::fromLatin1("_"));
+            translationTsSrcFilename.append(symbianTrans);	
+            translationTsSrcFilename.append(QString::fromLatin1(".ts"));
                     	
-										// output path for winscw qm files. /epoc32/release/winscw/udeb/z/resource/qt/translations/
-                    QString translationQmWinscwUdebFilename(translationFilename);
-                    translationQmWinscwUdebFilename.chop(3);
-                    translationQmWinscwUdebFilename.insert(0,symbianWinscwUdebQmPath);
-                    translationQmWinscwUdebFilename.append(QString::fromLatin1("_"));
-                    translationQmWinscwUdebFilename.append(symbianTrans);
-                    translationQmWinscwUdebFilename.append(QString::fromLatin1(".qm"));                    	
+			// output path for winscw qm files. /epoc32/release/winscw/udeb/z/resource/qt/translations/
+            QString translationQmWinscwUdebFilename(translationFilename);
+            translationQmWinscwUdebFilename = fileInfo(translationQmWinscwUdebFilename).completeBaseName();
+            translationQmWinscwUdebFilename.insert(0, symbianWinscwUdebQmPath);
+            translationQmWinscwUdebFilename.append(QString::fromLatin1("_"));
+            translationQmWinscwUdebFilename.append(symbianTrans);
+            translationQmWinscwUdebFilename.append(QString::fromLatin1(".qm"));                    	
 
-										// output path for winscw qm files. /epoc32/release/winscw/urel/z/resource/qt/translations/
-                    QString translationQmWinscwUrelFilename(translationFilename);
-                    translationQmWinscwUrelFilename.chop(3);
-                    translationQmWinscwUrelFilename.insert(0,symbianWinscwUrelQmPath);
-                    translationQmWinscwUrelFilename.append(QString::fromLatin1("_"));
-                    translationQmWinscwUrelFilename.append(symbianTrans);	
-                    translationQmWinscwUrelFilename.append(QString::fromLatin1(".qm")); 
+			// output path for winscw qm files. /epoc32/release/winscw/urel/z/resource/qt/translations/
+            QString translationQmWinscwUrelFilename(translationFilename);
+            translationQmWinscwUrelFilename = fileInfo(translationQmWinscwUrelFilename).completeBaseName();
+            translationQmWinscwUrelFilename.insert(0, symbianWinscwUrelQmPath);
+            translationQmWinscwUrelFilename.append(QString::fromLatin1("_"));
+            translationQmWinscwUrelFilename.append(symbianTrans);	
+            translationQmWinscwUrelFilename.append(QString::fromLatin1(".qm")); 
             
             t << "START EXTENSION qt/ts2qm" << endl;
             t << "OPTION TSFILE " << translationTsSrcFilename << endl;
@@ -451,14 +450,15 @@ void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t
             t << endl;
         }
     }
-
+    //QTP: loc change end
+    
     // Write deployment rules
     QString remoteTestPath = epocRoot() + QLatin1String("epoc32/winscw/c/private/") + privateDirUid;
     DeploymentList depList;
 
     //write emulator deployment
     t << "#if defined(WINSCW)" << endl;
-    initProjectDeploySymbian(project, depList, remoteTestPath, false,
+    initProjectDeploySymbian(project, depList, remoteTestPath, false, true,
         QLatin1String(EMULATOR_DEPLOYMENT_PLATFORM), QString(), generatedDirs, generatedFiles);
     writeSbsDeploymentList(depList, t);
     t << "#endif" << endl;
@@ -466,7 +466,7 @@ void SymbianSbsv2MakefileGenerator::writeBldInfExtensionRulesPart(QTextStream& t
     //write ROM deployment
     remoteTestPath = epocRoot() + QLatin1String("epoc32/data/z/private/") + privateDirUid;
     depList.clear();
-    initProjectDeploySymbian(project, depList, remoteTestPath, false,
+    initProjectDeploySymbian(project, depList, remoteTestPath, false, true,
         QLatin1String(ROM_DEPLOYMENT_PLATFORM), QString(), generatedDirs, generatedFiles);
     writeSbsDeploymentList(depList, t);
     t << endl;

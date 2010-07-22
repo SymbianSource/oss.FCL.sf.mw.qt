@@ -368,7 +368,8 @@ void QWin32PrintEngine::drawTextItem(const QPointF &p, const QTextItem &textItem
     }
 
     // We only want to convert the glyphs to text if the entire string is compatible with ASCII
-    bool convertToText = true;
+    // and if we actually have access to the chars.
+    bool convertToText = ti.chars != 0;
     for (int i=0;  i < ti.num_chars; ++i) {
         if (ti.chars[i].unicode() >= 0x80) {
             convertToText = false;
@@ -964,12 +965,13 @@ void QWin32PrintEnginePrivate::queryDefault()
         return;
 
     QStringList info = output.split(QLatin1Char(','));
-    if (info.size() > 0) {
+    int infoSize = info.size();
+    if (infoSize > 0) {
         if (name.isEmpty())
             name = info.at(0);
-        if (program.isEmpty())
+        if (program.isEmpty() && infoSize > 1)
             program = info.at(1);
-        if (port.isEmpty())
+        if (port.isEmpty() && infoSize > 2)
             port = info.at(2);
     }
 }
@@ -1240,6 +1242,7 @@ void QWin32PrintEngine::setProperty(PrintEnginePropertyKey key, const QVariant &
         d->updateOrigin();
         break;
 
+    case PPK_CopyCount: // fallthrough
     case PPK_NumberOfCopies:
         if (!d->devMode)
             break;
@@ -1404,6 +1407,14 @@ QVariant QWin32PrintEngine::property(PrintEnginePropertyKey key) const
 
     case PPK_FullPage:
         value = d->fullPage;
+        break;
+
+    case PPK_CopyCount:
+        value = d->num_copies;
+        break;
+
+    case PPK_SupportsMultipleCopies:
+        value = true;
         break;
 
     case PPK_NumberOfCopies:

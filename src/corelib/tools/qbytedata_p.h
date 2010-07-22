@@ -84,7 +84,7 @@ public:
     }
 
 
-    inline void append(QByteArray& bd)
+    inline void append(const QByteArray& bd)
     {
         if (bd.isEmpty())
             return;
@@ -205,6 +205,13 @@ public:
     inline QByteArray& operator[](int i)
     {
         return buffers[i];
+    }
+
+    inline bool canReadLine() const {
+        for (int i = 0; i < buffers.length(); i++)
+            if (buffers.at(i).contains('\n'))
+                return true;
+        return false;
     }
 };
 

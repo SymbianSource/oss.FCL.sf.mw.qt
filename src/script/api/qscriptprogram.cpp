@@ -63,7 +63,10 @@ QScriptProgramPrivate::QScriptProgramPrivate(const QString &src,
 
 QScriptProgramPrivate::~QScriptProgramPrivate()
 {
-    delete _executable;
+    if (engine) {
+        QScript::APIShim shim(engine);
+        _executable.clear();
+    }
 }
 
 QScriptProgramPrivate *QScriptProgramPrivate::get(const QScriptProgram &q)
@@ -76,17 +79,17 @@ JSC::EvalExecutable *QScriptProgramPrivate::executable(JSC::ExecState *exec,
 {
     if (_executable) {
         if (eng == engine)
-            return _executable;
-        delete _executable;
+            return _executable.get();
+        _executable = 0;
     }
     WTF::PassRefPtr<QScript::UStringSourceProviderWithFeedback> provider
         = QScript::UStringSourceProviderWithFeedback::create(sourceCode, fileName, firstLineNumber, eng);
     sourceId = provider->asID();
     JSC::SourceCode source(provider, firstLineNumber); //after construction of SourceCode provider variable will be null.
-    _executable = new JSC::EvalExecutable(exec, source);
+    _executable = JSC::EvalExecutable::create(exec, source);
     engine = eng;
     isCompiled = false;
-    return _executable;
+    return _executable.get();
 }
 
 /*!
@@ -121,7 +124,7 @@ QScriptProgram::QScriptProgram(const QScriptProgram &other)
 */
 QScriptProgram::~QScriptProgram()
 {
-    Q_D(QScriptProgram);
+    //    Q_D(QScriptProgram);
     //    if (d->engine && (d->ref == 1))
     //      d->engine->unregisterScriptProgram(d);
 }
