@@ -56,7 +56,6 @@
 #include <private/qpaintengine_mac_p.h>
 #include <private/qpainter_p.h>
 #include <private/qprintengine_mac_p.h>
-#include <private/qstylehelper_p.h>
 #include <qapplication.h>
 #include <qbitmap.h>
 #include <qcheckbox.h>
@@ -97,9 +96,11 @@
 #include <qdebug.h>
 #include <qlibrary.h>
 #include <qdatetimeedit.h>
+#include <qmath.h>
 #include <QtGui/qgraphicsproxywidget.h>
 #include <QtGui/qgraphicsview.h>
 #include <private/qt_cocoa_helpers_mac_p.h>
+#include <private/qstylehelper_p.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -237,12 +238,14 @@ void drawTabShape(QPainter *p, const QStyleOptionTabV3 *tabOpt)
 
         // fill body
         if (active) {
-            p->fillRect(rect, QColor(151, 151, 151));
+            int d = (QSysInfo::MacintoshVersion >= QSysInfo::MV_10_6) ? 16 : 0;
+            p->fillRect(rect, QColor(151 + d, 151 + d, 151 + d));
         } else {
+            int d = (QSysInfo::MacintoshVersion >= QSysInfo::MV_10_6) ? 9 : 0;
             QLinearGradient gradient(rect.topLeft(), rect.bottomLeft());
-            gradient.setColorAt(0, QColor(207, 207, 207));
-            gradient.setColorAt(0.5, QColor(206, 206, 206));
-            gradient.setColorAt(1, QColor(201, 201, 201));
+            gradient.setColorAt(0, QColor(207 + d, 207 + d, 207 + d));
+            gradient.setColorAt(0.5, QColor(206 + d, 206 + d, 206 + d));
+            gradient.setColorAt(1, QColor(201 + d, 201 + d, 201 + d));
             p->fillRect(rect, gradient);
         }
 
@@ -432,13 +435,13 @@ static inline bool isTreeView(const QWidget *widget)
 
 QString qt_mac_removeMnemonics(const QString &original)
 {
-    // copied from qt_format_text (to be bug-for-bug compatible).
     QString returnText(original.size(), 0);
     int finalDest = 0;
     int currPos = 0;
     int l = original.length();
     while (l) {
-        if (original.at(currPos) == QLatin1Char('&')) {
+        if (original.at(currPos) == QLatin1Char('&')
+            && (l == 1 || original.at(currPos + 1) != QLatin1Char('&'))) {
             ++currPos;
             --l;
             if (l == 0)
@@ -2140,8 +2143,11 @@ int QMacStyle::pixelMetric(PixelMetric metric, const QStyleOption *opt, const QW
         // The combo box popup has no frame.
         if (qstyleoption_cast<const QStyleOptionComboBox *>(opt) != 0)
             ret = 0;
+        // Frame of mac style line edits is two pixels on top and one on the bottom
+        else if (qobject_cast<const QLineEdit *>(widget) != 0)
+            ret = 2;
         else
-            ret = QWindowsStyle::pixelMetric(metric, opt, widget);
+            ret = 1;
         break;
     case PM_MaximumDragDistance:
         ret = -1;
@@ -3097,14 +3103,16 @@ void QMacStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt, QPai
         HIRect hirect = qt_hirectForQRect(opt->rect);
         HIThemeDrawButton(&hirect, &bi, cg, kHIThemeOrientationNormal, 0);
         break; }
+
     case PE_Frame: {
         QPen oldPen = p->pen();
-        QPen newPen;
-        newPen.setBrush(opt->palette.dark());
-        p->setPen(newPen);
+        p->setPen(opt->palette.base().color().darker(140));
         p->drawRect(opt->rect.adjusted(0, 0, -1, -1));
+        p->setPen(opt->palette.base().color().darker(180));
+        p->drawLine(opt->rect.topLeft(), opt->rect.topRight());
         p->setPen(oldPen);
         break; }
+
     case PE_FrameLineEdit:
         if (const QStyleOptionFrame *frame = qstyleoption_cast<const QStyleOptionFrame *>(opt)) {
             if (frame->state & State_Sunken) {
@@ -3146,6 +3154,18 @@ void QMacStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt, QPai
         break;
     case PE_PanelLineEdit:
         QWindowsStyle::drawPrimitive(pe, opt, p, w);
+        // Draw the focus frame for widgets other than QLineEdit (e.g. for line edits in Webkit).
+        // Focus frame is drawn outside the rectangle passed in the option-rect.
+        if (const QStyleOptionFrame *panel = qstyleoption_cast<const QStyleOptionFrame *>(opt)) {
+            if ((opt->state & State_HasFocus) && !qobject_cast<const QLineEdit*>(w)) {
+                int vmargin = pixelMetric(QStyle::PM_FocusFrameVMargin);
+                int hmargin = pixelMetric(QStyle::PM_FocusFrameHMargin);
+                QStyleOptionFrame focusFrame = *panel;
+                focusFrame.rect = panel->rect.adjusted(-hmargin, -vmargin, hmargin, vmargin);
+                drawControl(CE_FocusFrame, &focusFrame, p, w);
+            }
+        }
+
         break;
     case PE_FrameTabWidget:
         if (const QStyleOptionTabWidgetFrame *twf
@@ -3169,7 +3189,6 @@ void QMacStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt, QPai
         p->drawLine(opt->rect.topLeft(), opt->rect.bottomLeft());
         } break;
     case PE_FrameStatusBarItem:
-        QCommonStyle::drawPrimitive(pe, opt, p, w);
         break;
     case PE_IndicatorTabClose: {
         bool hover = (opt->state & State_MouseOver);
@@ -3266,10 +3285,14 @@ void QMacStyle::drawControl(ControlElement ce, const QStyleOption *opt, QPainter
             if (header->orientation == Qt::Horizontal){
                 switch (header->position) {
                 case QStyleOptionHeader::Beginning:
+                    ir.adjust(-1, -1, 0, 0);
                     break;
                 case QStyleOptionHeader::Middle:
+                    ir.adjust(-1, -1, 0, 0);
+                    break;
+                case QStyleOptionHeader::OnlyOneSection:
                 case QStyleOptionHeader::End:
-                    ir.adjust(-1, 0, 0, 0);
+                    ir.adjust(-1, -1, 1, 0);
                     break;
                 default:
                     break;
@@ -5418,14 +5441,12 @@ QRect QMacStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex *op
                     CGFloat height;
                     QCFString groupText = qt_mac_removeMnemonics(groupBox->text);
                     HIThemeGetTextDimensions(groupText, 0, &tti, &width, &height, 0);
-                    tw = int(width);
-                    h = int(height);
+                    tw = qRound(width);
+                    h = qCeil(height);
                 } else {
-                    QFontMetrics fm = groupBox->fontMetrics;
-                    if (!checkable && !fontIsSet)
-                        fm = QFontMetrics(qt_app_fonts_hash()->value("QSmallFont", QFont()));
-                    h = fm.height();
-                    tw = fm.size(Qt::TextShowMnemonic, groupBox->text).width();
+                    QFontMetricsF fm = QFontMetricsF(groupBox->fontMetrics);
+                    h = qCeil(fm.height());
+                    tw = qCeil(fm.size(Qt::TextShowMnemonic, groupBox->text).width());
                 }
                 ret.setHeight(h);
 
@@ -5472,10 +5493,10 @@ QRect QMacStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex *op
                         fm = QFontMetrics(qt_app_fonts_hash()->value("QSmallFont", QFont()));
                     yOffset = 5;
                     if (hasNoText)
-                        yOffset = -fm.height();
+                        yOffset = -qCeil(QFontMetricsF(fm).height());
                 }
 
-                ret = opt->rect.adjusted(0, fm.height() + yOffset, 0, 0);
+                ret = opt->rect.adjusted(0, qCeil(QFontMetricsF(fm).height()) + yOffset, 0, 0);
                 if (sc == SC_GroupBoxContents)
                     ret.adjust(3, 3, -3, -4);    // guess
             }

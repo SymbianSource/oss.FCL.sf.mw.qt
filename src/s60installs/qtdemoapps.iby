@@ -112,5 +112,4 @@ S60_APP_EXE(anomaly)
 S60_APP_RESOURCE(anomaly)
 data=\epoc32\data\Z\private\10003a3f\import\Apps\anomaly_reg.rsc   \private\10003a3f\import\apps\anomaly_reg.rsc
 
-
 #endif // QTDEMOAPPS_IBY

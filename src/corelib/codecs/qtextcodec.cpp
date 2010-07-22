@@ -105,7 +105,7 @@
 
 QT_BEGIN_NAMESPACE
 
-#ifndef QT_NO_TEXTCODECPLUGIN
+#if !defined(QT_NO_LIBRARY) && !defined(QT_NO_TEXTCODECPLUGIN)
 Q_GLOBAL_STATIC_WITH_ARGS(QFactoryLoader, loader,
     (QTextCodecFactoryInterface_iid, QLatin1String("/codecs")))
 #endif
@@ -149,7 +149,7 @@ static bool nameMatch(const QByteArray &name, const QByteArray &test)
 
 static QTextCodec *createForName(const QByteArray &name)
 {
-#ifndef QT_NO_TEXTCODECPLUGIN
+#if !defined(QT_NO_LIBRARY) && !defined(QT_NO_TEXTCODECPLUGIN)
     QFactoryLoader *l = loader();
     QStringList keys = l->keys();
     for (int i = 0; i < keys.size(); ++i) {
@@ -413,9 +413,35 @@ QString QWindowsLocalCodec::convertToUnicodeCharByChar(const char *chars, int le
     return s;
 }
 
-QByteArray QWindowsLocalCodec::convertFromUnicode(const QChar *uc, int len, ConverterState *) const
+QByteArray QWindowsLocalCodec::convertFromUnicode(const QChar *ch, int uclen, ConverterState *) const
 {
-    return qt_winQString2MB(uc, len);
+    if (!ch)
+        return QByteArray();
+    if (uclen == 0)
+        return QByteArray("");
+    BOOL used_def;
+    QByteArray mb(4096, 0);
+    int len;
+    while (!(len=WideCharToMultiByte(CP_ACP, 0, (const wchar_t*)ch, uclen,
+                mb.data(), mb.size()-1, 0, &used_def)))
+    {
+        int r = GetLastError();
+        if (r == ERROR_INSUFFICIENT_BUFFER) {
+            mb.resize(1+WideCharToMultiByte(CP_ACP, 0,
+                                (const wchar_t*)ch, uclen,
+                                0, 0, 0, &used_def));
+                // and try again...
+        } else {
+#ifndef QT_NO_DEBUG
+            // Fail.
+            qWarning("WideCharToMultiByte: Cannot convert multibyte text (error %d): %s (UTF-8)",
+                r, QString(ch, uclen).toLocal8Bit().data());
+#endif
+            break;
+        }
+    }
+    mb.resize(len);
+    return mb;
 }
 
 
@@ -1115,7 +1141,7 @@ QList<QByteArray> QTextCodec::availableCodecs()
     locker.unlock();
 #endif
 
-#ifndef QT_NO_TEXTCODECPLUGIN
+#if !defined(QT_NO_LIBRARY) && !defined(QT_NO_TEXTCODECPLUGIN)
     QFactoryLoader *l = loader();
     QStringList keys = l->keys();
     for (int i = 0; i < keys.size(); ++i) {
@@ -1155,7 +1181,7 @@ QList<int> QTextCodec::availableMibs()
     locker.unlock();
 #endif
 
-#ifndef QT_NO_TEXTCODECPLUGIN
+#if !defined(QT_NO_LIBRARY) && !defined(QT_NO_TEXTCODECPLUGIN)
     QFactoryLoader *l = loader();
     QStringList keys = l->keys();
     for (int i = 0; i < keys.size(); ++i) {
@@ -1291,6 +1317,19 @@ QTextDecoder* QTextCodec::makeDecoder() const
     return new QTextDecoder(this);
 }
 
+/*!
+    Creates a QTextDecoder with a specified \a flags to decode chunks
+    of \c{char *} data to create chunks of Unicode data.
+
+    The caller is responsible for deleting the returned object.
+
+    \since 4.7
+*/
+QTextDecoder* QTextCodec::makeDecoder(QTextCodec::ConversionFlags flags) const
+{
+    return new QTextDecoder(this, flags);
+}
+
 
 /*!
     Creates a QTextEncoder which stores enough state to encode chunks
@@ -1301,6 +1340,19 @@ QTextDecoder* QTextCodec::makeDecoder() const
 QTextEncoder* QTextCodec::makeEncoder() const
 {
     return new QTextEncoder(this);
+}
+
+/*!
+    Creates a QTextEncoder with a specified \a flags to encode chunks
+    of Unicode data as \c{char *} data.
+
+    The caller is responsible for deleting the returned object.
+
+    \since 4.7
+*/
+QTextEncoder* QTextCodec::makeEncoder(QTextCodec::ConversionFlags flags) const
+{
+    return new QTextEncoder(this, flags);
 }
 
 /*!
@@ -1444,6 +1496,17 @@ QString QTextCodec::toUnicode(const char *chars) const
 */
 
 /*!
+    Constructs a text encoder for the given \a codec and conversion \a flags.
+
+    \since 4.7
+*/
+QTextEncoder::QTextEncoder(const QTextCodec *codec, QTextCodec::ConversionFlags flags)
+    : c(codec), state()
+{
+    state.flags = flags;
+}
+
+/*!
     Destroys the encoder.
 */
 QTextEncoder::~QTextEncoder()
@@ -1518,6 +1581,18 @@ QByteArray QTextEncoder::fromUnicode(const QString& uc, int& lenInOut)
 
     Constructs a text decoder for the given \a codec.
 */
+
+/*!
+    Constructs a text decoder for the given \a codec and conversion \a flags.
+
+    \since 4.7
+*/
+
+QTextDecoder::QTextDecoder(const QTextCodec *codec, QTextCodec::ConversionFlags flags)
+    : c(codec), state()
+{
+    state.flags = flags;
+}
 
 /*!
     Destroys the decoder.

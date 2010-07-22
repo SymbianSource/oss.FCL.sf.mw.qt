@@ -271,7 +271,15 @@ private slots:
     void taskQTBUG_4401_enterKeyClearsPassword();
     void taskQTBUG_4679_moveToStartEndOfBlock();
     void taskQTBUG_4679_selectToStartEndOfBlock();
+#ifndef QT_NO_CONTEXTMENU
+    void taskQTBUG_7902_contextMenuCrash();
+#endif
     void taskQTBUG_7395_readOnlyShortcut();
+
+#ifdef QT3_SUPPORT
+    void validateAndSet_data();
+    void validateAndSet();
+#endif
 
 protected slots:
 #ifdef QT3_SUPPORT
@@ -1488,6 +1496,34 @@ void tst_QLineEdit::lostFocus()
 {
     editingFinished();
 }
+
+void tst_QLineEdit::validateAndSet_data()
+{
+    QTest::addColumn<QString>("newText");
+    QTest::addColumn<int>("newPos");
+    QTest::addColumn<int>("newMarkAnchor");
+    QTest::addColumn<int>("newMarkDrag");
+
+    QTest::newRow("1") << QString("Hello World") << 3 << 3 << 5;
+    QTest::newRow("2") << QString("Hello World") << 5 << 3 << 5;
+}
+
+void tst_QLineEdit::validateAndSet()
+{
+    QFETCH(QString, newText);
+    QFETCH(int, newPos);
+    QFETCH(int, newMarkAnchor);
+    QFETCH(int, newMarkDrag);
+
+    QLineEdit e;
+    e.validateAndSet(newText, newPos, newMarkAnchor, newMarkDrag);
+    QCOMPARE(e.text(), newText);
+    QCOMPARE(e.cursorPosition(), newPos);
+    QCOMPARE(e.selectedText(), newText.mid(newMarkAnchor, newMarkDrag-newMarkAnchor));
+}
+
+
+
 #endif
 void tst_QLineEdit::editingFinished()
 {
@@ -3636,6 +3672,26 @@ void tst_QLineEdit::taskQTBUG_4679_selectToStartEndOfBlock()
     QCOMPARE(testWidget->selectedText(), text.mid(5));
 #endif // Q_OS_MAC
 }
+
+#ifndef QT_NO_CONTEXTMENU
+void tst_QLineEdit::taskQTBUG_7902_contextMenuCrash()
+{
+    // Would pass before the associated commit, but left as a guard.
+    QLineEdit *w = new QLineEdit;
+    w->show();
+    QTest::qWaitForWindowShown(w);
+
+    QTimer ti;
+    w->connect(&ti, SIGNAL(timeout()), w, SLOT(deleteLater()));
+    ti.start(200);
+
+    QContextMenuEvent *cme = new QContextMenuEvent(QContextMenuEvent::Mouse, w->rect().center());
+    qApp->postEvent(w, cme);
+
+    QTest::qWait(300);
+    // No crash, it's allright.
+}
+#endif
 
 void tst_QLineEdit::taskQTBUG_7395_readOnlyShortcut()
 {

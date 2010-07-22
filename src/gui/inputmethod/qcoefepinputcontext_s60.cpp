@@ -87,7 +87,7 @@ QCoeFepInputContext::QCoeFepInputContext(QObject *parent)
     m_fepState->SetDefaultInputMode( EAknEditorTextInputMode );
     m_fepState->SetPermittedInputModes( EAknEditorAllInputModes );
     m_fepState->SetDefaultCase( EAknEditorLowerCase );
-    m_fepState->SetPermittedCases( EAknEditorLowerCase|EAknEditorUpperCase );
+    m_fepState->SetPermittedCases( EAknEditorAllCaseModes );
     m_fepState->SetSpecialCharacterTableResourceId(R_AVKON_SPECIAL_CHARACTER_TABLE_DIALOG);
     m_fepState->SetNumericKeymap( EAknEditorStandardNumberModeKeymap );
 }
@@ -484,9 +484,10 @@ void QCoeFepInputContext::applyHints(Qt::InputMethodHints hints)
 void QCoeFepInputContext::applyFormat(QList<QInputMethodEvent::Attribute> *attributes)
 {
     TCharFormat cFormat;
-    QColor styleTextColor = QApplication::palette("QLineEdit").text().color();
-    TLogicalRgb tontColor(TRgb(styleTextColor.red(), styleTextColor.green(), styleTextColor.blue(), styleTextColor.alpha()));
-    cFormat.iFontPresentation.iTextColor = tontColor;
+    const QColor styleTextColor = focusWidget() ? focusWidget()->palette().text().color() : 
+        QApplication::palette("QLineEdit").text().color();
+    const TLogicalRgb fontColor(TRgb(styleTextColor.red(), styleTextColor.green(), styleTextColor.blue(), styleTextColor.alpha()));
+    cFormat.iFontPresentation.iTextColor = fontColor;
 
     TInt numChars = 0;
     TInt charPos = 0;

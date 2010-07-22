@@ -61,6 +61,7 @@
 #include <qapplication.h>
 #include "qtextcontrol_p.h"
 #include "private/qtextedit_p.h"
+#include "private/qdataurl_p.h"
 
 #include "qtextdocument_p.h"
 #include <private/qprinter_p.h>
@@ -432,6 +433,30 @@ void QTextDocument::redo(QTextCursor *cursor)
         *cursor = QTextCursor(this);
         cursor->setPosition(pos);
     }
+}
+
+/*! \enum QTextDocument::Stacks
+  
+  \value UndoStack              The undo stack.
+  \value RedoStack              The redo stack.
+  \value UndoAndRedoStacks      Both the undo and redo stacks.
+*/
+        
+/*!
+    \since 4.7
+    Clears the stacks specified by \a stacksToClear.
+
+    This method clears any commands on the undo stack, the redo stack,
+    or both (the default). If commands are cleared, the appropriate
+    signals are emitted, QTextDocument::undoAvailable() or
+    QTextDocument::redoAvailable().
+
+    \sa QTextDocument::undoAvailable() QTextDocument::redoAvailable()
+*/
+void QTextDocument::clearUndoRedoStacks(Stacks stacksToClear)
+{
+    Q_D(QTextDocument);
+    d->clearUndoRedoStacks(stacksToClear, true);
 }
 
 /*!
@@ -1679,7 +1704,7 @@ void QTextDocument::print(QPrinter *printer) const
         return;
 
     const QTextDocument *doc = this;
-    QTextDocument *clonedDoc = 0;
+    QScopedPointer<QTextDocument> clonedDoc;
     (void)doc->documentLayout(); // make sure that there is a layout
 
     QRectF body = QRectF(QPointF(0, 0), d->pageSize);
@@ -1712,7 +1737,7 @@ void QTextDocument::print(QPrinter *printer) const
                 printerPageSize.height() / scaledPageSize.height());
     } else {
         doc = clone(const_cast<QTextDocument *>(this));
-        clonedDoc = const_cast<QTextDocument *>(doc);
+        clonedDoc.reset(const_cast<QTextDocument *>(doc));
 
         for (QTextBlock srcBlock = firstBlock(), dstBlock = clonedDoc->firstBlock();
              srcBlock.isValid() && dstBlock.isValid();
@@ -1749,9 +1774,9 @@ void QTextDocument::print(QPrinter *printer) const
     int pageCopies;
     if (printer->collateCopies() == true){
         docCopies = 1;
-        pageCopies = printer->numCopies();
+        pageCopies = printer->supportsMultipleCopies() ? 1 : printer->copyCount();
     } else {
-        docCopies = printer->numCopies();
+        docCopies = printer->supportsMultipleCopies() ? 1 : printer->copyCount();
         pageCopies = 1;
     }
 
@@ -1787,7 +1812,7 @@ void QTextDocument::print(QPrinter *printer) const
             for (int j = 0; j < pageCopies; ++j) {
                 if (printer->printerState() == QPrinter::Aborted
                     || printer->printerState() == QPrinter::Error)
-                    goto UserCanceled;
+                    return;
                 printPage(page, &p, doc, body, pageNumberPos);
                 if (j < pageCopies - 1)
                     printer->newPage();
@@ -1807,9 +1832,6 @@ void QTextDocument::print(QPrinter *printer) const
         if ( i < docCopies - 1)
             printer->newPage();
     }
-
-UserCanceled:
-    delete clonedDoc;
 }
 #endif
 
@@ -1923,6 +1945,10 @@ QVariant QTextDocument::loadResource(int type, const QUrl &name)
         r = control->loadResource(type, name);
     }
 #endif
+
+    // handle data: URLs
+    if (r.isNull() && name.scheme().compare(QLatin1String("data"), Qt::CaseInsensitive) == 0)
+        r = qDecodeDataUrl(name).second;
 
     // if resource was not loaded try to load it here
     if (!doc && r.isNull() && name.isRelative()) {

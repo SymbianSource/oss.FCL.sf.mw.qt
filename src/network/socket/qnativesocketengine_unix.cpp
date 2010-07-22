@@ -44,8 +44,8 @@
 #include "private/qnet_unix_p.h"
 #include "qiodevice.h"
 #include "qhostaddress.h"
+#include "qelapsedtimer.h"
 #include "qvarlengtharray.h"
-#include "qdatetime.h"
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -425,6 +425,9 @@ bool QNativeSocketEnginePrivate::nativeConnect(const QHostAddress &addr, quint16
         case EBADF:
         case EFAULT:
         case ENOTSOCK:
+#ifdef Q_OS_SYMBIAN
+        case EPIPE:
+#endif
             socketState = QAbstractSocket::UnconnectedState;
         default:
             break;
@@ -1014,7 +1017,7 @@ int QNativeSocketEnginePrivate::nativeSelect(int timeout, bool checkRead, bool c
 #ifndef Q_OS_SYMBIAN
     ret = qt_safe_select(socketDescriptor + 1, &fdread, &fdwrite, 0, timeout < 0 ? 0 : &tv);
 #else
-    QTime timer;
+    QElapsedTimer timer;
     timer.start();
 
     do {

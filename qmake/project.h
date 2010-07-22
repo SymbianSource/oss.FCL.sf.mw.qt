@@ -78,6 +78,7 @@ class QMakeProject
     FunctionBlock *function;
     QMap<QString, FunctionBlock*> testFunctions, replaceFunctions;
 
+    bool recursive;
     bool own_prop;
     QString pfile, cfile;
     QMakeProperty *prop;
@@ -105,6 +106,7 @@ class QMakeProject
     QStringList doVariableReplaceExpand(const QString &str, QMap<QString, QStringList> &place, bool *ok=0);
     void init(QMakeProperty *, const QMap<QString, QStringList> *);
     QStringList &values(const QString &v, QMap<QString, QStringList> &place);
+    void validateModes();
 
 public:
     QMakeProject() { init(0, 0); }
@@ -148,11 +150,13 @@ public:
     bool isActiveConfig(const QString &x, bool regex=false,
                         QMap<QString, QStringList> *place=NULL);
 
-    bool isSet(const QString &v);
-    bool isEmpty(const QString &v);
-    QStringList &values(const QString &v);
-    QString first(const QString &v);
-    QMap<QString, QStringList> &variables();
+    bool isSet(const QString &v); // No compat mapping, no magic variables
+    bool isEmpty(const QString &v); // With compat mapping, but no magic variables
+    QStringList &values(const QString &v); // With compat mapping and magic variables
+    QString first(const QString &v); // ditto
+    QMap<QString, QStringList> &variables(); // No compat mapping and magic, obviously
+
+    bool isRecursive() const { return recursive; }
 
 protected:
     friend class MakefileGenerator;
@@ -175,9 +179,6 @@ inline QString QMakeProject::configFile()
 inline QStringList &QMakeProject::values(const QString &v)
 { return values(v, vars); }
 
-inline bool QMakeProject::isEmpty(const QString &v)
-{ return !isSet(v) || values(v).isEmpty(); }
-
 inline bool QMakeProject::isSet(const QString &v)
 { return vars.contains(v); }
 
@@ -191,10 +192,6 @@ inline QString QMakeProject::first(const QString &v)
 
 inline QMap<QString, QStringList> &QMakeProject::variables()
 { return vars; }
-
-// Helper functions needed for Symbian
-bool isForSymbian();
-bool isForSymbianSbsv2();
 
 QT_END_NAMESPACE
 

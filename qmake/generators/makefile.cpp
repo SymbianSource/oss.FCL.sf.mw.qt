@@ -806,9 +806,8 @@ MakefileGenerator::init()
     }
 
     // escape qmake command
-    if (!project->isEmpty("QMAKE_QMAKE")) {
-        project->values("QMAKE_QMAKE") = escapeFilePaths(project->values("QMAKE_QMAKE"));
-    }
+    QStringList &qmk = project->values("QMAKE_QMAKE");
+    qmk = escapeFilePaths(qmk);
 }
 
 bool
@@ -1237,7 +1236,7 @@ MakefileGenerator::writeInstalls(QTextStream &t, const QString &installs, bool n
                 target += "\n";
             do_default = false;
             for(QStringList::Iterator wild_it = tmp.begin(); wild_it != tmp.end(); ++wild_it) {
-                QString wild = Option::fixPathToLocalOS((*wild_it), false, false);
+                QString wild = Option::fixPathToTargetOS((*wild_it), false, false);
                 QString dirstr = qmake_getpwd(), filestr = wild;
                 int slsh = filestr.lastIndexOf(Option::dir_sep);
                 if(slsh != -1) {
@@ -1246,7 +1245,8 @@ MakefileGenerator::writeInstalls(QTextStream &t, const QString &installs, bool n
                 }
                 if(!dirstr.endsWith(Option::dir_sep))
                     dirstr += Option::dir_sep;
-                if(exists(wild)) { //real file
+                bool is_target = (wild == fileFixify(var("TARGET"), FileFixifyAbsolute));
+                if(is_target || exists(wild)) { //real file or target
                     QString file = wild;
                     QFileInfo fi(fileInfo(wild));
                     if(!target.isEmpty())
@@ -1260,7 +1260,7 @@ MakefileGenerator::writeInstalls(QTextStream &t, const QString &installs, bool n
                     QString cmd;
                     if (fi.isDir())
                        cmd = "-$(INSTALL_DIR)";
-                    else if (fi.isExecutable())
+                    else if (is_target || fi.isExecutable())
                        cmd = "-$(INSTALL_PROGRAM)";
                     else
                        cmd = "-$(INSTALL_FILE)";
@@ -1277,13 +1277,26 @@ MakefileGenerator::writeInstalls(QTextStream &t, const QString &installs, bool n
                 }
                 QString local_dirstr = Option::fixPathToLocalOS(dirstr, true);
                 QStringList files = QDir(local_dirstr).entryList(QStringList(filestr));
-                if(project->values((*it) + ".CONFIG").indexOf("no_check_exist") != -1 && files.isEmpty()) {
+                const QStringList &installConfigValues = project->values((*it) + ".CONFIG");
+                if (installConfigValues.contains("no_check_exist") && files.isEmpty()) {
                     if(!target.isEmpty())
                         target += "\t";
                     QString dst_file = filePrefixRoot(root, dst);
                     QFileInfo fi(fileInfo(wild));
-                    QString cmd =  QString(fi.isExecutable() ? "-$(INSTALL_PROGRAM)" : "-$(INSTALL_FILE)") + " " +
-                                   wild + " " + dst_file + "\n";
+                    QString cmd;
+                    if (installConfigValues.contains("directory")) {
+                        cmd = QLatin1String("-$(INSTALL_DIR)");
+                        if (!dst_file.endsWith(Option::dir_sep))
+                            dst_file += Option::dir_sep;
+                        dst_file += fi.fileName();
+                    } else if (installConfigValues.contains("executable")) {
+                        cmd = QLatin1String("-$(INSTALL_PROGRAM)");
+                    } else if (installConfigValues.contains("data")) {
+                        cmd = QLatin1String("-$(INSTALL_FILE)");
+                    } else {
+                        cmd = QString(fi.isExecutable() ? "-$(INSTALL_PROGRAM)" : "-$(INSTALL_FILE)");
+                    }
+                    cmd += " " + wild + " " + dst_file + "\n";
                     target += cmd;
                     if(!uninst.isEmpty())
                         uninst.append("\n\t");
@@ -1814,8 +1827,6 @@ MakefileGenerator::writeExtraCompilerTargets(QTextStream &t)
                 tmp_clean = tmp_out;
             if(tmp_clean.indexOf("${QMAKE_") == -1) {
                 t << "\n\t" << "-$(DEL_FILE) " << tmp_clean;
-                if (isForSymbian())
-                    t << " 2> NUL"; // Eliminate unnecessary warnings
                 wrote_clean = true;
             }
             if(!wrote_clean_cmds || !wrote_clean) {
@@ -1843,12 +1854,8 @@ MakefileGenerator::writeExtraCompilerTargets(QTextStream &t)
                             cleans.append(files);
                     }
                 }
-                if(!cleans.isEmpty()) {
-                    if (isForSymbian())
-                        t << valGlue(cleans, "\n\t" + del_statement, " 2> NUL\n\t" + del_statement, " 2> NUL");
-                    else
-                        t << valGlue(cleans, "\n\t" + del_statement, "\n\t" + del_statement, "");
-                }
+                if(!cleans.isEmpty())
+                    t << valGlue(cleans, "\n\t" + del_statement, "\n\t" + del_statement, "");
                 if(!wrote_clean_cmds) {
                     for(QStringList::ConstIterator input = tmp_inputs.begin(); input != tmp_inputs.end(); ++input) {
                         t << "\n\t" << replaceExtraCompilerVariables(tmp_clean_cmds, (*input),
@@ -2109,7 +2116,7 @@ MakefileGenerator::writeExtraVariables(QTextStream &t)
 bool
 MakefileGenerator::writeStubMakefile(QTextStream &t)
 {
-    t << "QMAKE    = "        << (project->isEmpty("QMAKE_QMAKE") ? QString("qmake") : var("QMAKE_QMAKE")) << endl;
+    t << "QMAKE    = " << var("QMAKE_QMAKE") << endl;
     QStringList &qut = project->values("QMAKE_EXTRA_TARGETS");
     for(QStringList::ConstIterator it = qut.begin(); it != qut.end(); ++it)
         t << *it << " ";
@@ -2164,14 +2171,14 @@ QString MakefileGenerator::buildArgs(const QString &outdir)
         ret += " -nodependheuristics";
     if(!Option::mkfile::qmakespec_commandline.isEmpty())
         ret += " -spec " + specdir(outdir);
-    if(Option::target_mode == Option::TARG_MAC9_MODE)
-        ret += " -mac9";
-    else if(Option::target_mode == Option::TARG_MACX_MODE)
-        ret += " -macx";
-    else if(Option::target_mode == Option::TARG_UNIX_MODE)
-        ret += " -unix";
-    else if(Option::target_mode == Option::TARG_WIN_MODE)
-        ret += " -win32";
+    if (Option::target_mode_overridden) {
+        if (Option::target_mode == Option::TARG_MACX_MODE)
+            ret += " -macx";
+        else if (Option::target_mode == Option::TARG_UNIX_MODE)
+            ret += " -unix";
+        else if (Option::target_mode == Option::TARG_WIN_MODE)
+            ret += " -win32";
+    }
 
     //configs
     for(QStringList::Iterator it = Option::user_configs.begin();
@@ -2224,8 +2231,7 @@ MakefileGenerator::writeHeader(QTextStream &t)
     t << "# Project:  " << fileFixify(project->projectFile()) << endl;
     t << "# Template: " << var("TEMPLATE") << endl;
     if(!project->isActiveConfig("build_pass"))
-        t << "# Command: " << build_args().replace("$(QMAKE)",
-                      (project->isEmpty("QMAKE_QMAKE") ? QString("qmake") : var("QMAKE_QMAKE"))) << endl;
+        t << "# Command: " << build_args().replace("$(QMAKE)", var("QMAKE_QMAKE")) << endl;
     t << "#############################################################################" << endl;
     t << endl;
 }
@@ -2358,7 +2364,7 @@ MakefileGenerator::writeSubTargets(QTextStream &t, QList<MakefileGenerator::SubT
         t << "MAKEFILE      = " << ofile << endl;
         /* Calling Option::fixPathToTargetOS() is necessary for MinGW/MSYS, which requires
          * back-slashes to be turned into slashes. */
-        t << "QMAKE         = " << Option::fixPathToTargetOS(var("QMAKE_QMAKE")) << endl;
+        t << "QMAKE         = " << var("QMAKE_QMAKE") << endl;
         t << "DEL_FILE      = " << var("QMAKE_DEL_FILE") << endl;
         t << "CHK_DIR_EXISTS= " << var("QMAKE_CHK_DIR_EXISTS") << endl;
         t << "MKDIR         = " << var("QMAKE_MKDIR") << endl;
@@ -2681,8 +2687,6 @@ MakefileGenerator::writeMakeQmake(QTextStream &t)
             if(!specdir().isEmpty()) {
                 if(exists(Option::fixPathToLocalOS(specdir()+QDir::separator()+"qmake.conf")))
                     t << escapeDependencyPath(specdir() + Option::dir_sep + "qmake.conf") << " ";
-                else if(exists(Option::fixPathToLocalOS(specdir()+QDir::separator()+"tmake.conf")))
-                    t << escapeDependencyPath(specdir() + Option::dir_sep + "tmake.conf") << " ";
             }
             const QStringList &included = project->values("QMAKE_INTERNAL_INCLUDED_FILES");
             t << escapeDependencyPaths(included).join(" \\\n\t\t") << "\n\t"

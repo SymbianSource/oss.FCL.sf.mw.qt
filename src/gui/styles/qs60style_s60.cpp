@@ -50,20 +50,20 @@
 #include "qapplication.h"
 
 #include <w32std.h>
-#include <AknsConstants.h>
+#include <aknsconstants.h>
 #include <aknconsts.h>
-#include <AknsItemID.h>
-#include <AknsUtils.h>
-#include <AknsDrawUtils.h>
-#include <AknsSkinInstance.h>
-#include <AknsBasicBackgroundControlContext.h>
+#include <aknsitemid.h>
+#include <aknsutils.h>
+#include <aknsdrawutils.h>
+#include <aknsskininstance.h>
+#include <aknsbasicbackgroundcontrolcontext.h>
 #include <avkon.mbg>
 #include <AknFontAccess.h>
 #include <AknLayoutFont.h>
 #include <AknUtils.h>
 #include <aknnavi.h>
 #include <gulicon.h>
-#include <AknBitmapAnimation.h>
+#include <aknbitmapanimation.h>
 
 #if !defined(QT_NO_STYLE_S60) || defined(QT_PLUGIN)
 
@@ -310,7 +310,7 @@ const partMapEntry QS60StyleModeSpecifics::m_partMap[] = {
     /* SP_QsnFrPopupSideB */            {KAknsIIDQsnFrPopupSideB,               ENoDraw,     ES60_All,    -1,-1},
     /* SP_QsnFrPopupSideL */            {KAknsIIDQsnFrPopupSideL,               ENoDraw,     ES60_All,    -1,-1},
     /* SP_QsnFrPopupSideR */            {KAknsIIDQsnFrPopupSideR,               ENoDraw,     ES60_All,    -1,-1},
-    /* SP_QsnFrPopupCenter */           {KAknsIIDQsnFrPopupCenter,              ENoDraw,     ES60_All,    -1,-1},
+    /* SP_QsnFrPopupCenter */           {KAknsIIDQsnFrPopupCenterSubmenu,       ENoDraw,     ES60_All,    -1,-1},
 
     // ToolTip graphics different in 3.1 vs. 3.2+.
     /* SP_QsnFrPopupPreviewCornerTl */  {KAknsIIDQsnFrPopupCornerTl,            ENoDraw,     ES60_3_1,    EAknsMajorSkin, 0x19c5}, /* KAknsIIDQsnFrPopupPreviewCornerTl */
@@ -654,6 +654,14 @@ QPixmap QS60StyleModeSpecifics::fromFbsBitmap(CFbsBitmap *icon, CFbsBitmap *mask
 
         pixmap = QPixmap::fromImage(iconImage);
     }
+    if ((flags & QS60StylePrivate::SF_Mirrored_X_Axis) ||
+        (flags & QS60StylePrivate::SF_Mirrored_Y_Axis)) {
+        QImage iconImage = pixmap.toImage().mirrored(
+            flags & QS60StylePrivate::SF_Mirrored_X_Axis,
+            flags & QS60StylePrivate::SF_Mirrored_Y_Axis);
+        pixmap = QPixmap::fromImage(iconImage);
+    }
+
     return pixmap;
 }
 
@@ -919,7 +927,7 @@ QPixmap QS60StyleModeSpecifics::createSkinnedGraphicsLX(QS60StylePrivate::SkinFr
                 result = fromFbsBitmap(frame, NULL, flags, targetSize);
         }
     } else {
-        TDisplayMode maskDepth = EGray2;
+        TDisplayMode maskDepth = EGray256;
         // Query the skin item for possible frame graphics mask details.
         if (skinInstance) {
             CAknsMaskedBitmapItemData* skinMaskedBmp = static_cast<CAknsMaskedBitmapItemData*>(
@@ -969,7 +977,7 @@ void QS60StyleModeSpecifics::frameIdAndCenterId(QS60StylePrivate::SkinFrameEleme
 
     switch(frameElement) {
         case QS60StylePrivate::SF_ToolTip:
-            if (QSysInfo::s60Version()!=QSysInfo::SV_S60_3_1) {
+            if (QSysInfo::s60Version() != QSysInfo::SV_S60_3_1) {
                 centerId.Set(EAknsMajorGeneric, 0x19c2);
                 frameId.Set(EAknsMajorSkin, 0x5300);
             } else {
@@ -978,10 +986,15 @@ void QS60StyleModeSpecifics::frameIdAndCenterId(QS60StylePrivate::SkinFrameEleme
             }
             break;
         case QS60StylePrivate::SF_ToolBar:
-            if (QSysInfo::s60Version()==QSysInfo::SV_S60_3_1 || QSysInfo::s60Version()==QSysInfo::SV_S60_3_2) {
+            if (QSysInfo::s60Version() == QSysInfo::SV_S60_3_1 || 
+                QSysInfo::s60Version() == QSysInfo::SV_S60_3_2) {
                 centerId.Set(KAknsIIDQsnFrPopupCenterSubmenu);
                 frameId.Set(KAknsIIDQsnFrPopupSub);
             }
+            break;
+        case QS60StylePrivate::SF_PopupBackground:
+            centerId.Set(KAknsIIDQsnFrPopupCenterSubmenu);
+            frameId.Set(KAknsIIDQsnFrPopupSub);
             break;
         case QS60StylePrivate::SF_PanelBackground:
             // remove center piece for panel graphics, so that only border is drawn

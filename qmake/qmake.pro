@@ -6,6 +6,7 @@
 CONFIG += console bootstrap
 CONFIG -= qt shared app_bundle uic
 DEFINES += QT_BUILD_QMAKE QT_BOOTSTRAPPED
+DEFINES += QT_QCHAR_CONSTRUCTOR
 DESTDIR = ../bin/
 
 OBJECTS_DIR = .
@@ -19,7 +20,8 @@ VPATH += $$QT_SOURCE_TREE/src/corelib/global \
          $$QT_SOURCE_TREE/src/corelib/plugin \
          $$QT_SOURCE_TREE/src/corelib/xml \
          $$QT_SOURCE_TREE/src/corelib/io
-INCPATH += generators \
+INCLUDEPATH += . \
+           generators \
            generators/unix \
            generators/win32 \
            generators/mac \
@@ -29,7 +31,7 @@ INCPATH += generators \
            $$QT_SOURCE_TREE/qmake
 
 VPATH += $$QT_SOURCE_TREE/tools/shared
-INCPATH += $$QT_SOURCE_TREE/tools/shared
+INCLUDEPATH += $$QT_SOURCE_TREE/tools/shared
 
 include(qmake.pri)
 

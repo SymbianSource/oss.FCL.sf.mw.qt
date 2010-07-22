@@ -4,7 +4,7 @@
 <context>
     <name>AboutDialog</name>
     <message>
-        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="+1358"/>
+        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="+1366"/>
         <source>Qt Linguist</source>
         <translation>Qt Linguist</translation>
     </message>
@@ -286,7 +286,7 @@ Es wird mit einer einfachen Universalform gearbeitet.</translation>
 <context>
     <name>FormMultiWidget</name>
     <message>
-        <location filename="../tools/linguist/linguist/messageeditorwidgets.cpp" line="+296"/>
+        <location filename="../tools/linguist/linguist/messageeditorwidgets.cpp" line="+302"/>
         <source>Alt+Delete</source>
         <extracomment>translate, but don&apos;t change</extracomment>
         <translation>Alt+Delete</translation>
@@ -317,7 +317,7 @@ Es wird mit einer einfachen Universalform gearbeitet.</translation>
 <context>
     <name>LRelease</name>
     <message numerus="yes">
-        <location filename="../tools/linguist/shared/qm.cpp" line="+761"/>
+        <location filename="../tools/linguist/shared/qm.cpp" line="+763"/>
         <source>Dropped %n message(s) which had no ID.</source>
         <translation>
             <numerusform>Es wurde ein Eintrag ohne Bezeichner gelöscht.</numerusform>
@@ -453,7 +453,7 @@ Es wird mit einer einfachen Universalform gearbeitet.</translation>
         <translation>Ctrl+Q</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="+646"/>
+        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="+668"/>
         <location line="+15"/>
         <source>&amp;Save</source>
         <translation>&amp;Speichern</translation>
@@ -862,11 +862,6 @@ Es wird mit einer einfachen Universalform gearbeitet.</translation>
     </message>
     <message>
         <location/>
-        <source>Display information about the Qt toolkit by Trolltech.</source>
-        <translation>Informationen über das Qt-Toolkit von Trolltech anzeigen.</translation>
-    </message>
-    <message>
-        <location/>
         <source>&amp;What&apos;s This?</source>
         <translation>&amp;Direkthilfe</translation>
     </message>
@@ -914,13 +909,13 @@ Es wird mit einer einfachen Universalform gearbeitet.</translation>
         <translation>Freigeben unter ...</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-2005"/>
+        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-2035"/>
         <source></source>
         <comment>This is the application&apos;s main window.</comment>
         <translation></translation>
     </message>
     <message>
-        <location line="+188"/>
+        <location line="+190"/>
         <source>Source text</source>
         <translation>Ursprungstext</translation>
     </message>
@@ -947,12 +942,12 @@ Es wird mit einer einfachen Universalform gearbeitet.</translation>
         <translation>Dieser Bereich zeigt die Kontexte an.</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+13"/>
         <source>Strings</source>
         <translation>Zeichenketten</translation>
     </message>
     <message>
-        <location line="+39"/>
+        <location line="+37"/>
         <source>Phrases and guesses</source>
         <translation>Wörterbuch und Vorschläge</translation>
     </message>
@@ -973,7 +968,7 @@ Es wird mit einer einfachen Universalform gearbeitet.</translation>
         <translation>Geändert</translation>
     </message>
     <message>
-        <location line="+130"/>
+        <location line="+139"/>
         <source>Loading...</source>
         <translation>Lade ...</translation>
     </message>
@@ -1010,7 +1005,7 @@ Soll die erstgenannte Datei übersprungen werden?</translation>
         </translation>
     </message>
     <message>
-        <location line="+93"/>
+        <location line="+94"/>
         <source>Related files (%1);;</source>
         <translation>Verwandte Dateien (%1);;</translation>
     </message>
@@ -1028,12 +1023,12 @@ Soll die erstgenannte Datei übersprungen werden?</translation>
     <message>
         <location filename="../tools/linguist/linguist/mainwindow.ui"/>
         <location filename="../tools/linguist/linguist/mainwindow.cpp" line="+15"/>
-        <location line="+1165"/>
+        <location line="+1187"/>
         <source>Release</source>
         <translation>Freigeben</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-1164"/>
+        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-1186"/>
         <source>Qt message files for released applications (*.qm)
 All files (*)</source>
         <translation>Qt-Nachrichtendateien (*.qm)
@@ -1100,7 +1095,7 @@ Alle Dateien (*)</translation>
         <location line="+34"/>
         <location line="+24"/>
         <location line="+22"/>
-        <location line="+516"/>
+        <location line="+538"/>
         <location line="+1"/>
         <location line="+274"/>
         <location line="+40"/>
@@ -1109,7 +1104,7 @@ Alle Dateien (*)</translation>
         <translation>Qt Linguist</translation>
     </message>
     <message>
-        <location line="-1198"/>
+        <location line="-1220"/>
         <location line="+102"/>
         <source>Cannot find the string &apos;%1&apos;.</source>
         <translation>Kann Zeichenkette &apos;%1&apos; nicht finden.</translation>
@@ -1238,7 +1233,7 @@ Alle Dateien (*)</translation>
         <translation>Es wurden alle Übersetzungseinheiten abgearbeitet.</translation>
     </message>
     <message>
-        <location line="+176"/>
+        <location line="+198"/>
         <source>&amp;Window</source>
         <translation>&amp;Fenster</translation>
     </message>
@@ -1390,7 +1385,7 @@ Alle Dateien (*)</translation>
         <translation>Möchten Sie das Wörterbuch &apos;%1&apos; speichern?</translation>
     </message>
     <message>
-        <location line="+323"/>
+        <location line="+349"/>
         <source>All</source>
         <translation>Alle</translation>
     </message>
@@ -1411,7 +1406,7 @@ Alle Dateien (*)</translation>
     </message>
     <message>
         <location/>
-        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-536"/>
+        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-562"/>
         <source>Translation File &amp;Settings...</source>
         <translation>E&amp;instellungen ...</translation>
     </message>
@@ -1495,6 +1490,11 @@ Alle Dateien (*)</translation>
         <source>Length Variants</source>
         <translation>Längenvarianten</translation>
     </message>
+    <message>
+        <location/>
+        <source>Display information about the Qt toolkit by Nokia.</source>
+        <translation>Zeigt Informationen über das Qt-Toolkit von Nokia an.</translation>
+    </message>
 </context>
 <context>
     <name>MessageEditor</name>
@@ -1535,12 +1535,12 @@ Alle Dateien (*)</translation>
         <translation>Chinesisch</translation>
     </message>
     <message>
-        <location line="+53"/>
+        <location line="+47"/>
         <source>This whole panel allows you to view and edit the translation of some source text.</source>
         <translation>Dieser Bereich erlaubt die Darstellung und Änderung der Übersetzung eines Textes.</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+10"/>
         <source>Source text</source>
         <translation>Ursprungstext</translation>
     </message>
@@ -1575,7 +1575,7 @@ Alle Dateien (*)</translation>
         <translation>Hier können Sie Hinweise für den eigenen Gebrauch eintragen. Diese haben keinen Einflusse auf die Übersetzung.</translation>
     </message>
     <message>
-        <location line="+232"/>
+        <location line="+234"/>
         <source>%1 translation (%2)</source>
         <translation>Übersetzung %1 (%2)</translation>
     </message>
@@ -1605,7 +1605,7 @@ Zeile: %2</translation>
 <context>
     <name>MessageModel</name>
     <message>
-        <location filename="../tools/linguist/linguist/messagemodel.cpp" line="+832"/>
+        <location filename="../tools/linguist/linguist/messagemodel.cpp" line="+839"/>
         <source>Completion status for %1</source>
         <translation>Bearbeitungsstand von %1</translation>
     </message>
@@ -1628,7 +1628,7 @@ Zeile: %2</translation>
 <context>
     <name>MsgEdit</name>
     <message>
-        <location filename="../tools/linguist/linguist/messageeditor.cpp" line="-614"/>
+        <location filename="../tools/linguist/linguist/messageeditor.cpp" line="-602"/>
         <source></source>
         <comment>This is the right panel of the main window.</comment>
         <translation></translation>
@@ -1797,7 +1797,7 @@ Zeile: %2</translation>
         <translation>Kompilierte Qt-Übersetzungen</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-1280"/>
+        <location filename="../tools/linguist/linguist/mainwindow.cpp" line="-1302"/>
         <source>Translation files (%1);;</source>
         <translation>Übersetzungsdateien (%1);;</translation>
     </message>
@@ -1807,7 +1807,7 @@ Zeile: %2</translation>
         <translation>Alle Dateien (*)</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/linguist/messagemodel.cpp" line="-1127"/>
+        <location filename="../tools/linguist/linguist/messagemodel.cpp" line="-1134"/>
         <location line="+27"/>
         <location line="+67"/>
         <location line="+39"/>
@@ -1818,9 +1818,14 @@ Zeile: %2</translation>
         <translation>Qt Linguist</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/shared/po.cpp" line="+658"/>
+        <location filename="../tools/linguist/shared/po.cpp" line="+817"/>
         <source>GNU Gettext localization files</source>
         <translation>GNU-Gettext-Übersetzungsdateien</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>GNU Gettext localization template files</source>
+        <translation>Vorlagen für GNU-Gettext-Übersetzungsdateien</translation>
     </message>
     <message>
         <location filename="../tools/linguist/shared/ts.cpp" line="+752"/>
@@ -1838,12 +1843,12 @@ Zeile: %2</translation>
         <translation>Qt-Übersetzungsdateien (aktuelles Format)</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/shared/xliff.cpp" line="+827"/>
+        <location filename="../tools/linguist/shared/xliff.cpp" line="+829"/>
         <source>XLIFF localization files</source>
         <translation>XLIFF-Übersetzungsdateien</translation>
     </message>
     <message>
-        <location filename="../tools/linguist/shared/qph.cpp" line="+183"/>
+        <location filename="../tools/linguist/shared/qph.cpp" line="+195"/>
         <source>Qt Linguist &apos;Phrase Book&apos;</source>
         <translation>Qt-Linguist-Wörterbuch</translation>
     </message>
@@ -1985,12 +1990,12 @@ Zeile: %2</translation>
 <context>
     <name>TranslationSettingsDialog</name>
     <message>
-        <location filename="../tools/linguist/linguist/translationsettingsdialog.cpp" line="+68"/>
+        <location filename="../tools/linguist/linguist/translationsettingsdialog.cpp" line="+93"/>
         <source>Any Country</source>
         <translation>Land</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="-22"/>
         <location line="+8"/>
         <source>Settings for &apos;%1&apos; - Qt Linguist</source>
         <translation>Einstellungen für &apos;%1&apos; - Qt Linguist</translation>
