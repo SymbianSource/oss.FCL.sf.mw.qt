@@ -47,13 +47,16 @@ Rectangle {
     property Item text: dialogText
 
     signal closed
-
+    signal opened
     function forceClose() {
+        if(page.opacity == 0)
+            return; //already closed
         page.closed();
         page.opacity = 0;
     }
 
     function show(txt) {
+        page.opened();
         dialogText.text = txt;
         page.opacity = 1;
     }
@@ -62,7 +65,7 @@ Rectangle {
     color: "white"
     border.width: 1
     opacity: 0
-
+    visible: opacity > 0
     Behavior on opacity {
         NumberAnimation { duration: 1000 }
     }

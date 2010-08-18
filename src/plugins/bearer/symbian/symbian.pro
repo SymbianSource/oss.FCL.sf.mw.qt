@@ -1,5 +1,4 @@
-TARGET = qsymbianbearer
-include(../../qpluginbase.pri)
+TEMPLATE = subdirs
 
 QT += network
 
@@ -27,8 +26,8 @@ INCLUDEPATH += $$APP_LAYER_SYSTEMINCLUDE
 symbian-abld:INCLUDEPATH += $$QT_BUILD_TREE/include/QtNetwork/private
 
 LIBS += -lcommdb \
-        -lapsettingshandlerui \
-        -lconnmon \
+        -lApSettingsHandlerUI \
+        -lConnMon \
         -lcentralrepository \
         -lesock \
         -linsock \
@@ -39,3 +38,5 @@ LIBS += -lcommdb \
 QTDIR_build:DESTDIR = $$QT_BUILD_TREE/plugins/bearer
 target.path += $$[QT_INSTALL_PLUGINS]/bearer
 INSTALLS += target
+SUBDIRS += 3_1 3_2 symbian_3
+

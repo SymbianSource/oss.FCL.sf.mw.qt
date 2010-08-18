@@ -412,14 +412,12 @@ namespace QT_NAMESPACE {}
 #  if defined(__INTEL_COMPILER)
 #    define Q_CC_INTEL
 #  endif
-/* x64 does not support mmx intrinsics on windows */
-#  if (defined(Q_OS_WIN64) && defined(_M_X64))
+/* MSVC does not support SSE/MMX on x64 */
+#  if (defined(Q_CC_MSVC) && defined(_M_X64))
 #    undef QT_HAVE_SSE
-#    undef QT_HAVE_SSE2
 #    undef QT_HAVE_MMX
 #    undef QT_HAVE_3DNOW
 #  endif
-
 
 #elif defined(__BORLANDC__) || defined(__TURBOC__)
 #  define Q_CC_BOR
@@ -1068,10 +1066,11 @@ redefine to built-in booleans to make autotests work properly */
 //the alignment needs to be forced for sse2 to not crash with mingw
 #if defined(Q_WS_WIN)
 #  if defined(Q_CC_MINGW)
-#    define QT_WIN_CALLBACK CALLBACK __attribute__ ((force_align_arg_pointer))
+#    define QT_ENSURE_STACK_ALIGNED_FOR_SSE __attribute__ ((force_align_arg_pointer))
 #  else
-#    define QT_WIN_CALLBACK CALLBACK
+#    define QT_ENSURE_STACK_ALIGNED_FOR_SSE
 #  endif
+#  define QT_WIN_CALLBACK CALLBACK QT_ENSURE_STACK_ALIGNED_FOR_SSE 
 #endif
 
 typedef int QNoImplicitBoolCast;
@@ -1278,6 +1277,11 @@ class QDataStream;
 #    else
 #      define Q_COMPAT_EXPORT Q_DECL_IMPORT
 #    endif
+#    if defined(QT_BUILD_DBUS_LIB)
+#      define Q_DBUS_EXPORT Q_DECL_EXPORT
+#    else
+#      define Q_DBUS_EXPORT Q_DECL_IMPORT
+#    endif
 #    define Q_TEMPLATEDLL
 #  elif defined(QT_DLL) /* use a Qt DLL library */
 #    define Q_CORE_EXPORT Q_DECL_IMPORT
@@ -1295,6 +1299,7 @@ class QDataStream;
 #    define Q_SCRIPT_EXPORT Q_DECL_IMPORT
 #    define Q_SCRIPTTOOLS_EXPORT Q_DECL_IMPORT
 #    define Q_COMPAT_EXPORT Q_DECL_IMPORT
+#    define Q_DBUS_EXPORT Q_DECL_IMPORT
 #    define Q_TEMPLATEDLL
 #  endif
 #  define Q_NO_DECLARED_NOT_DEFINED
@@ -1323,6 +1328,7 @@ class QDataStream;
 #    define Q_SCRIPT_EXPORT Q_DECL_EXPORT
 #    define Q_SCRIPTTOOLS_EXPORT Q_DECL_EXPORT
 #    define Q_COMPAT_EXPORT Q_DECL_EXPORT
+#    define Q_DBUS_EXPORT Q_DECL_EXPORT
 #  else
 #    define Q_CORE_EXPORT
 #    define Q_GUI_EXPORT
@@ -1337,6 +1343,7 @@ class QDataStream;
 #    define Q_SCRIPT_EXPORT
 #    define Q_SCRIPTTOOLS_EXPORT
 #    define Q_COMPAT_EXPORT
+#    define Q_DBUS_EXPORT
 #  endif
 #endif
 
@@ -2425,6 +2432,9 @@ QT3_SUPPORT Q_CORE_EXPORT const char *qInstallPathSysconf();
 #if defined(Q_OS_SYMBIAN)
 
 #ifdef SYMBIAN_BUILD_GCE
+#define Q_SYMBIAN_SUPPORTS_SURFACES
+//RWsPointerCursor is fixed, so don't use low performance sprites
+#define Q_SYMBIAN_FIXED_POINTER_CURSORS
 #define Q_SYMBIAN_HAS_EXTENDED_BITMAP_TYPE
 #define Q_SYMBIAN_WINDOW_SIZE_CACHE
 #define QT_SYMBIAN_SUPPORTS_ADVANCED_POINTER

@@ -45,6 +45,8 @@
 #include <QDebug>
 #include <qdeclarativecontext.h>
 
+#ifndef QT_NO_DIRMODEL
+
 QT_BEGIN_NAMESPACE
 
 class QDeclarativeFolderListModelPrivate
@@ -91,7 +93,7 @@ public:
 };
 
 /*!
-    \qmlclass FolderListModel
+    \qmlclass FolderListModel QDeclarativeFolderListModel
     \brief The FolderListModel provides a model of the contents of a folder in a filesystem.
 
     FolderListModel provides access to the local filesystem.  The \e folder property
@@ -397,3 +399,5 @@ void QDeclarativeFolderListModel::setShowOnlyReadable(bool on)
 
 //![code]
 QT_END_NAMESPACE
+
+#endif // QT_NO_DIRMODEL

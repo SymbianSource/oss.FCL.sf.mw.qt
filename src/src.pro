@@ -18,15 +18,16 @@ contains(QT_CONFIG, xmlpatterns): SRC_SUBDIRS += src_xmlpatterns
 contains(QT_CONFIG, phonon): SRC_SUBDIRS += src_phonon
 contains(QT_CONFIG, multimedia): SRC_SUBDIRS += src_multimedia
 contains(QT_CONFIG, svg): SRC_SUBDIRS += src_svg
+contains(QT_CONFIG, script): SRC_SUBDIRS += src_script
+contains(QT_CONFIG, declarative): SRC_SUBDIRS += src_declarative
 contains(QT_CONFIG, webkit)  {
     exists($$QT_SOURCE_TREE/src/3rdparty/webkit/JavaScriptCore/JavaScriptCore.pro): SRC_SUBDIRS += src_javascriptcore
     SRC_SUBDIRS += src_webkit
 }
-contains(QT_CONFIG, script): SRC_SUBDIRS += src_script
 !contains(QT_CONFIG, no-gui):contains(QT_CONFIG, scripttools): SRC_SUBDIRS += src_scripttools
-contains(QT_CONFIG, declarative): SRC_SUBDIRS += src_declarative
 SRC_SUBDIRS += src_plugins
 contains(QT_CONFIG, declarative): SRC_SUBDIRS += src_imports
+contains(QT_CONFIG, declarative):contains(QT_CONFIG, webkit): SRC_SUBDIRS += src_webkit_declarative
 
 # s60installs need to be at the end, because projects.pro does an ordered build,
 # and s60installs depends on all the others.
@@ -82,9 +83,11 @@ src_webkit.subdir = $$QT_SOURCE_TREE/src/3rdparty/webkit/WebCore
 src_webkit.target = sub-webkit
 src_declarative.subdir = $$QT_SOURCE_TREE/src/declarative
 src_declarative.target = sub-declarative
+src_webkit_declarative.subdir = $$QT_SOURCE_TREE/src/3rdparty/webkit/WebKit/qt/declarative
+src_webkit_declarative.target = sub-webkitdeclarative
 
 #CONFIG += ordered
-!wince*:!ordered {
+!wince*:!ordered:!symbian-abld:!symbian-sbsv2 {
    src_corelib.depends = src_tools_moc src_tools_rcc
    src_gui.depends = src_corelib src_tools_uic
    embedded: src_gui.depends += src_network
@@ -133,6 +136,7 @@ src_declarative.target = sub-declarative
    contains(QT_CONFIG, svg) {
       src_declarative.depends += src_svg
    }
+   contains(QT_CONFIG, webkit) : contains(QT_CONFIG, declarative): src_webkit_declarative.depends = src_declarative src_webkit
 }
 
 
@@ -157,24 +161,24 @@ for(subname, SRC_SUBDIRS) {
    SUB_TEMPLATE = $$list($$fromfile($$subpro, TEMPLATE))
    !isEqual(subname, src_tools_bootstrap):if(isEqual($$SUB_TEMPLATE, lib) | isEqual($$SUB_TEMPLATE, subdirs) | isEqual(subname, src_tools_idc) | isEqual(subname, src_tools_uic3)):!separate_debug_info {
        #debug
-       eval(debug-$${subtarget}.depends = $${subdir}\$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_DEBUG_TARGETS)
-       eval(debug-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) debug))
+       debug-$${subtarget}.depends = $${subdir}$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_DEBUG_TARGETS
+       debug-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) debug)
        EXTRA_DEBUG_TARGETS += debug-$${subtarget}
        QMAKE_EXTRA_TARGETS += debug-$${subtarget}
        #release
-       eval(release-$${subtarget}.depends = $${subdir}\$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_RELEASE_TARGETS)
-       eval(release-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) release))
+       release-$${subtarget}.depends = $${subdir}$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_RELEASE_TARGETS
+       release-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) release)
        EXTRA_RELEASE_TARGETS += release-$${subtarget}
        QMAKE_EXTRA_TARGETS += release-$${subtarget}
     } else { #do not have a real debug target/release
        #debug
-       eval(debug-$${subtarget}.depends = $${subdir}\$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_DEBUG_TARGETS)
-       eval(debug-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) first))
+       debug-$${subtarget}.depends = $${subdir}$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_DEBUG_TARGETS
+       debug-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) first)
        EXTRA_DEBUG_TARGETS += debug-$${subtarget}
        QMAKE_EXTRA_TARGETS += debug-$${subtarget}
        #release
-       eval(release-$${subtarget}.depends = $${subdir}\$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_RELEASE_TARGETS)
-       eval(release-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) first))
+       release-$${subtarget}.depends = $${subdir}$${QMAKE_DIR_SEP}$(MAKEFILE) $$EXTRA_RELEASE_TARGETS
+       release-$${subtarget}.commands = (cd $$subdir && $(MAKE) -f $(MAKEFILE) first)
        EXTRA_RELEASE_TARGETS += release-$${subtarget}
        QMAKE_EXTRA_TARGETS += release-$${subtarget}
    }
@@ -182,5 +186,16 @@ for(subname, SRC_SUBDIRS) {
 debug.depends = $$EXTRA_DEBUG_TARGETS
 release.depends = $$EXTRA_RELEASE_TARGETS
 QMAKE_EXTRA_TARGETS += debug release
+
+# This gives us a top-level runonphone target, which installs Qt and optionally QtWebKit.
+contains(CONFIG, run_on_phone) {
+    src_runonphone_target.target = runonphone
+    src_runonphone_target.commands = $(MAKE) -C $$QT_BUILD_TREE/src/s60installs runonphone
+    src_runonphone_target.depends = first
+    contains(QT_CONFIG, webkit) {
+        src_runonphone_target.commands += && $(MAKE) -C $$QT_BUILD_TREE/src/3rdparty/webkit/WebCore runonphone
+    }
+    QMAKE_EXTRA_TARGETS += src_runonphone_target
+}
 
 SUBDIRS += $$SRC_SUBDIRS

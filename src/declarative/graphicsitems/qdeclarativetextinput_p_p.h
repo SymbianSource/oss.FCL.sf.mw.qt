@@ -72,9 +72,15 @@ public:
                  color((QRgb)0), style(QDeclarativeText::Normal),
                  styleColor((QRgb)0), hAlign(QDeclarativeTextInput::AlignLeft),
                  hscroll(0), oldScroll(0), focused(false), focusOnPress(true),
-                 cursorVisible(false), autoScroll(true), clickCausedFocus(false),
-                 selectByMouse(false)
+                 showInputPanelOnFocus(true), clickCausedFocus(false), cursorVisible(false),
+                 autoScroll(true), selectByMouse(false)
     {
+#ifdef Q_OS_SYMBIAN
+        if (QSysInfo::symbianVersion() == QSysInfo::SV_SF_1 || QSysInfo::symbianVersion() == QSysInfo::SV_SF_3) {
+            showInputPanelOnFocus = false;
+        }
+#endif
+
     }
 
     ~QDeclarativeTextInputPrivate()
@@ -93,6 +99,8 @@ public:
     void init();
     void startCreatingCursor();
     void focusChanged(bool hasFocus);
+    void updateHorizontalScroll();
+    int calculateTextWidth();
 
     QLineControl* control;
 
@@ -115,9 +123,10 @@ public:
     int oldScroll;
     bool focused;
     bool focusOnPress;
+    bool showInputPanelOnFocus;
+    bool clickCausedFocus;
     bool cursorVisible;
     bool autoScroll;
-    bool clickCausedFocus;
     bool selectByMouse;
 };
 

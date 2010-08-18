@@ -53,13 +53,13 @@
 #include "private/qdeclarativebinding_p_p.h"
 #include "private/qdeclarativeglobal_p.h"
 #include "private/qdeclarativescriptparser_p.h"
+#include "private/qdeclarativedebugtrace_p.h"
 
 #include <QStack>
 #include <QStringList>
 #include <QFileInfo>
 #include <QtCore/qdebug.h>
 #include <QApplication>
-#include <QGraphicsObject>
 
 QT_BEGIN_NAMESPACE
 
@@ -68,37 +68,85 @@ class QByteArray;
 /*!
     \class QDeclarativeComponent
     \since 4.7
-    \brief The QDeclarativeComponent class encapsulates a QML component description.
+    \brief The QDeclarativeComponent class encapsulates a QML component definition.
     \mainclass
+
+    Components are reusable, encapsulated QML elements with well-defined interfaces.
+    They are often defined in \l {qdeclarativedocuments.html}{Component Files}.
+
+    A QDeclarativeComponent instance can be created from a QML file.
+    For example, if there is a \c main.qml file like this:
+
+    \qml
+    import Qt 4.7
+
+    Item {
+        width: 200
+        height: 200
+    }
+    \endqml
+
+    The following code loads this QML file as a component, creates an instance of
+    this component using create(), and then queries the \l Item's \l {Item::}{width}
+    value:
+
+    \code
+    QDeclarativeEngine *engine = new QDeclarativeEngine;
+    QDeclarativeComponent component(engine, QUrl::fromLocalFile("main.qml"));
+
+    QObject *myObject = component.create();
+    QDeclarativeItem *item = qobject_cast<QDeclarativeItem*>(myObject);
+    int width = item->width();  // width = 200
+    \endcode
+
+    \sa {Using QML in C++ Applications}, {Integrating QML with existing Qt UI code}
 */
 
 /*!
     \qmlclass Component QDeclarativeComponent
     \since 4.7
-    \brief The Component element encapsulates a QML component description.
+    \brief The Component element encapsulates a QML component definition.
 
-    Components are reusable, encapsulated Qml element with a well-defined interface.
-    They are often defined in \l {qdeclarativedocuments.html}{Component Files}.
+    Components are reusable, encapsulated QML elements with well-defined interfaces.
 
-    The \e Component element allows defining components within a QML file.
-    This can be useful for reusing a small component within a single QML
-    file, or for defining a component that logically belongs with the
-    file containing it.
+    Components are often defined by \l {qdeclarativedocuments.html}{component files} -
+    that is, \c .qml files. The \e Component element allows components to be defined
+    within QML items rather than in a separate file. This may be useful for reusing 
+    a small component within a QML file, or for defining a component that logically 
+    belongs with other QML components within a file.
+
+    For example, here is a component that is used by multiple \l Loader objects:
 
     \qml
     Item {
         Component {
             id: redSquare
+
             Rectangle {
                 color: "red"
                 width: 10
                 height: 10
             }
         }
+
         Loader { sourceComponent: redSquare }
         Loader { sourceComponent: redSquare; x: 20 }
     }
     \endqml
+
+    Notice that while a \l Rectangle by itself would be automatically 
+    rendered and displayed, this is not the case for the above rectangle
+    because it is defined inside a \c Component. The component encapsulates the
+    QML elements within, as if they were defined in a separate \c .qml
+    file, and is not loaded until requested (in this case, by the
+    two \l Loader objects).
+
+    The Component element is commonly used to provide graphical components
+    for views. For example, the ListView::delegate property requires a Component
+    to specify how each list item is to be displayed.
+
+    Component objects can also be dynamically generated using
+    \l{Qt::createComponent}{Qt.createComponent()}.
 */
 
 /*!
@@ -448,7 +496,8 @@ void QDeclarativeComponent::loadUrl(const QUrl &url)
 
     d->clear();
 
-    if (url.isRelative() && !url.isEmpty())
+    if ((url.isRelative() && !url.isEmpty())
+    || url.scheme() == QLatin1String("file")) // Workaround QTBUG-11929
         d->url = d->engine->baseUrl().resolved(url);
     else
         d->url = url;
@@ -546,16 +595,18 @@ QDeclarativeComponent::QDeclarativeComponent(QDeclarativeComponentPrivate &dd, Q
 
 /*!
     \qmlmethod object Component::createObject(parent)
-    Returns an object instance from this component, or null if object creation fails.
+
+    Creates and returns an object instance of this component that will have the given 
+    \a parent. Returns null if object creation fails.
 
     The object will be created in the same context as the one in which the component
     was created. This function will always return null when called on components
     which were not created in QML.
 
-    Note that if the returned object is to be displayed, its \c parent must be set to
-    an existing item in a scene, or else the object will not be visible. The parent
-    argument is required to help you avoid this, you must explicitly pass in null if
-    you wish to create an object without setting a parent.
+    If you wish to create an object without setting a parent, specify \c null for
+    the \a parent value. Note that if the returned object is to be displayed, you 
+    must provide a valid \a parent value or set the returned object's \l{Item::parent}{parent} 
+    property, or else the object will not be visible.
 */
 
 /*!
@@ -570,26 +621,34 @@ QScriptValue QDeclarativeComponent::createObject(QObject* parent)
 {
     Q_D(QDeclarativeComponent);
     QDeclarativeContext* ctxt = creationContext();
-    if(!ctxt)
+    if(!ctxt && d->engine)
+        ctxt = d->engine->rootContext();
+    if (!ctxt)
         return QScriptValue(QScriptValue::NullValue);
     QObject* ret = create(ctxt);
     if (!ret)
         return QScriptValue(QScriptValue::NullValue);
 
-    QGraphicsObject* gobj = qobject_cast<QGraphicsObject*>(ret);
-    bool needParent = (gobj != 0);
-    if(parent){
+
+    if (parent) {
         ret->setParent(parent);
-        if (gobj) {
-            QGraphicsObject* gparent = qobject_cast<QGraphicsObject*>(parent);
-            if(gparent){
-                gobj->setParentItem(gparent);
+        QList<QDeclarativePrivate::AutoParentFunction> functions = QDeclarativeMetaType::parentFunctions();
+
+        bool needParent = false;
+
+        for (int ii = 0; ii < functions.count(); ++ii) {
+            QDeclarativePrivate::AutoParentResult res = functions.at(ii)(ret, parent);
+            if (res == QDeclarativePrivate::Parented) {
                 needParent = false;
+                break;
+            } else if (res == QDeclarativePrivate::IncompatibleParent) {
+                needParent = true;
             }
         }
+
+        if (needParent) 
+            qWarning("QDeclarativeComponent: Created graphical object was not placed in the graphics scene.");
     }
-    if(needParent)
-        qWarning("QDeclarativeComponent: Created graphical object was not placed in the graphics scene.");
 
     QDeclarativeEnginePrivate *priv = QDeclarativeEnginePrivate::get(d->engine);
     QDeclarativeData::get(ret, true)->setImplicitDestructible();
@@ -692,6 +751,11 @@ QDeclarativeComponentPrivate::beginCreate(QDeclarativeContextData *context, cons
     }
 
     QDeclarativeEnginePrivate *ep = QDeclarativeEnginePrivate::get(engine);
+
+    bool isRoot = !ep->inBeginCreate;
+    if (isRoot) 
+        QDeclarativeDebugTrace::startRange(QDeclarativeDebugTrace::Creating);
+    QDeclarativeDebugTrace::rangeData(QDeclarativeDebugTrace::Creating, cc->url);
 
     QDeclarativeContextData *ctxt = new QDeclarativeContextData;
     ctxt->isInternal = true;
@@ -839,6 +903,7 @@ void QDeclarativeComponentPrivate::complete(QDeclarativeEnginePrivate *enginePri
                 enginePriv->erroredBindings->removeError();
             }
         }
+
     }
 }
 
@@ -860,6 +925,8 @@ void QDeclarativeComponentPrivate::completeCreate()
     if (state.completePending) {
         QDeclarativeEnginePrivate *ep = QDeclarativeEnginePrivate::get(engine);
         complete(ep, &state);
+
+        QDeclarativeDebugTrace::endRange(QDeclarativeDebugTrace::Creating);
     }
 }
 

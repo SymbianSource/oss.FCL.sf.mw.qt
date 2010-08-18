@@ -1,4 +1,4 @@
-isEmpty(TARGET):error(You must set TARGET before include()'ing $${_FILE_})
+isEmpty(TARGET):error("You must set TARGET before include()'ing $${_FILE_}")
 INCLUDEPATH *= $$QMAKE_INCDIR_QT/$$TARGET #just for today to have some compat
 !isEmpty(RCC_DIR): INCLUDEPATH += $$RCC_DIR
 isEmpty(QT_ARCH):!isEmpty(ARCH):QT_ARCH=$$ARCH #another compat that will rot for change #215700
@@ -85,7 +85,6 @@ win32-borland {
 }
 
 win32 {
-    CONFIG += zlib
     INCLUDEPATH += tmp
     !static: DEFINES+=QT_MAKEDLL
 }
@@ -118,6 +117,8 @@ symbian {
     # workaround for the fact that some of our required includes in Symbian^3
     # now depend upon files in epoc32/include/platform
     INCLUDEPATH += $$OS_LAYER_SYSTEMINCLUDE
+    # All relevant files are marked as SMP safe for the Symbian port
+    MMP_RULES*=SMPSAFE
 }
 win32-borland:INCLUDEPATH += kernel
 

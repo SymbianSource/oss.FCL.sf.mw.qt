@@ -46,6 +46,11 @@
 #include <private/qdeclarativevaluetype_p.h>
 #include <math.h>
 
+#ifdef Q_OS_SYMBIAN
+// In Symbian OS test data is located in applications private dir
+#define SRCDIR "."
+#endif
+
 class tst_qdeclarativeflickable : public QObject
 {
     Q_OBJECT
@@ -141,6 +146,10 @@ void tst_qdeclarativeflickable::properties()
     QCOMPARE(obj->boundsBehavior(), QDeclarativeFlickable::StopAtBounds);
     QCOMPARE(obj->pressDelay(), 200);
     QCOMPARE(obj->maximumFlickVelocity(), 2000.);
+
+    QVERIFY(obj->property("ok").toBool() == false);
+    QMetaObject::invokeMethod(obj, "check");
+    QVERIFY(obj->property("ok").toBool() == true);
 
     delete obj;
 }

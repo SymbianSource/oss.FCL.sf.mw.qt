@@ -44,6 +44,7 @@
 #include "qpixmapfilter_vg_p.h"
 #include "qvgcompositionhelper_p.h"
 #include "qvgimagepool_p.h"
+#include "qvgfontglyphcache_p.h"
 #if !defined(QT_NO_EGL)
 #include <QtGui/private/qeglcontext_p.h>
 #include "qwindowsurface_vgegl_p.h"
@@ -54,6 +55,7 @@
 #include <QtGui/private/qfontengine_p.h>
 #include <QtGui/private/qpainterpath_p.h>
 #include <QtGui/private/qstatictext_p.h>
+#include <QtCore/qmath.h>
 #include <QDebug>
 #include <QSet>
 
@@ -79,24 +81,6 @@ Q_DECL_IMPORT extern int qt_defaultDpiX();
 Q_DECL_IMPORT extern int qt_defaultDpiY();
 
 class QVGPaintEnginePrivate;
-
-class QVGFontGlyphCache
-{
-public:
-    QVGFontGlyphCache();
-    ~QVGFontGlyphCache();
-
-    void cacheGlyphs(QVGPaintEnginePrivate *d, QFontEngine *fontEngine, const glyph_t *g, int count);
-
-    void setScaleFromText(const QFont &font, QFontEngine *fontEngine);
-
-    VGFont font;
-    VGfloat scaleX;
-    VGfloat scaleY;
-
-    uint cachedGlyphsMask[256 / 32];
-    QSet<glyph_t> cachedGlyphs;
-};
 
 typedef QHash<QFontEngine*, QVGFontGlyphCache*> QVGFontCache;
 
@@ -1622,11 +1606,51 @@ void QVGPaintEngine::clip(const QVectorPath &path, Qt::ClipOperation op)
         QRectF rect(points[0], points[1], points[2] - points[0],
                     points[5] - points[1]);
         clip(rect.toRect(), op);
-    } else {
-        // The best we can do is clip to the bounding rectangle
-        // of all control points.
-        clip(path.controlPointRect().toRect(), op);
+        return;
     }
+
+    // Try converting the path into a QRegion that tightly follows
+    // the outline of the path we want to clip with.
+    QRegion region;
+    if (!path.isEmpty())
+        region = QRegion(path.convertToPainterPath().toFillPolygon(QTransform()).toPolygon());
+
+    switch (op) {
+        case Qt::NoClip:
+        {
+            region = defaultClipRegion();
+        }
+        break;
+
+        case Qt::ReplaceClip:
+        {
+            region = d->transform.map(region);
+        }
+        break;
+
+        case Qt::IntersectClip:
+        {
+            region = s->clipRegion.intersect(d->transform.map(region));
+        }
+        break;
+
+        case Qt::UniteClip:
+        {
+            region = s->clipRegion.unite(d->transform.map(region));
+        }
+        break;
+    }
+    if (region.numRects() <= d->maxScissorRects) {
+        // We haven't reached the maximum scissor count yet, so we can
+        // still make use of this region.
+        s->clipRegion = region;
+        updateScissor();
+        return;
+    }
+
+    // The best we can do is clip to the bounding rectangle
+    // of all control points.
+    clip(path.controlPointRect().toRect(), op);
 }
 
 void QVGPaintEngine::clip(const QRect &rect, Qt::ClipOperation op)
@@ -3252,6 +3276,7 @@ QVGFontGlyphCache::QVGFontGlyphCache()
 {
     font = vgCreateFont(0);
     scaleX = scaleY = 0.0;
+    invertedGlyphs = false;
     memset(cachedGlyphsMask, 0, sizeof(cachedGlyphsMask));
 }
 
@@ -3386,7 +3411,11 @@ void QVGPaintEngine::drawStaticTextItem(QStaticTextItem *textItem)
     if (it != d->fontCache.constEnd()) {
         glyphCache = it.value();
     } else {
+#ifdef Q_OS_SYMBIAN
+        glyphCache = new QSymbianVGFontGlyphCache();
+#else
         glyphCache = new QVGFontGlyphCache();
+#endif
         if (glyphCache->font == VG_INVALID_HANDLE) {
             qWarning("QVGPaintEngine::drawTextItem: OpenVG fonts are not supported by the OpenVG engine");
             delete glyphCache;
@@ -3402,10 +3431,21 @@ void QVGPaintEngine::drawStaticTextItem(QStaticTextItem *textItem)
 
     // Set the transformation to use for drawing the current glyphs.
     QTransform glyphTransform(d->pathTransform);
-    glyphTransform.translate(p.x(), p.y());
+    if (d->transform.type() <= QTransform::TxTranslate) {
+        // Prevent blurriness of unscaled, unrotated text by using integer coordinates.
+        // Using ceil(x-0.5) instead of qRound() or int-cast, behave like other paint engines.
+        glyphTransform.translate(ceil(p.x() - 0.5), ceil(p.y() - 0.5));
+    } else {
+        glyphTransform.translate(p.x(), p.y());
+    }
 #if defined(QVG_NO_IMAGE_GLYPHS)
     glyphTransform.scale(glyphCache->scaleX, glyphCache->scaleY);
 #endif
+
+    // Some glyph caches can create the VGImage upright
+    if (glyphCache->invertedGlyphs)
+        glyphTransform.scale(1, -1);
+
     d->setTransform(VG_MATRIX_GLYPH_USER_TO_SURFACE, glyphTransform);
 
     // Add the glyphs from the text item into the glyph cache.

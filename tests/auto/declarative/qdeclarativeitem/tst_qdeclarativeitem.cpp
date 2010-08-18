@@ -44,8 +44,14 @@
 #include <QtDeclarative/qdeclarativecomponent.h>
 #include <QtDeclarative/qdeclarativecontext.h>
 #include <QtDeclarative/qdeclarativeview.h>
-#include <QtDeclarative/qdeclarativeitem.h>
+#include <private/qdeclarativerectangle_p.h>
+#include <private/qdeclarativeitem_p.h>
 #include "../../../shared/util.h"
+
+#ifdef Q_OS_SYMBIAN
+// In Symbian OS test data is located in applications private dir
+#define SRCDIR "."
+#endif
 
 class tst_QDeclarativeItem : public QObject
 
@@ -67,6 +73,8 @@ private slots:
     void transforms();
     void transforms_data();
     void childrenRect();
+    void childrenRectBug();
+    void childrenRectBug2();
 
     void childrenProperty();
     void resourcesProperty();
@@ -363,7 +371,7 @@ void tst_QDeclarativeItem::keyNavigation()
 
     QDeclarativeItem *item = findItem<QDeclarativeItem>(canvas->rootObject(), "item1");
     QVERIFY(item);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     // right
     QKeyEvent key(QEvent::KeyPress, Qt::Key_Right, Qt::NoModifier, "", false, 1);
@@ -372,7 +380,7 @@ void tst_QDeclarativeItem::keyNavigation()
 
     item = findItem<QDeclarativeItem>(canvas->rootObject(), "item2");
     QVERIFY(item);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     // down
     key = QKeyEvent(QEvent::KeyPress, Qt::Key_Down, Qt::NoModifier, "", false, 1);
@@ -381,7 +389,7 @@ void tst_QDeclarativeItem::keyNavigation()
 
     item = findItem<QDeclarativeItem>(canvas->rootObject(), "item4");
     QVERIFY(item);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     // left
     key = QKeyEvent(QEvent::KeyPress, Qt::Key_Left, Qt::NoModifier, "", false, 1);
@@ -390,7 +398,7 @@ void tst_QDeclarativeItem::keyNavigation()
 
     item = findItem<QDeclarativeItem>(canvas->rootObject(), "item3");
     QVERIFY(item);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     // up
     key = QKeyEvent(QEvent::KeyPress, Qt::Key_Up, Qt::NoModifier, "", false, 1);
@@ -399,7 +407,7 @@ void tst_QDeclarativeItem::keyNavigation()
 
     item = findItem<QDeclarativeItem>(canvas->rootObject(), "item1");
     QVERIFY(item);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     // tab
     key = QKeyEvent(QEvent::KeyPress, Qt::Key_Tab, Qt::NoModifier, "", false, 1);
@@ -408,7 +416,7 @@ void tst_QDeclarativeItem::keyNavigation()
 
     item = findItem<QDeclarativeItem>(canvas->rootObject(), "item2");
     QVERIFY(item);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     // backtab
     key = QKeyEvent(QEvent::KeyPress, Qt::Key_Backtab, Qt::NoModifier, "", false, 1);
@@ -417,7 +425,7 @@ void tst_QDeclarativeItem::keyNavigation()
 
     item = findItem<QDeclarativeItem>(canvas->rootObject(), "item1");
     QVERIFY(item);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     delete canvas;
 }
@@ -610,21 +618,21 @@ void tst_QDeclarativeItem::mouseFocus()
 
     QDeclarativeItem *item = findItem<QDeclarativeItem>(canvas->rootObject(), "declarativeItem");
     QVERIFY(item);
-    QSignalSpy focusSpy(item, SIGNAL(focusChanged(bool)));
+    QSignalSpy focusSpy(item, SIGNAL(activeFocusChanged(bool)));
 
     QTest::mouseClick(canvas->viewport(), Qt::LeftButton, 0, canvas->mapFromScene(item->scenePos()));
     QApplication::processEvents();
     QCOMPARE(focusSpy.count(), 1);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     // make sure focusable graphics widget underneath does not steal focus
     QTest::mouseClick(canvas->viewport(), Qt::LeftButton, 0, canvas->mapFromScene(item->scenePos()));
     QApplication::processEvents();
     QCOMPARE(focusSpy.count(), 1);
-    QVERIFY(item->hasFocus());
+    QVERIFY(item->hasActiveFocus());
 
     item->setFocus(false);
-    QVERIFY(!item->hasFocus());
+    QVERIFY(!item->hasActiveFocus());
     QCOMPARE(focusSpy.count(), 2);
     item->setFocus(true);
     QCOMPARE(focusSpy.count(), 3);
@@ -656,7 +664,8 @@ void tst_QDeclarativeItem::propertyChanges()
     QSignalSpy baselineOffsetSpy(item, SIGNAL(baselineOffsetChanged(qreal)));
     QSignalSpy childrenRectSpy(parentItem, SIGNAL(childrenRectChanged(QRectF)));
     QSignalSpy focusSpy(item, SIGNAL(focusChanged(bool)));
-    QSignalSpy wantsFocusSpy(parentItem, SIGNAL(wantsFocusChanged(bool)));
+    QSignalSpy wantsFocusSpy(parentItem, SIGNAL(activeFocusChanged(bool)));
+    QSignalSpy childrenChangedSpy(parentItem, SIGNAL(childrenChanged()));
 
     item->setParentItem(parentItem);
     item->setWidth(100.0);
@@ -669,6 +678,10 @@ void tst_QDeclarativeItem::propertyChanges()
     QList<QVariant> parentArguments = parentSpy.first();
     QVERIFY(parentArguments.count() == 1);
     QCOMPARE(item->parentItem(), qvariant_cast<QDeclarativeItem *>(parentArguments.at(0)));
+    QCOMPARE(childrenChangedSpy.count(),1);
+
+    item->setParentItem(parentItem);
+    QCOMPARE(childrenChangedSpy.count(),1);
 
     QCOMPARE(item->width(), 100.0);
     QCOMPARE(widthSpy.count(),1);
@@ -688,18 +701,15 @@ void tst_QDeclarativeItem::propertyChanges()
     QVERIFY(childrenRectArguments.count() == 1);
     QCOMPARE(parentItem->childrenRect(), childrenRectArguments.at(0).toRectF());
 
-    QCOMPARE(item->hasFocus(), true);
+    QCOMPARE(item->hasActiveFocus(), true);
     QCOMPARE(focusSpy.count(),1);
     QList<QVariant> focusArguments = focusSpy.first();
     QVERIFY(focusArguments.count() == 1);
     QCOMPARE(focusArguments.at(0).toBool(), true);
 
+    QCOMPARE(parentItem->hasActiveFocus(), false);
     QCOMPARE(parentItem->hasFocus(), false);
-    QCOMPARE(parentItem->wantsFocus(), true);
-    QCOMPARE(wantsFocusSpy.count(),1);
-    QList<QVariant> wantsFocusArguments = wantsFocusSpy.first();
-    QVERIFY(wantsFocusArguments.count() == 1);
-    QCOMPARE(wantsFocusArguments.at(0).toBool(), true);
+    QCOMPARE(wantsFocusSpy.count(),0);
 
     delete canvas;
 }
@@ -729,6 +739,45 @@ void tst_QDeclarativeItem::childrenRect()
     QCOMPARE(item->height(), qreal(0));
 
     delete o;
+}
+
+// QTBUG-11383
+void tst_QDeclarativeItem::childrenRectBug()
+{
+    QDeclarativeView *canvas = new QDeclarativeView(0);
+    canvas->setSource(QUrl::fromLocalFile(SRCDIR "/data/childrenRectBug.qml"));
+    canvas->show();
+
+    QGraphicsObject *o = canvas->rootObject();
+    QDeclarativeItem *item = o->findChild<QDeclarativeItem*>("theItem");
+    QCOMPARE(item->width(), qreal(200));
+    QCOMPARE(item->height(), qreal(100));
+    QCOMPARE(item->x(), qreal(100));
+
+    delete canvas;
+}
+
+// QTBUG-11465
+void tst_QDeclarativeItem::childrenRectBug2()
+{
+    QDeclarativeView *canvas = new QDeclarativeView(0);
+    canvas->setSource(QUrl::fromLocalFile(SRCDIR "/data/childrenRectBug2.qml"));
+    canvas->show();
+
+    QDeclarativeRectangle *rect = qobject_cast<QDeclarativeRectangle*>(canvas->rootObject());
+    QVERIFY(rect);
+    QDeclarativeItem *item = rect->findChild<QDeclarativeItem*>("theItem");
+    QCOMPARE(item->width(), qreal(100));
+    QCOMPARE(item->height(), qreal(110));
+    QCOMPARE(item->x(), qreal(130));
+
+    QDeclarativeItemPrivate *rectPrivate = QDeclarativeItemPrivate::get(rect);
+    rectPrivate->setState("row");
+    QCOMPARE(item->width(), qreal(210));
+    QCOMPARE(item->height(), qreal(50));
+    QCOMPARE(item->x(), qreal(75));
+
+    delete canvas;
 }
 
 template<typename T>

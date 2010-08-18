@@ -533,6 +533,13 @@ void QDeclarativeCurve::setY(qreal y)
 /*!
     \qmlproperty string PathAttribute::name
     the name of the attribute to change.
+
+    This attribute will be available to the delegate as PathView.<name>
+
+    Note that using an existing Item property name such as "opacity" as an
+    attribute is allowed.  This is because path attributes add a new
+    \l{qdeclarativeintroduction.html#attached-properties} {Attached Property}
+    which in no way clashes with existing properties.
 */
 
 /*!
@@ -628,7 +635,7 @@ void QDeclarativePathLine::addToPath(QPainterPath &path)
     \qml
     Path {
         startX: 0; startY: 0
-        PathQuad x: 200; y: 0; controlX: 100; controlY: 150 }
+        PathQuad { x: 200; y: 0; controlX: 100; controlY: 150 }
     }
     \endqml
     \endtable
@@ -713,8 +720,9 @@ void QDeclarativePathQuad::addToPath(QPainterPath &path)
     Path {
         startX: 20; startY: 0
         PathCubic {
-            x: 180; y: 0; control1X: -10; control1Y: 90
-                          control2X: 210; control2Y: 90
+            x: 180; y: 0
+            control1X: -10; control1Y: 90
+            control2X: 210; control2Y: 90
         }
     }
     \endqml
@@ -867,6 +875,9 @@ qreal QDeclarativePathPercent::value() const
 
 void QDeclarativePathPercent::setValue(qreal value)
 {
-    _value = value;
+    if (_value != value) {
+        _value = value;
+        emit changed();
+    }
 }
 QT_END_NAMESPACE

@@ -55,6 +55,9 @@
 // Uncomment and compile QtBearer to gain detailed state tracing
 // #define QT_BEARERMGMT_SYMBIAN_DEBUG
 
+#define QT_BEARERMGMT_CONFIGURATION_SNAP_PREFIX QLatin1String("S_")
+#define QT_BEARERMGMT_CONFIGURATION_IAP_PREFIX  QLatin1String("I_")
+
 class CCommsDatabase;
 class QEventLoop;
 
@@ -87,7 +90,23 @@ public:
 
     QString bearerName() const;
 
-    QNetworkConfigurationPrivatePointer serviceNetworkPtr;
+    inline TUint32 numericIdentifier() const
+    {
+        QMutexLocker locker(&mutex);
+        return numericId;
+    }
+
+    inline TUint connectionIdentifier() const
+    {
+        QMutexLocker locker(&mutex);
+        return connectionId;
+    }
+
+    inline QString configMappingName() const
+    {
+        QMutexLocker locker(&mutex);
+        return mappingName;
+    }
 
     QString mappingName;
 
@@ -143,6 +162,7 @@ Q_SIGNALS:
     
 public Q_SLOTS:
     void updateConfigurations();
+    void delayedConfigurationUpdate();
 
 private:
     void updateStatesToSnaps();
@@ -153,6 +173,7 @@ private:
     bool changeConfigurationStateAtMaxTo(QNetworkConfigurationPrivatePointer ptr,
                                          QNetworkConfiguration::StateFlags newState);
 #ifdef SNAP_FUNCTIONALITY_AVAILABLE
+    void updateMobileBearerToConfigs(TConnMonBearerInfo bearerInfo);
     SymbianNetworkConfigurationPrivate *configFromConnectionMethodL(RCmConnectionMethod& connectionMethod);
 #else
     bool readNetworkConfigurationValuesFromCommsDb(
@@ -167,7 +188,7 @@ private:
     void accessPointScanningReady(TBool scanSuccessful, TConnMonIapInfo iapInfo);
     void startCommsDatabaseNotifications();
     void stopCommsDatabaseNotifications();
-    void waitRandomTime();
+    void updateConfigurationsAfterRandomTime();
 
     QNetworkConfigurationPrivatePointer defaultConfigurationL();
     TBool GetS60PlatformVersion(TUint& aMajor, TUint& aMinor) const;
@@ -185,6 +206,9 @@ private:
     // For QNetworkSessionPrivate to indicate about state changes
     void configurationStateChangeReport(TUint32 accessPointId,
                                    QNetworkSession::State newState);
+#ifdef OCC_FUNCTIONALITY_AVAILABLE
+    QNetworkConfigurationPrivatePointer configurationFromEasyWlan(TUint32 apId, TUint connectionId);
+#endif
 
 private: // Data
     bool               iFirstUpdate; 
@@ -195,12 +219,12 @@ private: // Data
     TBool              iOnline;
     TBool              iInitOk;
     TBool              iUpdateGoingOn;
-    TBool              iIgnoringUpdates;
-    TUint              iTimeToWait;
-    QEventLoop*        iIgnoreEventLoop;
+    TBool              iUpdatePending;
 
     AccessPointsAvailabilityScanner* ipAccessPointsAvailabilityScanner;
-    
+
+    QNetworkConfigurationPrivatePointer defaultConfig;
+
     friend class QNetworkSessionPrivate;
     friend class AccessPointsAvailabilityScanner;
     friend class QNetworkSessionPrivateImpl;

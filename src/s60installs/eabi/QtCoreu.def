@@ -3707,4 +3707,10 @@ EXPORTS
 	_ZN23QEventDispatcherSymbian19getStaticMetaObjectEv @ 3706 NONAME
 	_ZNK23QEventDispatcherSymbian10metaObjectEv @ 3707 NONAME
 	_ZNK9QDateTime7msecsToERKS_ @ 3708 NONAME
+	_ZNK7QLocale13textDirectionEv @ 3709 NONAME
+	_ZNK7QString13isRightToLeftEv @ 3710 NONAME
+	_ZN16QIODevicePrivate4peekEPcx @ 3711 NONAME
+	_ZN16QIODevicePrivate4peekEx @ 3712 NONAME
+	_ZN8QProcess18setNativeArgumentsERK7QString @ 3713 NONAME
+	_ZNK8QProcess15nativeArgumentsEv @ 3714 NONAME
 

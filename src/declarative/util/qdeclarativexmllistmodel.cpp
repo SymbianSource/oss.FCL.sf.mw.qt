@@ -80,7 +80,11 @@ typedef QPair<int, int> QDeclarativeXmlListRange;
 
 /*!
     \qmlproperty string XmlRole::name
-    The name for the role. This name is used to access the model data for this role from Qml.
+
+    The name for the role. This name is used to access the model data for this role.
+
+    For example, the following model has a role named "title", which can be accessed
+    from the view's delegate:
 
     \qml
     XmlListModel {
@@ -91,19 +95,27 @@ typedef QPair<int, int> QDeclarativeXmlListRange;
 
     ListView {
         model: xmlModel
-        Text { text: title }
+        delegate: Text { text: title }
     }
     \endqml
 */
 
 /*!
     \qmlproperty string XmlRole::query
-    The relative XPath query for this role. The query should not start with a '/' (i.e. it must be
-    relative).
+    The relative XPath expression query for this role. The query must be relative; it cannot start
+    with a '/'.
 
-    \qml
-    XmlRole { name: "title"; query: "title/string()" }
-    \endqml
+    For example, if there is an XML document like this:
+
+    \quotefile doc/src/snippets/declarative/xmlrole.xml
+        
+    Here are some valid XPath expressions for XmlRole queries on this document:
+
+    \snippet doc/src/snippets/declarative/xmlrole.qml 0
+    \dots 4
+    \snippet doc/src/snippets/declarative/xmlrole.qml 1
+
+    See the \l{http://www.w3.org/TR/xpath20/}{W3C XPath 2.0 specification} for more information.
 */
 
 /*!
@@ -136,6 +148,7 @@ public:
     QDeclarativeXmlQuery(QObject *parent=0)
         : QThread(parent), m_quit(false), m_abortQueryId(-1), m_queryIds(XMLLISTMODEL_CLEAR_ID + 1) {
         qRegisterMetaType<QDeclarativeXmlQueryResult>("QDeclarativeXmlQueryResult");
+        m_currentJob.queryId = -1;
     }
 
     ~QDeclarativeXmlQuery() {
@@ -149,6 +162,13 @@ public:
 
     void abort(int id) {
         QMutexLocker locker(&m_mutex);
+        QQueue<XmlQueryJob>::iterator it;
+        for (it = m_jobs.begin(); it != m_jobs.end(); ++it) {
+            if ((*it).queryId == id) {
+                m_jobs.erase(it);
+                return;
+            }
+        }
         m_abortQueryId = id;
     }
 
@@ -176,7 +196,7 @@ public:
         m_queryIds++;
 
         if (!isRunning())
-            start();
+            start(QThread::IdlePriority);
         else
             m_condition.wakeOne();
         return job.queryId;
@@ -190,24 +210,28 @@ protected:
     void run() {
         while (!m_quit) {
             m_mutex.lock();
-            doQueryJob();
-            doSubQueryJob();
+            if (!m_jobs.isEmpty())
+                m_currentJob = m_jobs.dequeue();
             m_mutex.unlock();
 
-            m_mutex.lock();
-            const XmlQueryJob &job = m_jobs.dequeue();
-            if (m_abortQueryId != job.queryId) {
-                QDeclarativeXmlQueryResult r;
-                r.queryId = job.queryId;
+            QDeclarativeXmlQueryResult r;
+            if (m_currentJob.queryId != -1) {
+                doQueryJob();
+                doSubQueryJob();
+                r.queryId = m_currentJob.queryId;
                 r.size = m_size;
                 r.data = m_modelData;
                 r.inserted = m_insertedItemRanges;
                 r.removed = m_removedItemRanges;
-                r.keyRoleResultsCache = job.keyRoleResultsCache;
-                emit queryCompleted(r);
+                r.keyRoleResultsCache = m_currentJob.keyRoleResultsCache;
             }
+
+            m_mutex.lock();
+            if (m_currentJob.queryId != -1 && m_abortQueryId != m_currentJob.queryId)
+                emit queryCompleted(r);
             if (m_jobs.isEmpty())
                 m_condition.wait(&m_mutex);
+            m_currentJob.queryId = -1;
             m_abortQueryId = -1;
             m_mutex.unlock();
         }
@@ -223,6 +247,7 @@ private:
     QMutex m_mutex;
     QWaitCondition m_condition;
     QQueue<XmlQueryJob> m_jobs;
+    XmlQueryJob m_currentJob;
     bool m_quit;
     int m_abortQueryId;
     QString m_prefix;
@@ -237,15 +262,14 @@ Q_GLOBAL_STATIC(QDeclarativeXmlQuery, globalXmlQuery)
 
 void QDeclarativeXmlQuery::doQueryJob()
 {
-    Q_ASSERT(!m_jobs.isEmpty());
-    XmlQueryJob &job = m_jobs.head();
+    Q_ASSERT(m_currentJob.queryId != -1);
 
     QString r;
     QXmlQuery query;
-    QBuffer buffer(&job.data);
+    QBuffer buffer(&m_currentJob.data);
     buffer.open(QIODevice::ReadOnly);
     query.bindVariable(QLatin1String("src"), &buffer);
-    query.setQuery(job.namespaces + job.query);
+    query.setQuery(m_currentJob.namespaces + m_currentJob.query);
     query.evaluateTo(&r);
 
     //always need a single root element
@@ -253,9 +277,9 @@ void QDeclarativeXmlQuery::doQueryJob()
     QBuffer b(&xml);
     b.open(QIODevice::ReadOnly);
 
-    QString namespaces = QLatin1String("declare namespace dummy=\"http://qtsotware.com/dummy\";\n") + job.namespaces;
+    QString namespaces = QLatin1String("declare namespace dummy=\"http://qtsotware.com/dummy\";\n") + m_currentJob.namespaces;
     QString prefix = QLatin1String("doc($inputDocument)/dummy:items") +
-                     job.query.mid(job.query.lastIndexOf(QLatin1Char('/')));
+                     m_currentJob.query.mid(m_currentJob.query.lastIndexOf(QLatin1Char('/')));
 
     //figure out how many items we are dealing with
     int count = -1;
@@ -270,7 +294,7 @@ void QDeclarativeXmlQuery::doQueryJob()
             count = item.toAtomicValue().toInt();
     }
 
-    job.data = xml;
+    m_currentJob.data = xml;
     m_prefix = namespaces + prefix + QLatin1Char('/');
     m_size = 0;
     if (count > 0)
@@ -279,9 +303,9 @@ void QDeclarativeXmlQuery::doQueryJob()
 
 void QDeclarativeXmlQuery::getValuesOfKeyRoles(QStringList *values, QXmlQuery *query) const
 {
-    Q_ASSERT(!m_jobs.isEmpty());
+    Q_ASSERT(m_currentJob.queryId != -1);
 
-    const QStringList &keysQueries = m_jobs.head().keyRoleQueries;
+    const QStringList &keysQueries = m_currentJob.keyRoleQueries;
     QString keysQuery;
     if (keysQueries.count() == 1)
         keysQuery = m_prefix + keysQueries[0];
@@ -311,11 +335,10 @@ void QDeclarativeXmlQuery::addIndexToRangeList(QList<QDeclarativeXmlListRange> *
 
 void QDeclarativeXmlQuery::doSubQueryJob()
 {
-    Q_ASSERT(!m_jobs.isEmpty());
-    XmlQueryJob &job = m_jobs.head();
+    Q_ASSERT(m_currentJob.queryId != -1);
     m_modelData.clear();
 
-    QBuffer b(&job.data);
+    QBuffer b(&m_currentJob.data);
     b.open(QIODevice::ReadOnly);
 
     QXmlQuery subquery;
@@ -328,16 +351,16 @@ void QDeclarativeXmlQuery::doSubQueryJob()
 
     m_insertedItemRanges.clear();
     m_removedItemRanges.clear();
-    if (job.keyRoleResultsCache.isEmpty()) {
+    if (m_currentJob.keyRoleResultsCache.isEmpty()) {
         m_insertedItemRanges << qMakePair(0, m_size);
     } else {
-        if (keyRoleResults != job.keyRoleResultsCache) {
+        if (keyRoleResults != m_currentJob.keyRoleResultsCache) {
             QStringList temp;
-            for (int i=0; i<job.keyRoleResultsCache.count(); i++) {
-                if (!keyRoleResults.contains(job.keyRoleResultsCache[i]))
+            for (int i=0; i<m_currentJob.keyRoleResultsCache.count(); i++) {
+                if (!keyRoleResults.contains(m_currentJob.keyRoleResultsCache[i]))
                     addIndexToRangeList(&m_removedItemRanges, i);
                 else 
-                    temp << job.keyRoleResultsCache[i];
+                    temp << m_currentJob.keyRoleResultsCache[i];
             }
 
             for (int i=0; i<keyRoleResults.count(); i++) {
@@ -348,11 +371,11 @@ void QDeclarativeXmlQuery::doSubQueryJob()
             }
         }
     }
-    job.keyRoleResultsCache = keyRoleResults;
+    m_currentJob.keyRoleResultsCache = keyRoleResults;
 
     // Get the new values for each role.
     //### we might be able to condense even further (query for everything in one go)
-    const QStringList &queries = job.roleQueries;
+    const QStringList &queries = m_currentJob.roleQueries;
     for (int i = 0; i < queries.size(); ++i) {
         QList<QVariant> resultList;
         if (!queries[i].isEmpty()) {
@@ -366,7 +389,7 @@ void QDeclarativeXmlQuery::doSubQueryJob()
                     item = resultItems.next();
                 }
             } else {
-                emit error(job.roleQueryErrorId.at(i), queries[i]);
+                emit error(m_currentJob.roleQueryErrorId.at(i), queries[i]);
             }
         }
         //### should warn here if things have gone wrong.
@@ -485,8 +508,8 @@ void QDeclarativeXmlListModelPrivate::clear_role(QDeclarativeListProperty<QDecla
   \since 4.7
     \brief The XmlListModel element is used to specify a model using XPath expressions.
 
-    XmlListModel is used to create a model from XML data. XmlListModel can be used as a data source
-    for the view classes (such as ListView, PathView, GridView) and other classes that interact with model
+    XmlListModel is used to create a model from XML data. It can be used as a data source
+    for view elements (such as ListView, PathView, GridView) and other elements that interact with model
     data (such as \l Repeater).
 
     For example, if there is a XML document at http://www.mysite.com/feed.xml like this:
@@ -497,11 +520,11 @@ void QDeclarativeXmlListModelPrivate::clear_role(QDeclarativeListProperty<QDecla
         ...
         <channel>
             <item>
-                <title>Item A</title>
+                <title>A blog post</title>
                 <pubDate>Sat, 07 Sep 2010 10:00:01 GMT</pubDate>
             </item>
             <item>
-                <title>Item B</title>
+                <title>Another blog post</title>
                 <pubDate>Sat, 07 Sep 2010 15:35:01 GMT</pubDate>
             </item>
         </channel>
@@ -511,19 +534,25 @@ void QDeclarativeXmlListModelPrivate::clear_role(QDeclarativeListProperty<QDecla
     A XmlListModel could create a model from this data, like this:
 
     \qml
+    import Qt 4.7
+
     XmlListModel {
         id: xmlModel
         source: "http://www.mysite.com/feed.xml"
         query: "/rss/channel/item"
+
         XmlRole { name: "title"; query: "title/string()" }
         XmlRole { name: "pubDate"; query: "pubDate/string()" }
     }
     \endqml
 
     The \l {XmlListModel::query}{query} value of "/rss/channel/item" specifies that the XmlListModel should generate
-    a model item for each \c <item> in the XML document. The XmlRole objects define the
-    model item attributes; here, each model item will have \c title and \c pubDate 
+    a model item for each \c <item> in the XML document. 
+    
+    The XmlRole objects define the
+    model item attributes. Here, each model item will have \c title and \c pubDate 
     attributes that match the \c title and \c pubDate values of its corresponding \c <item>.
+    (See \l XmlRole::query for more examples of valid XPath expressions for XmlRole.)
 
     The model could be used in a ListView, like this:
 
@@ -531,9 +560,16 @@ void QDeclarativeXmlListModelPrivate::clear_role(QDeclarativeListProperty<QDecla
     ListView {
         width: 180; height: 300
         model: xmlModel
-        delegate: Text { title + " (" + pubDate + ")" }
+        delegate: Text { text: title + " (" + pubDate + ")" }
     }
     \endqml
+
+    \image qml-xmllistmodel-example.png
+
+    The XmlListModel data is loaded asynchronously, and \l status
+    is set to \c XmlListModel.Ready when loading is complete.
+    Note this means when XmlListModel is used for a view, the view is not
+    populated until the model is loaded.
 
 
     \section2 Using key XML roles
@@ -560,7 +596,7 @@ void QDeclarativeXmlListModelPrivate::clear_role(QDeclarativeListProperty<QDecla
     with a combined value of all key roles that is not already present in
     the model.
 
-    \sa {declarative/xml/xmldata}{XML data example}
+    \sa {RSS News}
 */
 
 QDeclarativeXmlListModel::QDeclarativeXmlListModel(QObject *parent)
@@ -638,7 +674,7 @@ QString QDeclarativeXmlListModel::toString(int role) const
     \qmlproperty url XmlListModel::source
     The location of the XML data source.
 
-    If both source and xml are set, xml will be used.
+    If both \c source and \l xml are set, \l xml is used.
 */
 QUrl QDeclarativeXmlListModel::source() const
 {
@@ -659,11 +695,11 @@ void QDeclarativeXmlListModel::setSource(const QUrl &src)
 
 /*!
     \qmlproperty string XmlListModel::xml
-    This property holds XML text set directly.
+    This property holds the XML data for this model, if set.
 
     The text is assumed to be UTF-8 encoded.
 
-    If both source and xml are set, xml will be used.
+    If both \l source and \c xml are set, \c xml is used.
 */
 QString QDeclarativeXmlListModel::xml() const
 {
@@ -720,6 +756,7 @@ void QDeclarativeXmlListModel::setQuery(const QString &query)
         source: "http://mysite.com/feed.xml"
         query: "/feed/entry"
         namespaceDeclarations: "declare default element namespace 'http://www.w3.org/2005/Atom';"
+
         XmlRole { name: "title"; query: "title/string()" }
     }
     \endqml

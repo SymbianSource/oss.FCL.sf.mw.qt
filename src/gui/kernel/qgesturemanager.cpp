@@ -66,10 +66,12 @@
 # define DEBUG qDebug
 #endif
 
+#ifndef QT_NO_GESTURES
+
 QT_BEGIN_NAMESPACE
 
 QGestureManager::QGestureManager(QObject *parent)
-    : QObject(parent), state(NotGesture), m_lastCustomGestureId(0)
+    : QObject(parent), state(NotGesture), m_lastCustomGestureId(Qt::CustomGesture)
 {
     qRegisterMetaType<Qt::GestureState>();
 
@@ -117,7 +119,7 @@ Qt::GestureType QGestureManager::registerGestureRecognizer(QGestureRecognizer *r
     if (type == Qt::CustomGesture) {
         // generate a new custom gesture id
         ++m_lastCustomGestureId;
-        type = Qt::GestureType(Qt::CustomGesture + m_lastCustomGestureId);
+        type = Qt::GestureType(m_lastCustomGestureId);
     }
     m_recognizers.insertMulti(type, recognizer);
     delete dummy;
@@ -284,6 +286,9 @@ bool QGestureManager::filterEventThroughContexts(const QMultiMap<QObject *,
     // check if a running gesture switched back to maybe state
     QSet<QGesture *> activeToMaybeGestures = m_activeGestures & newMaybeGestures;
 
+    // check if a maybe gesture switched to canceled - reset it but don't send an event
+    QSet<QGesture *> maybeToCanceledGestures = m_maybeGestures & notGestures;
+
     // check if a running gesture switched back to not gesture state,
     // i.e. were canceled
     QSet<QGesture *> canceledGestures = m_activeGestures & notGestures;
@@ -343,7 +348,8 @@ bool QGestureManager::filterEventThroughContexts(const QMultiMap<QObject *,
                 << "\n\tstarted:" << startedGestures
                 << "\n\ttriggered:" << triggeredGestures
                 << "\n\tfinished:" << finishedGestures
-                << "\n\tcanceled:" << canceledGestures;
+                << "\n\tcanceled:" << canceledGestures
+                << "\n\tmaybe-canceled:" << maybeToCanceledGestures;
     }
 
     QSet<QGesture *> undeliveredGestures;
@@ -364,7 +370,7 @@ bool QGestureManager::filterEventThroughContexts(const QMultiMap<QObject *,
 
     // reset gestures that ended
     QSet<QGesture *> endedGestures =
-            finishedGestures + canceledGestures + undeliveredGestures;
+            finishedGestures + canceledGestures + undeliveredGestures + maybeToCanceledGestures;
     foreach (QGesture *gesture, endedGestures) {
         recycle(gesture);
         m_gestureTargets.remove(gesture);
@@ -684,11 +690,14 @@ void QGestureManager::recycle(QGesture *gesture)
     if (recognizer) {
         gesture->setGestureCancelPolicy(QGesture::CancelNone);
         recognizer->reset(gesture);
+        m_activeGestures.remove(gesture);
     } else {
         cleanupGesturesForRemovedRecognizer(gesture);
     }
 }
 
 QT_END_NAMESPACE
+
+#endif // QT_NO_GESTURES
 
 #include "moc_qgesturemanager_p.cpp"

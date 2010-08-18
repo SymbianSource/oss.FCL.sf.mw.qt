@@ -125,7 +125,7 @@ QDBusConnectionManager::~QDBusConnectionManager()
     connectionHash.clear();
 }
 
-QDBUS_EXPORT void qDBusBindToApplication();
+Q_DBUS_EXPORT void qDBusBindToApplication();
 void qDBusBindToApplication()
 {
 }
@@ -998,14 +998,6 @@ QDBusConnection QDBusConnection::sender()
 void QDBusConnectionPrivate::setSender(const QDBusConnectionPrivate *s)
 {
     _q_manager()->setSender(s);
-}
-
-/*!
-  \internal
-*/
-void QDBusConnectionPrivate::setConnection(const QString &name, QDBusConnectionPrivate *c)
-{
-    _q_manager()->setConnection(name, c);
 }
 
 /*!

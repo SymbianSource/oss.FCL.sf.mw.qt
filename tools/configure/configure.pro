@@ -4,11 +4,11 @@ DESTDIR   = ../..
 CONFIG   += console flat
 CONFIG   -= moc qt
 DEFINES  = UNICODE QT_NODLL QT_NO_CODECS QT_NO_TEXTCODEC QT_NO_UNICODETABLES QT_LITE_COMPONENT QT_NO_STL QT_NO_COMPRESS QT_NO_THREAD QT_NO_QOBJECT _CRT_SECURE_NO_DEPRECATE
-DEFINES  += QT_BOOTSTRAPPED
+DEFINES  += QT_BOOTSTRAPPED QT_QCHAR_CONSTRUCTOR
 
 win32 : LIBS += -lole32 -ladvapi32
 win32-msvc.net | win32-msvc2* : QMAKE_CXXFLAGS += /EHsc
-win32-g++ : LIBS += -luuid
+win32-g++* : LIBS += -luuid
 
 win32-msvc* {
     QMAKE_CFLAGS_RELEASE -= -MD
@@ -23,7 +23,8 @@ win32-msvc* {
 
 PRECOMPILED_HEADER = configure_pch.h
 
-INCPATH += $$QT_SOURCE_TREE/src/corelib/arch/generic \
+INCLUDEPATH += \
+           $$QT_SOURCE_TREE/src/corelib/arch/generic \
            $$QT_SOURCE_TREE/src/corelib/global \
            $$QT_BUILD_TREE/include \
            $$QT_BUILD_TREE/include/QtCore \

@@ -17,16 +17,18 @@ SOURCES += $$PWD/qmlruntime.cpp \
            $$PWD/loggerwidget.cpp
 
 RESOURCES = $$PWD/qmlruntime.qrc
-maemo5 {
-    SOURCES += $$PWD/deviceorientation_maemo.cpp
+symbian:!contains(S60_VERSION, 3.1):!contains(S60_VERSION, 3.2) {
+   SOURCES += $$PWD/deviceorientation_symbian.cpp
+   FORMS = $$PWD/recopts.ui \
+           $$PWD/proxysettings.ui
+} else:maemo5 {
+    QT += dbus
+    HEADERS += $$PWD/texteditautoresizer_maemo5.h
+    SOURCES += $$PWD/deviceorientation_maemo5.cpp
+    FORMS = $$PWD/recopts_maemo5.ui \
+            $$PWD/proxysettings_maemo5.ui
 } else {
     SOURCES += $$PWD/deviceorientation.cpp
+    FORMS = $$PWD/recopts.ui \
+            $$PWD/proxysettings.ui
 }
-
-symbian {
-    INCLUDEPATH += $$QT_SOURCE_TREE/examples/network/qftp/
-    LIBS += -lesock -lcommdb -lconnmon -linsock
-}
-
-FORMS = $$PWD/recopts.ui \
-        $$PWD/proxysettings.ui

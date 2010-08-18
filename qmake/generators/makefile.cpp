@@ -972,7 +972,7 @@ MakefileGenerator::writePrlFile(QTextStream &t)
             libs << "QMAKE_LIBS_PRIVATE";
         t << "QMAKE_PRL_LIBS = ";
         for(QStringList::Iterator it = libs.begin(); it != libs.end(); ++it)
-            t << project->values((*it)).join(" ") << " ";
+            t << project->values((*it)).join(" ").replace('\\', "\\\\") << " ";
         t << endl;
     }
 }
@@ -1762,6 +1762,7 @@ MakefileGenerator::writeExtraCompilerTargets(QTextStream &t)
         }
         QStringList tmp_dep = project->values((*it) + ".depends");
         QString tmp_dep_cmd;
+        QString dep_cd_cmd;
         if(!project->isEmpty((*it) + ".depend_command")) {
             int argv0 = -1;
             QStringList cmdline = project->values((*it) + ".depend_command");
@@ -1780,6 +1781,9 @@ MakefileGenerator::writeExtraCompilerTargets(QTextStream &t)
                     cmdline[argv0] = escapeFilePath(cmdline.at(argv0));
                 }
             }
+            dep_cd_cmd = QLatin1String("cd ")
+                 + escapeFilePath(Option::fixPathToLocalOS(Option::output_dir, false))
+                 + QLatin1String(" && ");
         }
         QStringList &vars = project->values((*it) + ".variables");
         if(tmp_out.isEmpty() || tmp_cmd.isEmpty())
@@ -1881,7 +1885,7 @@ MakefileGenerator::writeExtraCompilerTargets(QTextStream &t)
                     char buff[256];
                     QString dep_cmd = replaceExtraCompilerVariables(tmp_dep_cmd, (*input),
                                                                     tmp_out);
-                    dep_cmd = fixEnvVariables(dep_cmd);
+                    dep_cmd = dep_cd_cmd + fixEnvVariables(dep_cmd);
                     if(FILE *proc = QT_POPEN(dep_cmd.toLatin1().constData(), "r")) {
                         QString indeps;
                         while(!feof(proc)) {
@@ -1979,7 +1983,7 @@ MakefileGenerator::writeExtraCompilerTargets(QTextStream &t)
             if(!tmp_dep_cmd.isEmpty() && doDepends()) {
                 char buff[256];
                 QString dep_cmd = replaceExtraCompilerVariables(tmp_dep_cmd, (*input), out);
-                dep_cmd = fixEnvVariables(dep_cmd);
+                dep_cmd = dep_cd_cmd + fixEnvVariables(dep_cmd);
                 if(FILE *proc = QT_POPEN(dep_cmd.toLatin1().constData(), "r")) {
                     QString indeps;
                     while(!feof(proc)) {

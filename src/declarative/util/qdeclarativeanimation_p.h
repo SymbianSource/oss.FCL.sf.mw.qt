@@ -134,9 +134,12 @@ public:
 private Q_SLOTS:
     void timelineComplete();
     void componentFinalized();
-
 private:
     virtual void setTarget(const QDeclarativeProperty &);
+    void notifyRunningChanged(bool running);
+    friend class QDeclarativeBehavior;
+
+
 };
 
 class QDeclarativePauseAnimationPrivate;
@@ -384,7 +387,7 @@ Q_SIGNALS:
 };
 
 class QDeclarativeAnimationGroupPrivate;
-class QDeclarativeAnimationGroup : public QDeclarativeAbstractAnimation
+class Q_AUTOTEST_EXPORT QDeclarativeAnimationGroup : public QDeclarativeAbstractAnimation
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(QDeclarativeAnimationGroup)

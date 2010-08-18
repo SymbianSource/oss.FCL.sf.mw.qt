@@ -93,7 +93,6 @@
 #include <QtGui/qcolor.h>
 #include <QtGui/qvector3d.h>
 #include <QtGui/qsound.h>
-#include <QGraphicsObject>
 #include <QtCore/qcryptographichash.h>
 
 #include <private/qobject_p.h>
@@ -116,22 +115,55 @@ QT_BEGIN_NAMESPACE
 /*!
   \qmlclass QtObject QObject
   \since 4.7
-  \brief The QtObject element is the most basic element in QML
+  \brief The QtObject element is the most basic element in QML.
 
   The QtObject element is a non-visual element which contains only the
-  objectName property. It is useful for when you need an extremely
-  lightweight element to place your own custom properties in.
+  objectName property. 
+
+  It can be useful to create a QtObject if you need an extremely
+  lightweight element to enclose a set of custom properties:
+
+  \snippet doc/src/snippets/declarative/qtobject.qml 0
 
   It can also be useful for C++ integration, as it is just a plain
   QObject. See the QObject documentation for further details.
 */
 /*!
-  \qmlproperty string QtObject::objectName
-  This property allows you to give a name to this specific object instance.
+  \qmlproperty string QML:QtObject::objectName
+  This property holds the QObject::objectName for this specific object instance.
 
-  See \l{scripting.html#accessing-child-qobjects}{Accessing Child QObjects}
-  in the scripting documentation for details how objectName can be used from
-  scripts.
+  This allows a C++ application to locate an item within a QML component
+  using the QObject::findChild() method. For example, the following C++ 
+  application locates the child \l Rectangle item and dynamically changes its
+  \c color value:
+
+    \qml
+    // MyRect.qml
+
+    import Qt 4.7
+
+    Item {
+        width: 200; height: 200
+
+        Rectangle {
+            anchors.fill: parent
+            color: "red" 
+            objectName: "myRect"
+        }
+    }
+    \endqml
+
+    \code
+    // main.cpp
+
+    QDeclarativeView view;
+    view.setSource(QUrl::fromLocalFile("MyRect.qml"));
+    view.show();
+
+    QDeclarativeItem *item = view.rootObject()->findChild<QDeclarativeItem*>("myRect");
+    if (item) 
+        item->setProperty("color", QColor(Qt::yellow));
+    \endcode
 */
 
 struct StaticQtMetaObject : public QObject
@@ -152,17 +184,30 @@ void QDeclarativeEnginePrivate::defineModule()
 }
 
 /*!
+\keyword QmlGlobalQtObject
 \qmlclass Qt QDeclarativeEnginePrivate
-\brief The QML Global Qt Object
+\brief The QML global Qt object provides useful enums and functions from Qt.
 
-The Qt object provides useful enums and functions from Qt, for use in all QML
-files. Note that you do note create instances of this type, but instead use
-the members of the global "Qt" object.
+The \c Qt object provides useful enums and functions from Qt, for use in all QML files. 
+
+The \c Qt object is not a QML element; it cannot be instantiated. It is a global object 
+with enums and functions.  To use it, call the members of the global \c Qt object directly. 
+For example:
+
+\qml
+import Qt 4.7
+
+Text {
+    color: Qt.rgba(255, 0, 0, 1)
+    text: Qt.md5("hello, world")
+}
+\endqml
+
 
 \section1 Enums
 
 The Qt object contains all enums in the Qt namespace. For example, you can
-access the AlignLeft member of the Qt::AlignmentFlag enum with \c Qt.AlignLeft.
+access the \c AlignLeft member of the \c Qt::AlignmentFlag enum with \c Qt.AlignLeft.
 
 For a full list of enums, see the \l{Qt Namespace} documentation.
 
@@ -172,26 +217,26 @@ data types. This is primarily useful when setting the properties of an item
 when the property has one of the following types:
 
 \list
-\o Color
-\o Rect
-\o Point
-\o Size
-\o Vector3D
+\o \c color - use \l{QML:Qt::rgba()}{Qt.rgba()}, \l{QML:Qt::hsla()}{Qt.hsla()}, \l{QML:Qt::darker()}{Qt.darker()}, \l{QML:Qt::lighter()}{Qt.lighter()} or \l{QML:Qt::tint()}{Qt.tint()}
+\o \c rect - use \l{QML:Qt::rect()}{Qt.rect()}
+\o \c point - use \l{QML:Qt::point()}{Qt.point()}
+\o \c size - use \l{QML:Qt::size()}{Qt.size()}
+\o \c vector3d - use \l{QML:Qt::vector3d()}{Qt.vector3d()}
 \endlist
 
-There are also string based constructors for these types, see \l{qdeclarativebasictypes.html}{Qml Types}.
+There are also string based constructors for these types. See \l{qdeclarativebasictypes.html}{QML Basic Types} for more information.
 
 \section1 Date/Time Formatters
 
 The Qt object contains several functions for formatting dates and times.
 
 \list
-    \o \l{Qt::formatDateTime}{string Qt.formatDateTime(datetime date, variant format)
-    \o \l{Qt::formatDate}{string Qt.formatDate(datetime date, variant format)
-    \o \l{Qt::formatTime}{string Qt.formatTime(datetime date, variant format)
+    \o \l{QML:Qt::formatDateTime}{string Qt.formatDateTime(datetime date, variant format)}
+    \o \l{QML:Qt::formatDate}{string Qt.formatDate(datetime date, variant format)}
+    \o \l{QML:Qt::formatTime}{string Qt.formatTime(datetime date, variant format)}
 \endlist
 
-The format specification is described at \l{Qt::formatDateTime}{Qt.formatDateTime}.
+The format specification is described at \l{QML:Qt::formatDateTime}{Qt.formatDateTime}.
 
 
 \section1 Dynamic Object Creation
@@ -200,14 +245,14 @@ items from files or strings. See \l{Dynamic Object Management} for an overview
 of their use.
 
 \list
-    \o \l{Qt::createComponent}{object Qt.createComponent(url)}
-    \o \l{Qt::createQmlObject}{object Qt.createQmlObject(string qml, object parent, string filepath)}
+    \o \l{QML:Qt::createComponent()}{object Qt.createComponent(url)}
+    \o \l{QML:Qt::createQmlObject()}{object Qt.createQmlObject(string qml, object parent, string filepath)}
 \endlist
 */
 
 
 QDeclarativeEnginePrivate::QDeclarativeEnginePrivate(QDeclarativeEngine *e)
-: captureProperties(false), rootContext(0), currentExpression(0), isDebugging(false),
+: captureProperties(false), rootContext(0), isDebugging(false),
   outputWarningsToStdErr(true), contextClass(0), sharedContext(0), sharedScope(0),
   objectClass(0), valueTypeClass(0), globalClass(0), cleanup(0), erroredBindings(0),
   inProgressCreations(0), scriptEngine(this), workerScriptEngine(0), componentAttached(0),
@@ -225,9 +270,8 @@ QDeclarativeEnginePrivate::QDeclarativeEnginePrivate(QDeclarativeEngine *e)
 }
 
 /*!
-\qmlmethod url Qt::resolvedUrl(url)
-This function returns \c url resolved relative to the URL of the
-caller.
+  \qmlmethod url Qt::resolvedUrl(url)
+  Returns \c url resolved relative to the URL of the caller.
 */
 QUrl QDeclarativeScriptEngine::resolvedUrl(QScriptContext *context, const QUrl& url)
 {
@@ -285,10 +329,12 @@ QDeclarativeScriptEngine::QDeclarativeScriptEngine(QDeclarativeEnginePrivate *pr
         qtObject.setProperty(QLatin1String("tint"), newFunction(QDeclarativeEnginePrivate::tint, 2));
     }
 
+#ifndef QT_NO_TEXTDATE
     //date/time formatting
     qtObject.setProperty(QLatin1String("formatDate"),newFunction(QDeclarativeEnginePrivate::formatDate, 2));
     qtObject.setProperty(QLatin1String("formatTime"),newFunction(QDeclarativeEnginePrivate::formatTime, 2));
     qtObject.setProperty(QLatin1String("formatDateTime"),newFunction(QDeclarativeEnginePrivate::formatDateTime, 2));
+#endif
 
     //misc methods
     qtObject.setProperty(QLatin1String("openUrlExternally"),newFunction(QDeclarativeEnginePrivate::desktopOpenUrl, 1));
@@ -532,9 +578,9 @@ void QDeclarativeEngine::clearComponentCache()
   component instances should be added to sub-contexts parented to the
   root context.
 */
-QDeclarativeContext *QDeclarativeEngine::rootContext()
+QDeclarativeContext *QDeclarativeEngine::rootContext() const
 {
-    Q_D(QDeclarativeEngine);
+    Q_D(const QDeclarativeEngine);
     return d->rootContext;
 }
 
@@ -608,23 +654,15 @@ QNetworkAccessManager *QDeclarativeEngine::networkAccessManager() const
 /*!
 
   Sets the \a provider to use for images requested via the \e
-  image: url scheme, with host \a providerId.
+  image: url scheme, with host \a providerId. The QDeclarativeEngine 
+  takes ownership of \a provider.
 
-  QDeclarativeImageProvider allows images to be provided to QML
-  asynchronously.  The image request will be run in a low priority
-  thread.  This allows potentially costly image loading to be done in
-  the background, without affecting the performance of the UI.
+  Image providers enable support for pixmap and threaded image
+  requests. See the QDeclarativeImageProvider documentation for details on
+  implementing and using image providers.
 
   Note that images loaded from a QDeclarativeImageProvider are cached
   by QPixmapCache, similar to any image loaded by QML.
-
-  The QDeclarativeEngine assumes ownership of the provider.
-
-  This example creates a provider with id \e colors:
-
-  \snippet examples/declarative/cppextensions/imageprovider/imageprovider.cpp 0
-
-  \snippet examples/declarative/cppextensions/imageprovider/imageprovider-example.qml 0
 
   \sa removeImageProvider()
 */
@@ -659,14 +697,33 @@ void QDeclarativeEngine::removeImageProvider(const QString &providerId)
     delete d->imageProviders.take(providerId);
 }
 
+QDeclarativeImageProvider::ImageType QDeclarativeEnginePrivate::getImageProviderType(const QUrl &url)
+{
+    QMutexLocker locker(&mutex);
+    QDeclarativeImageProvider *provider = imageProviders.value(url.host());
+    if (provider)
+        return provider->imageType();
+    return static_cast<QDeclarativeImageProvider::ImageType>(-1);
+}
+
 QImage QDeclarativeEnginePrivate::getImageFromProvider(const QUrl &url, QSize *size, const QSize& req_size)
 {
     QMutexLocker locker(&mutex);
     QImage image;
     QDeclarativeImageProvider *provider = imageProviders.value(url.host());
     if (provider)
-        image = provider->request(url.path().mid(1), size, req_size);
+        image = provider->requestImage(url.path().mid(1), size, req_size);
     return image;
+}
+
+QPixmap QDeclarativeEnginePrivate::getPixmapFromProvider(const QUrl &url, QSize *size, const QSize& req_size)
+{
+    QMutexLocker locker(&mutex);
+    QPixmap pixmap;
+    QDeclarativeImageProvider *provider = imageProviders.value(url.host());
+    if (provider)
+        pixmap = provider->requestPixmap(url.path().mid(1), size, req_size);
+    return pixmap;
 }
 
 /*!
@@ -1021,6 +1078,17 @@ QDeclarativeContextData *QDeclarativeEnginePrivate::getContext(QScriptContext *c
     return contextClass->contextFromValue(scopeNode);
 }
 
+/*!
+    Returns the QUrl associated with the script \a ctxt for the case that there is
+    no QDeclarativeContext.
+*/
+QUrl QDeclarativeEnginePrivate::getUrl(QScriptContext *ctxt)
+{
+    QScriptValue scopeNode = QScriptDeclarativeClass::scopeChainValue(ctxt, -3);
+    Q_ASSERT(scopeNode.isValid());
+    Q_ASSERT(QScriptDeclarativeClass::scriptClass(scopeNode) == contextClass);
+    return contextClass->urlFromValue(scopeNode);
+}
 
 QString QDeclarativeEnginePrivate::urlToLocalFileOrQrc(const QUrl& url)
 {
@@ -1035,31 +1103,33 @@ QString QDeclarativeEnginePrivate::urlToLocalFileOrQrc(const QUrl& url)
 /*!
 \qmlmethod object Qt::createComponent(url)
 
-This function takes the URL of a QML file as its only argument. It returns
-a component object which can be used to create and load that QML file.
+Returns a \l Component object created using the QML file at the specified \a url,
+or \c null if there was an error in creating the component.
 
-Here is an example. Remember that QML files that might be loaded
-over the network cannot be expected to be ready immediately.
+Call \l {Component::createObject()}{Component.createObject()} on the returned
+component to create an object instance of the component.
 
-\snippet doc/src/snippets/declarative/componentCreation.js 0
+Here is an example. Notice it checks whether the component \l{Component::status}{status} is
+\c Component.Ready before calling \l {Component::createObject()}{createObject()}
+in case the QML file is loaded over a network and thus is not ready immediately.
+
+\snippet doc/src/snippets/declarative/componentCreation.js vars
 \codeline
-\snippet doc/src/snippets/declarative/componentCreation.js 1
+\snippet doc/src/snippets/declarative/componentCreation.js func
+\snippet doc/src/snippets/declarative/componentCreation.js remote
+\snippet doc/src/snippets/declarative/componentCreation.js func-end
+\codeline
+\snippet doc/src/snippets/declarative/componentCreation.js finishCreation
 
-If you are certain the files will be local, you could simplify to:
+If you are certain the QML file to be loaded is a local file, you could omit the \c finishCreation() 
+function and call \l {Component::createObject()}{createObject()} immediately:
 
-\snippet doc/src/snippets/declarative/componentCreation.js 2
+\snippet doc/src/snippets/declarative/componentCreation.js func
+\snippet doc/src/snippets/declarative/componentCreation.js local
+\snippet doc/src/snippets/declarative/componentCreation.js func-end
 
-The methods and properties of the \l {Component} element are defined in its own
-page, but when using it dynamically only two methods are usually used.
- \l {Component::createObject()}{Component.createObject()} returns the created object or \c null if there is an error.
-If there is an error, \l {Component::errorString()}{Component.errorString()} describes
-the error that occurred. Note that createObject() takes exactly one argument, which is set
-to the parent of the created object. Graphical objects without a parent will not appear
-on the scene, but if you do not wish to parent the item at this point you can safely pass
-in null.
-
-If you want to just create an arbitrary string of QML, instead of
-loading a QML file, consider the \l{Qt.createQmlObject(string qml, object parent, string filepath)}{Qt.createQmlObject()} function.
+To create a QML object from an arbitrary string of QML (instead of a file),
+use \l{QML:Qt::createQmlObject()}{Qt.createQmlObject()}.
 */
 
 QScriptValue QDeclarativeEnginePrivate::createComponent(QScriptContext *ctxt, QScriptEngine *engine)
@@ -1068,16 +1138,19 @@ QScriptValue QDeclarativeEnginePrivate::createComponent(QScriptContext *ctxt, QS
         static_cast<QDeclarativeScriptEngine*>(engine)->p;
     QDeclarativeEngine* activeEngine = activeEnginePriv->q_func();
 
-    QDeclarativeContextData* context = activeEnginePriv->getContext(ctxt);
-    Q_ASSERT(context);
-
     if(ctxt->argumentCount() != 1) {
         return ctxt->throwError(QLatin1String("Qt.createComponent(): Invalid arguments"));
-    }else{
+    } else {
+
         QString arg = ctxt->argument(0).toString();
         if (arg.isEmpty())
             return engine->nullValue();
-        QUrl url = QUrl(context->resolvedUrl(QUrl(arg)));
+        QUrl url;
+        QDeclarativeContextData* context = activeEnginePriv->getContext(ctxt);
+        if (context)
+            url = QUrl(context->resolvedUrl(QUrl(arg)));
+        else
+            url = activeEnginePriv->getUrl(ctxt).resolved(QUrl(arg));
         QDeclarativeComponent *c = new QDeclarativeComponent(activeEngine, url, activeEngine);
         QDeclarativeComponentPrivate::get(c)->creationContext = context;
         QDeclarativeData::get(c, true)->setImplicitDestructible();
@@ -1088,29 +1161,22 @@ QScriptValue QDeclarativeEnginePrivate::createComponent(QScriptContext *ctxt, QS
 /*!
 \qmlmethod object Qt::createQmlObject(string qml, object parent, string filepath)
 
-Creates a new object from the specified string of QML. It requires a
-second argument, which is the id of an existing QML object to use as
-the new object's parent. If a third argument is provided, this is used
-for error reporting as the filepath that the QML came from.
+Returns a new object created from the given \a string of QML which will have the specified \a parent,
+or \c null if there was an error in creating the object.
 
-Example (where \c targetItem is the id of an existing QML item):
+If \a filepath is specified, it will be used for error reporting for the created object.
+
+Example (where \c parentItem is the id of an existing QML item):
 
 \snippet doc/src/snippets/declarative/createQmlObject.qml 0
 
-This function is intended for use inside QML only. It is intended to behave
-similarly to eval, but for creating QML elements.
-
-Returns the created object, \c or null if there is an error. In the case of an
-error, a QtScript Error object is thrown. This object has the additional property,
-qmlErrors, which is an array of all the errors encountered when trying to execute the
-QML. Each object in the array has the members \c lineNumber, \c columnNumber, \c fileName and \c message.
+In the case of an error, a QtScript Error object is thrown. This object has an additional property,
+\c qmlErrors, which is an array of the errors encountered.
+Each object in this array has the members \c lineNumber, \c columnNumber, \c fileName and \c message.
 
 Note that this function returns immediately, and therefore may not work if
-the QML loads new components. If you are trying to load a new component,
-for example from a QML file, consider the \l{Qt.createComponent(url file)}{Qt.createComponent()} function
-instead. 'New components' refers to external QML files that have not yet
-been loaded, and so it is safe to use \c Qt.createQmlObject() to load built-in
-components.
+the \a qml string loads new components (that is, external QML files that have not yet been loaded).
+If this is the case, consider using \l{QML:Qt::createComponent()}{Qt.createComponent()} instead.
 */
 
 QScriptValue QDeclarativeEnginePrivate::createQmlObject(QScriptContext *ctxt, QScriptEngine *engine)
@@ -1194,10 +1260,12 @@ QScriptValue QDeclarativeEnginePrivate::createQmlObject(QScriptContext *ctxt, QS
     Q_ASSERT(obj);
 
     obj->setParent(parentArg);
-    QGraphicsObject* gobj = qobject_cast<QGraphicsObject*>(obj);
-    QGraphicsObject* gparent = qobject_cast<QGraphicsObject*>(parentArg);
-    if(gobj && gparent)
-        gobj->setParentItem(gparent);
+
+    QList<QDeclarativePrivate::AutoParentFunction> functions = QDeclarativeMetaType::parentFunctions();
+    for (int ii = 0; ii < functions.count(); ++ii) {
+        if (QDeclarativePrivate::Parented == functions.at(ii)(obj, parentArg))
+            break;
+    }
 
     QDeclarativeData::get(obj, true)->setImplicitDestructible();
     return activeEnginePriv->objectClass->newQObject(obj, QMetaType::QObjectStar);
@@ -1217,7 +1285,7 @@ QScriptValue QDeclarativeEnginePrivate::isQtObject(QScriptContext *ctxt, QScript
 
 /*!
 \qmlmethod Qt::vector3d(real x, real y, real z)
-This function returns a Vector3D with the specified \c x, \c y and \c z.
+Returns a Vector3D with the specified \c x, \c y and \c z.
 */
 QScriptValue QDeclarativeEnginePrivate::vector3d(QScriptContext *ctxt, QScriptEngine *engine)
 {
@@ -1231,8 +1299,9 @@ QScriptValue QDeclarativeEnginePrivate::vector3d(QScriptContext *ctxt, QScriptEn
 
 /*!
 \qmlmethod string Qt::formatDate(datetime date, variant format)
-This function returns the string representation of \c date, formatted according to \c format.
+Returns the string representation of \c date, formatted according to \c format.
 */
+#ifndef QT_NO_TEXTDATE
 QScriptValue QDeclarativeEnginePrivate::formatDate(QScriptContext*ctxt, QScriptEngine*engine)
 {
     int argCount = ctxt->argumentCount();
@@ -1242,11 +1311,12 @@ QScriptValue QDeclarativeEnginePrivate::formatDate(QScriptContext*ctxt, QScriptE
     QDate date = ctxt->argument(0).toDateTime().date();
     Qt::DateFormat enumFormat = Qt::DefaultLocaleShortDate;
     if (argCount == 2) {
-        if (ctxt->argument(1).isString()) {
-            QString format = ctxt->argument(1).toString();
+        QScriptValue formatArg = ctxt->argument(1);
+        if (formatArg.isString()) {
+            QString format = formatArg.toString();
             return engine->newVariant(qVariantFromValue(date.toString(format)));
-        } else if (ctxt->argument(1).isNumber()) {
-            enumFormat = Qt::DateFormat(ctxt->argument(1).toUInt32());
+        } else if (formatArg.isNumber()) {
+            enumFormat = Qt::DateFormat(formatArg.toUInt32());
         } else {
             return ctxt->throwError(QLatin1String("Qt.formatDate(): Invalid date format"));
         }
@@ -1256,7 +1326,7 @@ QScriptValue QDeclarativeEnginePrivate::formatDate(QScriptContext*ctxt, QScriptE
 
 /*!
 \qmlmethod string Qt::formatTime(datetime time, variant format)
-This function returns the string representation of \c time, formatted according to \c format.
+Returns the string representation of \c time, formatted according to \c format.
 
 See Qt::formatDateTime for how to define \c format.
 */
@@ -1269,11 +1339,12 @@ QScriptValue QDeclarativeEnginePrivate::formatTime(QScriptContext*ctxt, QScriptE
     QTime date = ctxt->argument(0).toDateTime().time();
     Qt::DateFormat enumFormat = Qt::DefaultLocaleShortDate;
     if (argCount == 2) {
-        if (ctxt->argument(1).isString()) {
-            QString format = ctxt->argument(1).toString();
+        QScriptValue formatArg = ctxt->argument(1);
+        if (formatArg.isString()) {
+            QString format = formatArg.toString();
             return engine->newVariant(qVariantFromValue(date.toString(format)));
-        } else if (ctxt->argument(1).isNumber()) {
-            enumFormat = Qt::DateFormat(ctxt->argument(1).toUInt32());
+        } else if (formatArg.isNumber()) {
+            enumFormat = Qt::DateFormat(formatArg.toUInt32());
         } else {
             return ctxt->throwError(QLatin1String("Qt.formatTime(): Invalid time format"));
         }
@@ -1283,7 +1354,7 @@ QScriptValue QDeclarativeEnginePrivate::formatTime(QScriptContext*ctxt, QScriptE
 
 /*!
 \qmlmethod string Qt::formatDateTime(datetime dateTime, variant format)
-This function returns the string representation of \c dateTime, formatted according to \c format.
+Returns the string representation of \c dateTime, formatted according to \c format.
 
 \c format for the date/time formatting functions is be specified as follows.
 
@@ -1359,22 +1430,24 @@ QScriptValue QDeclarativeEnginePrivate::formatDateTime(QScriptContext*ctxt, QScr
     QDateTime date = ctxt->argument(0).toDateTime();
     Qt::DateFormat enumFormat = Qt::DefaultLocaleShortDate;
     if (argCount == 2) {
-        if (ctxt->argument(1).isString()) {
-            QString format = ctxt->argument(1).toString();
+        QScriptValue formatArg = ctxt->argument(1);
+        if (formatArg.isString()) {
+            QString format = formatArg.toString();
             return engine->newVariant(qVariantFromValue(date.toString(format)));
-        } else if (ctxt->argument(1).isNumber()) {
-            enumFormat = Qt::DateFormat(ctxt->argument(1).toUInt32());
+        } else if (formatArg.isNumber()) {
+            enumFormat = Qt::DateFormat(formatArg.toUInt32());
         } else { 
             return ctxt->throwError(QLatin1String("Qt.formatDateTime(): Invalid datetime format"));
         }
     }
     return engine->newVariant(qVariantFromValue(date.toString(enumFormat)));
 }
+#endif // QT_NO_TEXTDATE
 
 /*!
 \qmlmethod color Qt::rgba(real red, real green, real blue, real alpha)
 
-This function returns a Color with the specified \c red, \c green, \c blue and \c alpha components.
+Returns a color with the specified \c red, \c green, \c blue and \c alpha components.
 All components should be in the range 0-1 inclusive.
 */
 QScriptValue QDeclarativeEnginePrivate::rgba(QScriptContext *ctxt, QScriptEngine *engine)
@@ -1402,7 +1475,7 @@ QScriptValue QDeclarativeEnginePrivate::rgba(QScriptContext *ctxt, QScriptEngine
 /*!
 \qmlmethod color Qt::hsla(real hue, real saturation, real lightness, real alpha)
 
-This function returns a Color with the specified \c hue, \c saturation, \c lightness and \c alpha components.
+Returns a color with the specified \c hue, \c saturation, \c lightness and \c alpha components.
 All components should be in the range 0-1 inclusive.
 */
 QScriptValue QDeclarativeEnginePrivate::hsla(QScriptContext *ctxt, QScriptEngine *engine)
@@ -1430,7 +1503,9 @@ QScriptValue QDeclarativeEnginePrivate::hsla(QScriptContext *ctxt, QScriptEngine
 /*!
 \qmlmethod rect Qt::rect(int x, int y, int width, int height) 
 
-This function returns a Rect with the top-left corner at \c x, \c y and the specified \c width and \c height.
+Returns a \c rect with the top-left corner at \c x, \c y and the specified \c width and \c height.
+
+The returned object has \c x, \c y, \c width and \c height attributes with the given values.
 */
 QScriptValue QDeclarativeEnginePrivate::rect(QScriptContext *ctxt, QScriptEngine *engine)
 {
@@ -1450,7 +1525,7 @@ QScriptValue QDeclarativeEnginePrivate::rect(QScriptContext *ctxt, QScriptEngine
 
 /*!
 \qmlmethod point Qt::point(int x, int y)
-This function returns a Point with the specified \c x and \c y coordinates.
+Returns a Point with the specified \c x and \c y coordinates.
 */
 QScriptValue QDeclarativeEnginePrivate::point(QScriptContext *ctxt, QScriptEngine *engine)
 {
@@ -1463,7 +1538,7 @@ QScriptValue QDeclarativeEnginePrivate::point(QScriptContext *ctxt, QScriptEngin
 
 /*!
 \qmlmethod Qt::size(int width, int height)
-This function returns as Size with the specified \c width and \c height.
+Returns a Size with the specified \c width and \c height.
 */
 QScriptValue QDeclarativeEnginePrivate::size(QScriptContext *ctxt, QScriptEngine *engine)
 {
@@ -1476,7 +1551,7 @@ QScriptValue QDeclarativeEnginePrivate::size(QScriptContext *ctxt, QScriptEngine
 
 /*!
 \qmlmethod color Qt::lighter(color baseColor, real factor)
-This function returns a color lighter than \c baseColor by the \c factor provided.
+Returns a color lighter than \c baseColor by the \c factor provided.
 
 If the factor is greater than 1.0, this functions returns a lighter color.
 Setting factor to 1.5 returns a color that is 50% brighter. If the factor is less than 1.0,
@@ -1512,7 +1587,7 @@ QScriptValue QDeclarativeEnginePrivate::lighter(QScriptContext *ctxt, QScriptEng
 
 /*!
 \qmlmethod color Qt::darker(color baseColor, real factor)
-This function returns a color darker than \c baseColor by the \c factor provided.
+Returns a color darker than \c baseColor by the \c factor provided.
 
 If the factor is greater than 1.0, this function returns a darker color.
 Setting factor to 3.0 returns a color that has one-third the brightness.
@@ -1549,7 +1624,7 @@ QScriptValue QDeclarativeEnginePrivate::darker(QScriptContext *ctxt, QScriptEngi
 
 /*!
 \qmlmethod bool Qt::openUrlExternally(url target)
-This function attempts to open the specified \c target url in an external application, based on the user's desktop preferences. It will return true if it succeeds, and false otherwise.
+Attempts to open the specified \c target url in an external application, based on the user's desktop preferences. Returns true if it succeeds, and false otherwise.
 */
 QScriptValue QDeclarativeEnginePrivate::desktopOpenUrl(QScriptContext *ctxt, QScriptEngine *e)
 {
@@ -1564,7 +1639,7 @@ QScriptValue QDeclarativeEnginePrivate::desktopOpenUrl(QScriptContext *ctxt, QSc
 
 /*!
 \qmlmethod list<string> Qt::fontFamilies()
-This function returns a list of the font families available to the application.
+Returns a list of the font families available to the application.
 */
 
 QScriptValue QDeclarativeEnginePrivate::fontFamilies(QScriptContext *ctxt, QScriptEngine *e)
@@ -1579,7 +1654,7 @@ QScriptValue QDeclarativeEnginePrivate::fontFamilies(QScriptContext *ctxt, QScri
 
 /*!
 \qmlmethod string Qt::md5(data)
-This function returns a hex string of the md5 hash of \c data.
+Returns a hex string of the md5 hash of \c data.
 */
 QScriptValue QDeclarativeEnginePrivate::md5(QScriptContext *ctxt, QScriptEngine *)
 {
@@ -1708,8 +1783,7 @@ void QDeclarativeEnginePrivate::warning(QDeclarativeEnginePrivate *engine, const
 /*!
 \qmlmethod Qt::quit()
 This function causes the QDeclarativeEngine::quit() signal to be emitted.
-Within the \l {Qt Declarative UI Runtime}{qml} application this causes the 
-launcher application to exit.
+Within the \l {QML Viewer}, this causes the launcher application to exit.
 */
 
 QScriptValue QDeclarativeEnginePrivate::quit(QScriptContext * /*ctxt*/, QScriptEngine *e)

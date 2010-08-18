@@ -3,7 +3,6 @@ include(../spectrum.pri)
 TEMPLATE = app
 
 TARGET = spectrum
-unix: !macx: !symbian: TARGET = spectrum.bin
 
 QT       += multimedia
 
@@ -45,10 +44,10 @@ RESOURCES = spectrum.qrc
 
 symbian {
     # Platform security capability required to record audio on Symbian
-    TARGET.CAPABILITY += UserEnvironment
+    TARGET.CAPABILITY = UserEnvironment
 
     # Provide unique ID for the generated binary, required by Symbian OS
-    TARGET.UID3 = 0xA000E3FA
+    TARGET.UID3 = 0xA000E402
 }
 
 
@@ -57,19 +56,26 @@ symbian {
     symbian {
         # Must explicitly add the .dll suffix to ensure dynamic linkage
         LIBS += -lfftreal.dll
+        QMAKE_LIBDIR += $${fftreal_dir}
     } else {
         macx {
             # Link to fftreal framework
             LIBS += -F$${fftreal_dir}
             LIBS += -framework fftreal
         } else {
-            # Link to dynamic library which is written to ../bin
-            LIBS += -L../bin
+            LIBS += -L..
             LIBS += -lfftreal
         }
     }
 }
 
+# Install
+
+sources.files = $$SOURCES $$HEADERS $$RESOURCES app.pro
+sources.path = $$[QT_INSTALL_DEMOS]/spectrum/app
+images.files += images/record.png images/settings.png
+images.path = $$[QT_INSTALL_DEMOS]/spectrum/app/images
+INSTALLS += sources images
 
 # Deployment
 
@@ -78,7 +84,7 @@ symbian {
 
     !contains(DEFINES, DISABLE_FFT) {
         # Include FFTReal DLL in the SIS file
-        fftreal.sources = $${EPOCROOT}epoc32/release/$(PLATFORM)/$(TARGET)/fftreal.dll
+        fftreal.sources = ../fftreal.dll
         fftreal.path = !:/sys/bin
         DEPLOYMENT += fftreal
     }
@@ -103,17 +109,11 @@ symbian {
         }
     } else {
         # Specify directory in which to create spectrum application
-        DESTDIR = ../bin
+        DESTDIR = ..
 
-        unix: !symbian {
-            # On unices other than Mac OSX, we copy a shell script into the bin directory.
-            # This script takes care of correctly setting the LD_LIBRARY_PATH so that
-            # the dynamic library can be located.
-            copy_launch_script.target = copy_launch_script
-            copy_launch_script.commands = \
-                install -m 0555 $$PWD/spectrum.sh ../bin/spectrum
-            QMAKE_EXTRA_TARGETS += copy_launch_script
-            POST_TARGETDEPS += copy_launch_script
+        unix: {
+            # Provide relative path from application to fftreal library
+            QMAKE_LFLAGS += -Wl,--rpath=\\\$\$ORIGIN
         }
     }
 }

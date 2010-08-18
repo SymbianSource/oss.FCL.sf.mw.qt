@@ -48,6 +48,11 @@
 #include <qdeclarativeexpression.h>
 #include "../../../shared/util.h"
 
+#ifdef Q_OS_SYMBIAN
+// In Symbian OS test data is located in applications private dir
+#define SRCDIR "."
+#endif
+
 class tst_QDeclarativePositioners : public QObject
 {
     Q_OBJECT
@@ -70,6 +75,7 @@ private slots:
     void test_repeater();
     void test_flow();
     void test_flow_resize();
+    void test_flow_implicit_resize();
     void test_conflictinganchors();
 private:
     QDeclarativeView *createView(const QString &filename);
@@ -646,6 +652,28 @@ void tst_QDeclarativePositioners::test_flow_resize()
     QCOMPARE(four->y(), 50.0);
     QCOMPARE(five->x(), 50.0);
     QCOMPARE(five->y(), 50.0);
+
+    delete canvas;
+}
+
+void tst_QDeclarativePositioners::test_flow_implicit_resize()
+{
+    QDeclarativeView *canvas = createView(SRCDIR "/data/flow-testimplicitsize.qml");
+    QVERIFY(canvas->rootObject() != 0);
+
+    QDeclarativeFlow *flow = canvas->rootObject()->findChild<QDeclarativeFlow*>("flow");
+    QVERIFY(flow != 0);
+
+    QCOMPARE(flow->width(), 100.0);
+    QCOMPARE(flow->height(), 120.0);
+
+    canvas->rootObject()->setProperty("leftToRight", true);
+    QCOMPARE(flow->width(), 220.0);
+    QCOMPARE(flow->height(), 50.0);
+
+    canvas->rootObject()->setProperty("leftToRight", false);
+    QCOMPARE(flow->width(), 100.0);
+    QCOMPARE(flow->height(), 120.0);
 
     delete canvas;
 }

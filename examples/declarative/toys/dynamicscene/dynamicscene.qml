@@ -50,7 +50,12 @@ Item {
     //This is a desktop-sized example
     width: 800; height: 480
 
-    
+
+    MouseArea {
+        anchors.fill: parent
+        onClicked: window.focus = false;
+    }
+
     //This is the message box that pops up when there's an error
     Rectangle {
         id: dialog
@@ -179,7 +184,6 @@ Item {
                     id: qmlText
                     anchors.fill: parent; anchors.margins: 5
                     readOnly: false
-                    focusOnPress: true
                     font.pixelSize: 14
                     wrapMode: TextEdit.WordWrap
 

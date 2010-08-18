@@ -754,6 +754,7 @@ struct WindowsToISOListElt {
     char iso_name[6];
 };
 
+/* NOTE: This array should be sorted by the first column! */
 static const WindowsToISOListElt windows_to_iso_list[] = {
     { 0x0401, "ar_SA" },
     { 0x0402, "bg\0  " },
@@ -2095,6 +2096,7 @@ QDataStream &operator>>(QDataStream &ds, QLocale &l)
     \value Serbia
     \value SaintBarthelemy
     \value SaintMartin
+    \value LatinAmericaAndTheCaribbean
     \omitvalue LastCountry
 
     \sa country()
@@ -3475,6 +3477,25 @@ QLocale::MeasurementSystem QLocale::measurementSystem() const
 
     return meas;
 }
+
+/*!
+  \since 4.7
+
+  Returns the text direction of the language.
+*/
+Qt::LayoutDirection QLocale::textDirection() const
+{
+    Language lang = language();
+    if (lang == QLocale::Arabic ||
+        lang == QLocale::Hebrew ||
+        lang == QLocale::Persian ||
+        lang == QLocale::Urdu ||
+        lang == QLocale::Syriac)
+        return Qt::RightToLeft;
+
+    return Qt::LeftToRight;
+}
+
 
 /*!
     \since 4.5

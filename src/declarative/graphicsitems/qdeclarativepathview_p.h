@@ -53,7 +53,7 @@ QT_MODULE(Declarative)
 
 class QDeclarativePathViewPrivate;
 class QDeclarativePathViewAttached;
-class Q_DECLARATIVE_EXPORT QDeclarativePathView : public QDeclarativeItem
+class Q_AUTOTEST_EXPORT QDeclarativePathView : public QDeclarativeItem
 {
     Q_OBJECT
 
@@ -161,6 +161,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *);
     bool sendMouseEvent(QGraphicsSceneMouseEvent *event);
     bool sceneEventFilter(QGraphicsItem *, QEvent *);
+    bool event(QEvent *event);
     void componentComplete();
 
 private Q_SLOTS:

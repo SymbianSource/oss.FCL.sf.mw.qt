@@ -53,7 +53,7 @@ static const int QGRAPHICSVIEW_PREALLOC_STYLE_OPTIONS = 503; // largest prime < 
 
     QGraphicsView visualizes the contents of a QGraphicsScene in a scrollable
     viewport. To create a scene with geometrical items, see QGraphicsScene's
-    documentation. QGraphicsView is part of \l{The Graphics View Framework}.
+    documentation. QGraphicsView is part of the \l{Graphics View Framework}.
 
     To visualize a scene, you start by constructing a QGraphicsView object,
     passing the address of the scene you want to visualize to QGraphicsView's
@@ -2688,10 +2688,12 @@ void QGraphicsView::setupViewport(QWidget *widget)
     if (d->scene && !d->scene->d_func()->allItemsIgnoreTouchEvents)
         widget->setAttribute(Qt::WA_AcceptTouchEvents);
 
+#ifndef QT_NO_GESTURES
     if (d->scene) {
         foreach (Qt::GestureType gesture, d->scene->d_func()->grabbedGestures.keys())
             widget->grabGesture(gesture);
     }
+#endif
 
     widget->setAcceptDrops(acceptDrops());
 }
@@ -2838,6 +2840,7 @@ bool QGraphicsView::viewportEvent(QEvent *event)
 
         return true;
     }
+#ifndef QT_NO_GESTURES
     case QEvent::Gesture:
     case QEvent::GestureOverride:
     {
@@ -2851,6 +2854,7 @@ bool QGraphicsView::viewportEvent(QEvent *event)
         }
         return true;
     }
+#endif // QT_NO_GESTURES
     default:
         break;
     }

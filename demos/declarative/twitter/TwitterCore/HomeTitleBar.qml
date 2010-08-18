@@ -128,14 +128,15 @@ Item {
                 cursorVisible: true; font.bold: true
                 width: parent.width - 12
                 height: parent.height - 8
-                font.pointSize: 10
-                wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
+                font.pixelSize: 12
+                wrapMode: TextEdit.Wrap
                 color: "#151515"; selectionColor: "green"
             }
             Keys.forwardTo: [(returnKey), (editor)]
             Item {
                 id: returnKey
                 Keys.onReturnPressed: container.accept()
+                Keys.onEnterPressed: container.accept()
                 Keys.onEscapePressed: titleBar.state = ""
             }
         }
@@ -148,7 +149,7 @@ Item {
             PropertyChanges { target: tagButton; text: "OK" }
             PropertyChanges { target: tagButton; width: 28 }
             PropertyChanges { target: tagButton; height: 24 }
-            PropertyChanges { target: txtEdit; focus: true }
+            PropertyChanges { target: editor; focus: true }
         }
     ]
     transitions: [

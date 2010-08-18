@@ -1168,4 +1168,7 @@ EXPORTS
 	_ZNK21QNetworkAccessManager17networkAccessibleEv @ 1167 NONAME
 	_ZN35QNetworkConfigurationManagerPrivate12capabilitiesEv @ 1168 NONAME
 	_ZN10QTcpServer20addPendingConnectionEP10QTcpSocket @ 1169 NONAME
+	_ZN14QAuthenticator9setOptionERK7QStringRK8QVariant @ 1170 NONAME
+	_ZNK14QAuthenticator6optionERK7QString @ 1171 NONAME
+	_ZNK14QAuthenticator7optionsEv @ 1172 NONAME
 

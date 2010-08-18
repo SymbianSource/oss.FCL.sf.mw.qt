@@ -43,22 +43,28 @@ import Qt 4.7
 Item {
     id: tabWidget
 
-    property int current: 0
+    // Setting the default property to stack.children means any child items
+    // of the TabWidget are actually added to the 'stack' item's children.
+    // See the "Extending Types from QML" documentation for details on default
+    // properties.
     default property alias content: stack.children
+
+    property int current: 0
 
     onCurrentChanged: setOpacities()
     Component.onCompleted: setOpacities()
 
-    function setOpacities()
-    {
+    function setOpacities() {
         for (var i = 0; i < stack.children.length; ++i) {
-            stack.children[i].opacity = i == current ? 1 : 0
+            stack.children[i].opacity = (i == current ? 1 : 0)
         }
     }
 
     Row {
         id: header
+
         Repeater {
+            model: stack.children.length
             delegate: Rectangle {
                 width: tabWidget.width / stack.children.length; height: 36
 
@@ -85,7 +91,6 @@ Item {
                     onClicked: tabWidget.current = index
                 }
             }
-            model: stack.children.length
         }
     }
 

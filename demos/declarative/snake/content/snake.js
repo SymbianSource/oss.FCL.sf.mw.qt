@@ -37,6 +37,7 @@ function startNewGame()
         startNewGameTimer.running = true;
         return;
     }
+
     numRows = numRowsAvailable;
     numColumns = numColumnsAvailable;
     board = new Array(numRows * numColumns);
@@ -149,7 +150,7 @@ function move() {
         snake.push(newLink);
     } else {
         var lastLink = snake[snake.length-1];
-        board[lastLink.row * numColumns + lastLink.column] = Undefined;
+        board[lastLink.row * numColumns + lastLink.column] = undefined;
     }
 
     if (waitForCookie > 0) {
@@ -185,7 +186,7 @@ function move() {
 
 function isFree(row, column)
 {
-    return board[row * numColumns + column] == Undefined;
+    return board[row * numColumns + column] == undefined;
 }
 
 function isHead(row, column)
@@ -213,7 +214,7 @@ function moveSkull()
         --linksToDie;
         var link = snake.pop();
         link.dying = true;
-        board[link.row * numColumns + link.column] = Undefined;
+        board[link.row * numColumns + link.column] = undefined;
         if (score > 0)
             --score;
         if (snake.length == 0) {

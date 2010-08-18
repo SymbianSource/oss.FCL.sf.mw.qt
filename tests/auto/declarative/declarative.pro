@@ -1,12 +1,12 @@
 TEMPLATE = subdirs
 !symbian: {
 SUBDIRS += \
-           examples \
            qdeclarativemetatype \
            qmetaobjectbuilder
 }
 
 SUBDIRS += \
+           examples \
            parserstress \
            qdeclarativeanchors \
            qdeclarativeanimatedimage \
@@ -52,8 +52,7 @@ SUBDIRS += \
            qdeclarativeqt \
            qdeclarativerepeater \
            qdeclarativesmoothedanimation \
-           qdeclarativesmoothedfollow\
-           qdeclarativespringfollow \
+           qdeclarativespringanimation \
            qdeclarativesqldatabase \
            qdeclarativestates \
            qdeclarativestyledtext \

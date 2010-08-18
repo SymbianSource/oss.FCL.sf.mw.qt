@@ -372,16 +372,17 @@ void MingwMakefileGenerator::writeObjectsPart(QTextStream &t)
     if (project->values("OBJECTS").count() < var("QMAKE_LINK_OBJECT_MAX").toInt()) {
         objectsLinkLine = "$(OBJECTS)";
     } else if (project->isActiveConfig("staticlib") && project->first("TEMPLATE") == "lib") {
-        QString ar_script_file = var("QMAKE_LINK_OBJECT_SCRIPT") + "." + var("TARGET");
-        if (!var("BUILD_NAME").isEmpty()) {
-            ar_script_file += "." + var("BUILD_NAME");
-        }
-        createArObjectScriptFile(ar_script_file, var("DEST_TARGET"), project->values("OBJECTS"));
-        if(!project->isEmpty("QMAKE_AR")) {
-            objectsLinkLine = var("QMAKE_AR") + " -M < " + ar_script_file;
-        } else {
-            objectsLinkLine = "ar -M < " + ar_script_file;
-        }
+	QString ar_script_file = var("QMAKE_LINK_OBJECT_SCRIPT") + "." + var("TARGET");
+	if (!var("BUILD_NAME").isEmpty()) {
+	    ar_script_file += "." + var("BUILD_NAME");
+	}
+	createArObjectScriptFile(ar_script_file, var("DEST_TARGET"), project->values("OBJECTS"));
+        // QMAKE_LIB is used for win32, including mingw, whereas QMAKE_AR is used on Unix.
+        // Strip off any options since the ar commands will be read from file.
+        QString ar_cmd = var("QMAKE_LIB").section(" ", 0, 0);;
+        if (ar_cmd.isEmpty())
+            ar_cmd = "ar";
+        objectsLinkLine = ar_cmd + " -M < " + ar_script_file;
     } else {
         QString ld_script_file = var("QMAKE_LINK_OBJECT_SCRIPT") + "." + var("TARGET");
 	if (!var("BUILD_NAME").isEmpty()) {

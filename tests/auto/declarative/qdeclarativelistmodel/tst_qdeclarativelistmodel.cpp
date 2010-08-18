@@ -48,8 +48,14 @@
 
 #include <QtCore/qtimer.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qtranslator.h>
 
 #include "../../../shared/util.h"
+
+#ifdef Q_OS_SYMBIAN
+// In Symbian OS test data is located in applications private dir
+#define SRCDIR "."
+#endif
 
 class tst_qdeclarativelistmodel : public QObject
 {
@@ -119,14 +125,17 @@ void tst_qdeclarativelistmodel::waitForWorker(QDeclarativeItem *item)
 void tst_qdeclarativelistmodel::static_i18n()
 {
     QString expect = QString::fromUtf8("na\303\257ve");
-    QString componentStr = "import Qt 4.7\nListModel { ListElement { prop1: \""+expect+"\" } }";
+
+    QString componentStr = "import Qt 4.7\nListModel { ListElement { prop1: \""+expect+"\"; prop2: QT_TR_NOOP(\""+expect+"\") } }";
     QDeclarativeEngine engine;
     QDeclarativeComponent component(&engine);
     component.setData(componentStr.toUtf8(), QUrl::fromLocalFile(""));
     QDeclarativeListModel *obj = qobject_cast<QDeclarativeListModel*>(component.create());
     QVERIFY(obj != 0);
-    QString prop = obj->get(0).property(QLatin1String("prop1")).toString();
-    QCOMPARE(prop,expect);
+    QString prop1 = obj->get(0).property(QLatin1String("prop1")).toString();
+    QCOMPARE(prop1,expect);
+    QString prop2 = obj->get(0).property(QLatin1String("prop2")).toString();
+    QCOMPARE(prop2,expect); // (no, not translated, QT_TR_NOOP is a no-op)
     delete obj;
 }
 
@@ -184,8 +193,9 @@ void tst_qdeclarativelistmodel::dynamic_data()
 
     QTest::newRow("count") << "count" << 0 << "";
 
-    QTest::newRow("get1") << "{get(0)}" << 0 << "";
-    QTest::newRow("get2") << "{get(-1)}" << 0 << "";
+    QTest::newRow("get1") << "{get(0) === undefined}" << 1 << "";
+    QTest::newRow("get2") << "{get(-1) === undefined}" << 1 << "";
+    QTest::newRow("get3") << "{append({'foo':123});get(0) != undefined}" << 1 << "";
 
     QTest::newRow("append1") << "{append({'foo':123});count}" << 1 << "";
     QTest::newRow("append2") << "{append({'foo':123,'bar':456});count}" << 1 << "";
@@ -283,8 +293,6 @@ void tst_qdeclarativelistmodel::dynamic()
     if (e.hasError())
         qDebug() << e.error(); // errors not expected
 
-    if (QTest::currentDataTag() != QLatin1String("clear3") && QTest::currentDataTag() != QLatin1String("remove3"))
-        QVERIFY(!e.hasError());
     QCOMPARE(actual,result);
 }
 
@@ -298,6 +306,9 @@ void tst_qdeclarativelistmodel::dynamic_worker()
     QFETCH(QString, script);
     QFETCH(int, result);
     QFETCH(QString, warning);
+
+    // This is same as dynamic() except it applies the test to a ListModel called 
+    // from a WorkerScript (i.e. testing the internal NestedListModel class)
 
     QDeclarativeListModel model;
     QDeclarativeEngine eng;
@@ -550,6 +561,18 @@ void tst_qdeclarativelistmodel::error_data()
     QTest::newRow("QML elements not allowed in ListElement")
         << "import Qt 4.7\nListModel { ListElement { a: Item { } } }"
         << "ListElement: cannot contain nested elements";
+
+    QTest::newRow("qualified ListElement supported")
+        << "import Qt 4.7 as Foo\nFoo.ListModel { Foo.ListElement { a: 123 } }"
+        << "";
+
+    QTest::newRow("qualified ListElement required")
+        << "import Qt 4.7 as Foo\nFoo.ListModel { ListElement { a: 123 } }"
+        << "ListElement is not a type";
+
+    QTest::newRow("unknown qualified ListElement not allowed")
+        << "import Qt 4.7\nListModel { Foo.ListElement { a: 123 } }"
+        << "Foo.ListElement - Foo is not a namespace";
 }
 
 void tst_qdeclarativelistmodel::error()

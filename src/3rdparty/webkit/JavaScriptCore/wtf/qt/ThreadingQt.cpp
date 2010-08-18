@@ -217,6 +217,10 @@ ThreadIdentifier currentThread()
 
 bool isMainThread()
 {
+    /* Prevent crash on exit */
+    if (QThread::currentThread() == 0 || QCoreApplication::instance() == 0)
+        return true;
+    
     return QThread::currentThread() == QCoreApplication::instance()->thread();
 }
 
