@@ -47,5 +47,5 @@ PRJ_TESTMMPFILES
 PRJ_EXTENSIONS
 START EXTENSION qt/qtconfig
 OPTION QT_ROOT ..
-OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process -nomake examples -nomake demos -nomake tools
+OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -no-webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process -nomake examples -nomake demos -nomake tools
 END
