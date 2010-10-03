@@ -1677,11 +1677,12 @@ EXPORTS
 	?setMethodBody@QDeclarativeEngineDebug@@QAE_NHABVQString@@0@Z @ 1676 NONAME ; bool QDeclarativeEngineDebug::setMethodBody(int, class QString const &, class QString const &)
 	?resetBindingForObject@QDeclarativeEngineDebug@@QAE_NHABVQString@@@Z @ 1677 NONAME ; bool QDeclarativeEngineDebug::resetBindingForObject(int, class QString const &)
 	?forceActiveFocus@QDeclarativeItem@@QAEXXZ @ 1678 NONAME ; void QDeclarativeItem::forceActiveFocus(void)
-	?qmlregister@QDeclarativePrivate@@YAHW4RegistrationType@1@PAX@Z @ 1679 NONAME ; int QDeclarativePrivate::qmlregister(enum QDeclarativePrivate::RegistrationType, void *)
-	?engine@QDeclarativeView@@QBEPAVQDeclarativeEngine@@XZ @ 1680 NONAME ; class QDeclarativeEngine * QDeclarativeView::engine(void) const
-	?activeFocusChanged@QDeclarativeItem@@IAEX_N@Z @ 1681 NONAME ; void QDeclarativeItem::activeFocusChanged(bool)
-	?focusScopeItemChange@QDeclarativeItemPrivate@@UAEX_N@Z @ 1682 NONAME ; void QDeclarativeItemPrivate::focusScopeItemChange(bool)
+	?activeFocusChanged@QDeclarativeItem@@IAEX_N@Z @ 1679 NONAME ; void QDeclarativeItem::activeFocusChanged(bool)
+	?focusScopeItemChange@QDeclarativeItemPrivate@@UAEX_N@Z @ 1680 NONAME ; void QDeclarativeItemPrivate::focusScopeItemChange(bool)
+	?hasActiveFocus@QDeclarativeItem@@QBE_NXZ @ 1681 NONAME ; bool QDeclarativeItem::hasActiveFocus(void) const
+	?engine@QDeclarativeView@@QBEPAVQDeclarativeEngine@@XZ @ 1682 NONAME ; class QDeclarativeEngine * QDeclarativeView::engine(void) const
 	?rootContext@QDeclarativeView@@QBEPAVQDeclarativeContext@@XZ @ 1683 NONAME ; class QDeclarativeContext * QDeclarativeView::rootContext(void) const
 	?rootContext@QDeclarativeEngine@@QBEPAVQDeclarativeContext@@XZ @ 1684 NONAME ; class QDeclarativeContext * QDeclarativeEngine::rootContext(void) const
-	?hasActiveFocus@QDeclarativeItem@@QBE_NXZ @ 1685 NONAME ; bool QDeclarativeItem::hasActiveFocus(void) const
+	?qmlregister@QDeclarativePrivate@@YAHW4RegistrationType@1@PAX@Z @ 1685 NONAME ; int QDeclarativePrivate::qmlregister(enum QDeclarativePrivate::RegistrationType, void *)
+	?hasValue@QDeclarativeOpenMetaObject@@QBE_NH@Z @ 1686 NONAME ; bool QDeclarativeOpenMetaObject::hasValue(int) const
 

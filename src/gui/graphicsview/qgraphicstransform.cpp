@@ -267,6 +267,7 @@ void QGraphicsScale::setXScale(qreal scale)
         return;
     d->xScale = scale;
     update();
+    emit xScaleChanged();
     emit scaleChanged();
 }
 
@@ -293,6 +294,7 @@ void QGraphicsScale::setYScale(qreal scale)
         return;
     d->yScale = scale;
     update();
+    emit yScaleChanged();
     emit scaleChanged();
 }
 
@@ -319,6 +321,7 @@ void QGraphicsScale::setZScale(qreal scale)
         return;
     d->zScale = scale;
     update();
+    emit zScaleChanged();
     emit scaleChanged();
 }
 
@@ -339,6 +342,27 @@ void QGraphicsScale::applyTo(QMatrix4x4 *matrix) const
     QGraphicsScale emits this signal when its origin changes.
 
     \sa QGraphicsScale::origin
+*/
+
+/*!
+    \fn QGraphicsScale::xScaleChanged()
+    \since 4.7
+
+    This signal is emitted whenever the \l xScale property changes.
+*/
+
+/*!
+    \fn QGraphicsScale::yScaleChanged()
+    \since 4.7
+
+    This signal is emitted whenever the \l yScale property changes.
+*/
+
+/*!
+    \fn QGraphicsScale::zScaleChanged()
+    \since 4.7
+
+    This signal is emitted whenever the \l zScale property changes.
 */
 
 /*!

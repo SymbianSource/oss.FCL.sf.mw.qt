@@ -1706,13 +1706,13 @@ EXPORTS
 	_ZN25QDeclarativeImageProviderC1ENS_9ImageTypeE @ 1705 NONAME
 	_ZN25QDeclarativeImageProviderC2ENS_9ImageTypeE @ 1706 NONAME
 	_ZNK25QDeclarativeImageProvider9imageTypeEv @ 1707 NONAME
-	_ZN16QDeclarativeItem16forceActiveFocusEv @ 1708 NONAME
-	_ZN16QDeclarativeItem18activeFocusChangedEb @ 1709 NONAME
-	_ZN19QDeclarativePrivate11qmlregisterENS_16RegistrationTypeEPv @ 1710 NONAME
-	_ZN23QDeclarativeEngineDebug21resetBindingForObjectEiRK7QString @ 1711 NONAME
-	_ZNK16QDeclarativeItem14hasActiveFocusEv @ 1712 NONAME
-	_ZNK16QDeclarativeView11rootContextEv @ 1713 NONAME
-	_ZNK16QDeclarativeView6engineEv @ 1714 NONAME
-	_ZNK18QDeclarativeEngine11rootContextEv @ 1715 NONAME
-	_Z12registerTypeRKN19QDeclarativePrivate12RegisterTypeE @ 1716 NONAME
+	_ZN23QDeclarativeEngineDebug21resetBindingForObjectEiRK7QString @ 1708 NONAME
+	_ZN16QDeclarativeItem16forceActiveFocusEv @ 1709 NONAME
+	_ZN16QDeclarativeItem18activeFocusChangedEb @ 1710 NONAME
+	_ZNK16QDeclarativeItem14hasActiveFocusEv @ 1711 NONAME
+	_ZNK16QDeclarativeView11rootContextEv @ 1712 NONAME
+	_ZNK16QDeclarativeView6engineEv @ 1713 NONAME
+	_ZNK18QDeclarativeEngine11rootContextEv @ 1714 NONAME
+	_ZN19QDeclarativePrivate11qmlregisterENS_16RegistrationTypeEPv @ 1715 NONAME
+	_ZNK26QDeclarativeOpenMetaObject8hasValueEi @ 1716 NONAME
 

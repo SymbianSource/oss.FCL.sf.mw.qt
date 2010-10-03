@@ -69,6 +69,7 @@ QT_BEGIN_NAMESPACE
 
 /*!
     \qmlclass Transform QGraphicsTransform
+    \ingroup qml-transform-elements
     \since 4.7
     \brief The Transform elements provide a way of building advanced transformations on Items.
 
@@ -90,6 +91,7 @@ QT_BEGIN_NAMESPACE
 
 /*!
     \qmlclass Translate QDeclarativeTranslate
+    \ingroup qml-transform-elements
     \since 4.7
     \brief The Translate object provides a way to move an Item without changing its x or y properties.
 
@@ -131,6 +133,7 @@ QT_BEGIN_NAMESPACE
 
 /*!
     \qmlclass Scale QGraphicsScale
+    \ingroup qml-transform-elements
     \since 4.7
     \brief The Scale element provides a way to scale an Item.
 
@@ -172,6 +175,7 @@ QT_BEGIN_NAMESPACE
 
 /*!
     \qmlclass Rotation QGraphicsRotation
+    \ingroup qml-transform-elements
     \since 4.7
     \brief The Rotation object provides a way to rotate an Item.
 
@@ -225,12 +229,6 @@ QT_BEGIN_NAMESPACE
     The angle to rotate, in degrees clockwise.
 */
 
-/*!
-    \internal
-    \class QDeclarativeContents
-    \brief The QDeclarativeContents class gives access to the height and width of an item's contents.
-
-*/
 QDeclarativeContents::QDeclarativeContents(QDeclarativeItem *item) : m_item(item), m_x(0), m_y(0), m_width(0), m_height(0)
 {
     //### optimize
@@ -419,11 +417,12 @@ void QDeclarativeItemKeyFilter::componentComplete()
 
 /*!
     \qmlclass KeyNavigation QDeclarativeKeyNavigationAttached
+    \ingroup qml-basic-interaction-elements
     \since 4.7
     \brief The KeyNavigation attached property supports key navigation by arrow keys.
 
     It is common in key-based UIs to use arrow keys to navigate
-    between focussed items.  The KeyNavigation property provides a
+    between focused items.  The KeyNavigation property provides a
     convenient way of specifying which item will gain focus
     when an arrow key is pressed.  The following example provides
     key navigation for a 2x2 grid of items.
@@ -511,8 +510,10 @@ QDeclarativeItem *QDeclarativeKeyNavigationAttached::left() const
 void QDeclarativeKeyNavigationAttached::setLeft(QDeclarativeItem *i)
 {
     Q_D(QDeclarativeKeyNavigationAttached);
+    if (d->left == i)
+        return;
     d->left = i;
-    emit changed();
+    emit leftChanged();
 }
 
 QDeclarativeItem *QDeclarativeKeyNavigationAttached::right() const
@@ -524,8 +525,10 @@ QDeclarativeItem *QDeclarativeKeyNavigationAttached::right() const
 void QDeclarativeKeyNavigationAttached::setRight(QDeclarativeItem *i)
 {
     Q_D(QDeclarativeKeyNavigationAttached);
+    if (d->right == i)
+        return;
     d->right = i;
-    emit changed();
+    emit rightChanged();
 }
 
 QDeclarativeItem *QDeclarativeKeyNavigationAttached::up() const
@@ -537,8 +540,10 @@ QDeclarativeItem *QDeclarativeKeyNavigationAttached::up() const
 void QDeclarativeKeyNavigationAttached::setUp(QDeclarativeItem *i)
 {
     Q_D(QDeclarativeKeyNavigationAttached);
+    if (d->up == i)
+        return;
     d->up = i;
-    emit changed();
+    emit upChanged();
 }
 
 QDeclarativeItem *QDeclarativeKeyNavigationAttached::down() const
@@ -550,8 +555,10 @@ QDeclarativeItem *QDeclarativeKeyNavigationAttached::down() const
 void QDeclarativeKeyNavigationAttached::setDown(QDeclarativeItem *i)
 {
     Q_D(QDeclarativeKeyNavigationAttached);
+    if (d->down == i)
+        return;
     d->down = i;
-    emit changed();
+    emit downChanged();
 }
 
 QDeclarativeItem *QDeclarativeKeyNavigationAttached::tab() const
@@ -563,8 +570,10 @@ QDeclarativeItem *QDeclarativeKeyNavigationAttached::tab() const
 void QDeclarativeKeyNavigationAttached::setTab(QDeclarativeItem *i)
 {
     Q_D(QDeclarativeKeyNavigationAttached);
+    if (d->tab == i)
+        return;
     d->tab = i;
-    emit changed();
+    emit tabChanged();
 }
 
 QDeclarativeItem *QDeclarativeKeyNavigationAttached::backtab() const
@@ -576,8 +585,10 @@ QDeclarativeItem *QDeclarativeKeyNavigationAttached::backtab() const
 void QDeclarativeKeyNavigationAttached::setBacktab(QDeclarativeItem *i)
 {
     Q_D(QDeclarativeKeyNavigationAttached);
+    if (d->backtab == i)
+        return;
     d->backtab = i;
-    emit changed();
+    emit backtabChanged();
 }
 
 /*!
@@ -713,6 +724,7 @@ void QDeclarativeKeyNavigationAttached::keyReleased(QKeyEvent *event, bool post)
 
 /*!
     \qmlclass Keys QDeclarativeKeysAttached
+    \ingroup qml-basic-interaction-elements
     \since 4.7
     \brief The Keys attached property provides key handling to Items.
 
@@ -1298,6 +1310,7 @@ QDeclarativeKeysAttached *QDeclarativeKeysAttached::qmlAttachedProperties(QObjec
 
 /*!
     \qmlclass Item QDeclarativeItem
+    \ingroup qml-basic-visual-elements
     \since 4.7
     \brief The Item is the most basic of all visual items in QML.
 
@@ -1417,11 +1430,6 @@ QDeclarativeKeysAttached *QDeclarativeKeysAttached::qmlAttachedProperties(QObjec
 
 /*! \fn void QDeclarativeItem::transformOriginChanged(TransformOrigin)
   \internal
-*/
-
-/*!
-    \fn void QDeclarativeItem::childrenChanged()
-    \internal
 */
 
 /*!
@@ -1714,7 +1722,6 @@ void QDeclarativeItemPrivate::parentProperty(QObject *o, void *rv, QDeclarativeN
     specify it.
  */
 
-/*! \internal */
 QDeclarativeListProperty<QObject> QDeclarativeItemPrivate::data()
 {
     return QDeclarativeListProperty<QObject>(q_func(), 0, QDeclarativeItemPrivate::data_append);
@@ -1876,6 +1883,12 @@ void QDeclarativeItem::geometryChanged(const QRectF &newGeometry,
         }
     }
 
+    for(int ii = 0; ii < d->changeListeners.count(); ++ii) {
+        const QDeclarativeItemPrivate::ChangeListener &change = d->changeListeners.at(ii);
+        if (change.types & QDeclarativeItemPrivate::Geometry)
+            change.listener->itemGeometryChanged(this, newGeometry, oldGeometry);
+    }
+
     if (newGeometry.x() != oldGeometry.x())
         emit xChanged();
     if (newGeometry.width() != oldGeometry.width())
@@ -1884,12 +1897,6 @@ void QDeclarativeItem::geometryChanged(const QRectF &newGeometry,
         emit yChanged();
     if (newGeometry.height() != oldGeometry.height())
         emit heightChanged();
-
-    for(int ii = 0; ii < d->changeListeners.count(); ++ii) {
-        const QDeclarativeItemPrivate::ChangeListener &change = d->changeListeners.at(ii);
-        if (change.types & QDeclarativeItemPrivate::Geometry)
-            change.listener->itemGeometryChanged(this, newGeometry, oldGeometry);
-    }
 }
 
 void QDeclarativeItemPrivate::removeItemChangeListener(QDeclarativeItemChangeListener *listener, ChangeTypes types)
@@ -2399,21 +2406,9 @@ void QDeclarativeItemPrivate::focusChanged(bool flag)
     Q_Q(QDeclarativeItem);
     if (!(flags & QGraphicsItem::ItemIsFocusScope) && parent)
         emit q->activeFocusChanged(flag);   //see also QDeclarativeItemPrivate::subFocusItemChange()
-
-    bool inScope = false;
-    QGraphicsItem *p = parent;
-    while (p) {
-        if (p->flags() & QGraphicsItem::ItemIsFocusScope) {
-            inScope = true;
-            break;
-        }
-        p = p->parentItem();
-    }
-    if (!inScope)
-        emit q->focusChanged(flag);
+    emit q->focusChanged(flag);
 }
 
-/*! \internal */
 QDeclarativeListProperty<QObject> QDeclarativeItemPrivate::resources()
 {
     return QDeclarativeListProperty<QObject>(q_func(), 0, QDeclarativeItemPrivate::resources_append,
@@ -2438,7 +2433,6 @@ QDeclarativeListProperty<QObject> QDeclarativeItemPrivate::resources()
   \sa {qmlstate}{States}
 */
 
-/*! \internal */
 QDeclarativeListProperty<QDeclarativeState> QDeclarativeItemPrivate::states()
 {
     return _states()->statesProperty();
@@ -2458,11 +2452,10 @@ QDeclarativeListProperty<QDeclarativeState> QDeclarativeItemPrivate::states()
   }
   \endqml
 
-  \sa {state-transitions}{Transitions}
+  \sa {qdeclarativeanimation.html#transitions}{QML Transitions}
 */
 
 
-/*! \internal */
 QDeclarativeListProperty<QDeclarativeTransition> QDeclarativeItemPrivate::transitions()
 {
     return _states()->transitionsProperty();
@@ -2482,7 +2475,7 @@ QDeclarativeListProperty<QDeclarativeTransition> QDeclarativeItemPrivate::transi
   Item {
     filter: [
       Blur { ... },
-      Relection { ... }
+      Reflection { ... }
       ...
     ]
   }
@@ -2504,7 +2497,9 @@ QDeclarativeListProperty<QDeclarativeTransition> QDeclarativeItemPrivate::transi
   This property holds whether clipping is enabled.
 
   if clipping is enabled, an item will clip its own painting, as well
-  as the painting of its children, to its bounding rectangle.
+  as the painting of its children, to its bounding rectangle. If you set
+  clipping during an item's paint operation, remember to re-set it to 
+  prevent clipping the rest of your scene.
 
   Non-rectangular clipping regions are not supported for performance reasons.
 */
@@ -2533,7 +2528,6 @@ QDeclarativeListProperty<QDeclarativeTransition> QDeclarativeItemPrivate::transi
   \sa {qmlstates}{States}
 */
 
-/*! \internal */
 QString QDeclarativeItemPrivate::state() const
 {
     if (!_stateGroup)
@@ -2542,7 +2536,6 @@ QString QDeclarativeItemPrivate::state() const
         return _stateGroup->state();
 }
 
-/*! \internal */
 void QDeclarativeItemPrivate::setState(const QString &state)
 {
     _states()->setState(state);
@@ -2728,12 +2721,12 @@ QVariant QDeclarativeItem::itemChange(GraphicsItemChange change,
         }
         break;
     case ItemChildAddedChange:
-        if (d->_contents)
+        if (d->_contents && d->componentComplete)
             d->_contents->childAdded(qobject_cast<QDeclarativeItem*>(
                     value.value<QGraphicsItem*>()));
         break;
     case ItemChildRemovedChange:
-        if (d->_contents)
+        if (d->_contents && d->componentComplete)
             d->_contents->childRemoved(qobject_cast<QDeclarativeItem*>(
                     value.value<QGraphicsItem*>()));
         break;
@@ -2843,6 +2836,41 @@ void QDeclarativeItem::setSmooth(bool smooth)
 }
 
 /*!
+  \property QDeclarativeItem::anchors
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::left
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::right
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::horizontalCenter
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::top
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::bottom
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::verticalCenter
+  \internal
+*/
+
+/*!
   \property QDeclarativeItem::focus
   \internal
 */
@@ -2859,6 +2887,41 @@ void QDeclarativeItem::setSmooth(bool smooth)
 
 /*!
   \property QDeclarativeItem::activeFocus
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::baseline
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::data
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::resources
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::state
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::states
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::transformOriginPoint
+  \internal
+*/
+
+/*!
+  \property QDeclarativeItem::transitions
   \internal
 */
 
@@ -3130,8 +3193,7 @@ bool QDeclarativeItem::hasActiveFocus() const
 {
     Q_D(const QDeclarativeItem);
     return focusItem() == this ||
-           (d->flags & QGraphicsItem::ItemIsFocusScope && focusItem() != 0) ||
-           (!parentItem() && focusItem() != 0);
+           (d->flags & QGraphicsItem::ItemIsFocusScope && focusItem() != 0);
 }
 
 /*!
@@ -3151,10 +3213,8 @@ bool QDeclarativeItem::hasActiveFocus() const
   }
   \endqml
 
-  For the purposes of this property, the top level item in the scene
-  is assumed to act like a focus scope, and to always have active focus
-  when the scene has focus. On a practical level, that means the following
-  QML will give active focus to \c input on startup.
+  For the purposes of this property, the scene as a whole is assumed to act like a focus scope.
+  On a practical level, that means the following QML will give active focus to \c input on startup.
 
   \qml
   Rectangle {
@@ -3180,7 +3240,7 @@ bool QDeclarativeItem::hasFocus() const
         p = p->parentItem();
     }
 
-    return hasActiveFocus() ? true : (!QGraphicsItem::parentItem() ? true : false);
+    return hasActiveFocus();
 }
 
 /*! \internal */

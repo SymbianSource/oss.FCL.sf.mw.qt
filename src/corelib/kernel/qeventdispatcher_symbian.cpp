@@ -232,8 +232,12 @@ void QTimerActiveObject::DoCancel()
 
 void QTimerActiveObject::RunL()
 {
-    int error;
-    QT_TRYCATCH_ERROR(error, Run());
+    int error = KErrNone;
+    if (iStatus == KErrNone) {
+        QT_TRYCATCH_ERROR(error, Run());
+    } else {
+        error = iStatus.Int();
+    }
     // All Symbian error codes are negative.
     if (error < 0) {
         CActiveScheduler::Current()->Error(error);  // stop and report here, as this timer will be deleted on scope exit
@@ -423,7 +427,7 @@ void QSelectThread::run()
                 //     ones that return -1 in select
                 // after loop update notifiers for all of them
 
-                // as we dont have "exception" notifier type
+                // as we don't have "exception" notifier type
                 // we should force monitoring fd_set of this
                 // type as well
 

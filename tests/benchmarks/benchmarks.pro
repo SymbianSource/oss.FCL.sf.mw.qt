@@ -1,6 +1,5 @@
 TEMPLATE = subdirs
 SUBDIRS = \
-        uimodels\GraphicsViewBenchmark \
         corelib \
         gui \
         network \

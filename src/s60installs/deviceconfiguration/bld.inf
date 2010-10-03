@@ -38,6 +38,15 @@ environment.prf /epoc32/tools/qt/mkspecs/features/
 ../../../content/apps/qt.sisx               CRML_EXPORT_PATH(../content/sis/,uda_content)
 ../../../content/apps/qt_stub.sis          /epoc32/data/z/system/install/qt_stub.sis
 
+//tools
+../../../bin/createpackage.bat         /epoc32/tools/createpackage.bat
+../../../bin/createpackage.pl          /epoc32/tools/createpackage.pl
+../../../bin/patch_capabilities.bat    /epoc32/tools/patch_capabilities.bat
+../../../bin/patch_capabilities.pl     /epoc32/tools/patch_capabilities.pl
+
+
+
+
 PRJ_MMPFILES
 
 
@@ -47,5 +56,9 @@ PRJ_TESTMMPFILES
 PRJ_EXTENSIONS
 START EXTENSION qt/qtconfig
 OPTION QT_ROOT ..
+#ifdef SYMBIAN_GRAPHICS_WSERV_QT_EFFECTS /* Flag for 10.1 */
 OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -no-webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process -nomake examples -nomake demos -nomake tools
+#else
+OPTION OPTIONS -opensource -confirm-license -openvg -script -no-scripttools -no-webkit -make make -graphicssystem openvg -no-phonon-backend -usedeffiles -dont-process -nomake examples -nomake demos -nomake tools
+#endif
 END

@@ -57,8 +57,8 @@ symbian: {
         bearerPluginLocation = $${EPOCROOT}epoc32/release/$(PLATFORM)/$(TARGET)
         bearerStubZ = $${EPOCROOT}$${HW_ZDIR}$${QT_PLUGINS_BASE_DIR}/bearer/qsymbianbearer$${QT_LIBINFIX}.qtplugin
         BLD_INF_RULES.prj_exports += \
-            "qsymbianbearer.qtplugin $$bearerStubZ" \
-            "qsymbianbearer.qtplugin $${EPOCROOT}epoc32/winscw/c$${QT_PLUGINS_BASE_DIR}/bearer/qsymbianbearer$${QT_LIBINFIX}.qtplugin"
+            "qsymbianbearer.qtplugin /$${HW_ZDIR}$${QT_PLUGINS_BASE_DIR}/bearer/qsymbianbearer$${QT_LIBINFIX}.qtplugin" \
+            "qsymbianbearer.qtplugin /epoc32/winscw/c$${QT_PLUGINS_BASE_DIR}/bearer/qsymbianbearer$${QT_LIBINFIX}.qtplugin"
     } else {
         pluginLocations = $$QT_BUILD_TREE/plugins/s60
         bearerPluginLocation = $$QT_BUILD_TREE/plugins/bearer
@@ -187,6 +187,11 @@ symbian: {
             "[0x102032BE],0,0,0,{\"S60ProductID\"}" \
             "[0x102752AE],0,0,0,{\"S60ProductID\"}" \
             "[0x1028315F],0,0,0,{\"S60ProductID\"}"
+    }
+
+    contains(QT_CONFIG, opengl) {
+        qtlibraries.sources += $$QMAKE_LIBDIR_QT/QtOpenGL$${QT_LIBINFIX}.dll
+        graphicssystems_plugins.sources += $$QT_BUILD_TREE/plugins/graphicssystems/qglgraphicssystem$${QT_LIBINFIX}.dll
     }
 
     contains(QT_CONFIG, multimedia){

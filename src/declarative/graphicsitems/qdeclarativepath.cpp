@@ -51,6 +51,7 @@ QT_BEGIN_NAMESPACE
 
 /*!
     \qmlclass PathElement QDeclarativePathElement
+    \ingroup qml-view-elements
     \since 4.7
     \brief PathElement is the base path type.
 
@@ -61,12 +62,8 @@ QT_BEGIN_NAMESPACE
 */
 
 /*!
-    \internal
-    \class QDeclarativePathElement
-*/
-
-/*!
     \qmlclass Path QDeclarativePath
+    \ingroup qml-view-elements
     \since 4.7
     \brief A Path object defines a path for use by \l PathView.
 
@@ -80,13 +77,6 @@ QT_BEGIN_NAMESPACE
     along the path.
 
     \sa PathView, PathAttribute, PathPercent, PathLine, PathQuad, PathCubic
-*/
-
-/*!
-    \internal
-    \class QDeclarativePath
-    \brief The QDeclarativePath class defines a path.
-    \sa QDeclarativePathView
 */
 QDeclarativePath::QDeclarativePath(QObject *parent)
  : QObject(*(new QDeclarativePathPrivate), parent)
@@ -474,6 +464,7 @@ void QDeclarativeCurve::setX(qreal x)
 {
     if (_x != x) {
         _x = x;
+        emit xChanged();
         emit changed();
     }
 }
@@ -487,6 +478,7 @@ void QDeclarativeCurve::setY(qreal y)
 {
     if (_y != y) {
         _y = y;
+        emit yChanged();
         emit changed();
     }
 }
@@ -495,6 +487,7 @@ void QDeclarativeCurve::setY(qreal y)
 
 /*!
     \qmlclass PathAttribute QDeclarativePathAttribute
+    \ingroup qml-view-elements
     \since 4.7
     \brief The PathAttribute allows setting an attribute at a given position in a Path.
 
@@ -520,15 +513,6 @@ void QDeclarativeCurve::setY(qreal y)
 
    \sa Path
 */
-
-/*!
-    \internal
-    \class QDeclarativePathAttribute
-    \brief The QDeclarativePathAttribute class allows to set the value of an attribute at a given position in the path.
-
-    \sa QDeclarativePath
-*/
-
 
 /*!
     \qmlproperty string PathAttribute::name
@@ -576,6 +560,7 @@ void QDeclarativePathAttribute::setValue(qreal value)
 {
     if (_value != value) {
         _value = value;
+        emit valueChanged();
         emit changed();
     }
 }
@@ -584,6 +569,7 @@ void QDeclarativePathAttribute::setValue(qreal value)
 
 /*!
     \qmlclass PathLine QDeclarativePathLine
+    \ingroup qml-view-elements
     \since 4.7
     \brief The PathLine defines a straight line.
 
@@ -598,14 +584,6 @@ void QDeclarativePathAttribute::setValue(qreal value)
     \endqml
 
     \sa Path, PathQuad, PathCubic
-*/
-
-/*!
-    \internal
-    \class QDeclarativePathLine
-    \brief The QDeclarativePathLine class defines a straight line.
-
-    \sa QDeclarativePath
 */
 
 /*!
@@ -624,6 +602,7 @@ void QDeclarativePathLine::addToPath(QPainterPath &path)
 
 /*!
     \qmlclass PathQuad QDeclarativePathQuad
+    \ingroup qml-view-elements
     \since 4.7
     \brief The PathQuad defines a quadratic Bezier curve with a control point.
 
@@ -642,15 +621,6 @@ void QDeclarativePathLine::addToPath(QPainterPath &path)
 
     \sa Path, PathCubic, PathLine
 */
-
-/*!
-    \internal
-    \class QDeclarativePathQuad
-    \brief The QDeclarativePathQuad class defines a quadratic Bezier curve with a control point.
-
-    \sa QDeclarativePath
-*/
-
 
 /*!
     \qmlproperty real PathQuad::x
@@ -678,6 +648,7 @@ void QDeclarativePathQuad::setControlX(qreal x)
 {
     if (_controlX != x) {
         _controlX = x;
+        emit controlXChanged();
         emit changed();
     }
 }
@@ -695,6 +666,7 @@ void QDeclarativePathQuad::setControlY(qreal y)
 {
     if (_controlY != y) {
         _controlY = y;
+        emit controlYChanged();
         emit changed();
     }
 }
@@ -708,6 +680,7 @@ void QDeclarativePathQuad::addToPath(QPainterPath &path)
 
 /*!
    \qmlclass PathCubic QDeclarativePathCubic
+    \ingroup qml-view-elements
     \since 4.7
    \brief The PathCubic defines a cubic Bezier curve with two control points.
 
@@ -732,14 +705,6 @@ void QDeclarativePathQuad::addToPath(QPainterPath &path)
 */
 
 /*!
-    \internal
-    \class QDeclarativePathCubic
-    \brief The QDeclarativePathCubic class defines a cubic Bezier curve with two control points.
-
-    \sa QDeclarativePath
-*/
-
-/*!
     \qmlproperty real PathCubic::x
     \qmlproperty real PathCubic::y
 
@@ -761,6 +726,7 @@ void QDeclarativePathCubic::setControl1X(qreal x)
 {
     if (_control1X != x) {
         _control1X = x;
+        emit control1XChanged();
         emit changed();
     }
 }
@@ -774,6 +740,7 @@ void QDeclarativePathCubic::setControl1Y(qreal y)
 {
     if (_control1Y != y) {
         _control1Y = y;
+        emit control1YChanged();
         emit changed();
     }
 }
@@ -793,6 +760,7 @@ void QDeclarativePathCubic::setControl2X(qreal x)
 {
     if (_control2X != x) {
         _control2X = x;
+        emit control2XChanged();
         emit changed();
     }
 }
@@ -806,6 +774,7 @@ void QDeclarativePathCubic::setControl2Y(qreal y)
 {
     if (_control2Y != y) {
         _control2Y = y;
+        emit control2YChanged();
         emit changed();
     }
 }
@@ -819,6 +788,7 @@ void QDeclarativePathCubic::addToPath(QPainterPath &path)
 
 /*!
     \qmlclass PathPercent QDeclarativePathPercent
+    \ingroup qml-view-elements
     \since 4.7
     \brief The PathPercent manipulates the way a path is interpreted.
 
@@ -856,18 +826,6 @@ void QDeclarativePathCubic::addToPath(QPainterPath &path)
     \sa Path
 */
 
-/*!
-    \internal
-    \class QDeclarativePathPercent
-    \brief The QDeclarativePathPercent class manipulates the way a path is interpreted.
-
-    QDeclarativePathPercent allows you to bunch up items (or spread out items) along various
-    segments of a QDeclarativePathView's path.
-
-    \sa QDeclarativePath
-
-*/
-
 qreal QDeclarativePathPercent::value() const
 {
     return _value;
@@ -877,6 +835,7 @@ void QDeclarativePathPercent::setValue(qreal value)
 {
     if (_value != value) {
         _value = value;
+        emit valueChanged();
         emit changed();
     }
 }

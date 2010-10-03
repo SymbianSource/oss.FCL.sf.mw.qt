@@ -91,7 +91,6 @@ GraphicsWebView::GraphicsWebView(QDeclarativeWebView* parent)
 
 void GraphicsWebView::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    setFocus();
     pressPoint = event->pos();
     if (pressTime) {
         pressTimer.start(pressTime, this);
@@ -101,6 +100,11 @@ void GraphicsWebView::mousePressEvent(QGraphicsSceneMouseEvent* event)
         parent->setKeepMouseGrab(true);
     }
     QGraphicsWebView::mousePressEvent(event);
+
+    QWebHitTestResult hit = page()->mainFrame()->hitTestContent(pressPoint.toPoint());
+    if (hit.isContentEditable())
+        parent->forceActiveFocus();
+    setFocus();
 }
 
 void GraphicsWebView::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
@@ -139,6 +143,7 @@ void GraphicsWebView::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 /*!
     \qmlclass WebView QDeclarativeWebView
+    \ingroup qml-view-elements
     \since 4.7
     \brief The WebView item allows you to add web content to a canvas.
     \inherits Item

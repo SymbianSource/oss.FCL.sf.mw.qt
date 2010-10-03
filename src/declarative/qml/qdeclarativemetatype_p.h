@@ -149,10 +149,8 @@ public:
 private:
     friend class QDeclarativeTypePrivate;
     friend struct QDeclarativeMetaTypeData;
-    //friend int QDeclarativePrivate::registerType(const QDeclarativePrivate::RegisterInterface &);
-    //Q_DECLARATIVE_EXPORT friend int registerType(const QDeclarativePrivate::RegisterType &);
     Q_DECLARATIVE_EXPORT friend int registerType(const QDeclarativePrivate::RegisterType &);
-    friend int registerInterface(const QDeclarativePrivate::RegisterInterface &);
+    Q_DECLARATIVE_EXPORT friend int registerInterface(const QDeclarativePrivate::RegisterInterface &);
     QDeclarativeType(int, const QDeclarativePrivate::RegisterInterface &);
     QDeclarativeType(int, const QDeclarativePrivate::RegisterType &);
     ~QDeclarativeType();

@@ -123,9 +123,6 @@ bool QDeclarativeActionEvent::override(QDeclarativeActionEvent *other)
     return false;
 }
 
-/*!
-    \internal
-*/
 QDeclarativeStateOperation::QDeclarativeStateOperation(QObjectPrivate &dd, QObject *parent)
     : QObject(dd, parent)
 {
@@ -133,6 +130,7 @@ QDeclarativeStateOperation::QDeclarativeStateOperation(QObjectPrivate &dd, QObje
 
 /*!
     \qmlclass State QDeclarativeState
+    \ingroup qml-state-elements
     \since 4.7
     \brief The State element defines configurations of objects and properties.
 
@@ -154,28 +152,15 @@ QDeclarativeStateOperation::QDeclarativeStateOperation(QObjectPrivate &dd, QObje
 
     Notice the default state is referred to using an empty string ("").
 
-    States are commonly used together with \l {state-transitions}{Transitions} to provide
+    States are commonly used together with \l {Transitions} to provide
     animations when state changes occur.
 
     \note Setting the state of an object from within another state of the same object is
     not allowed.
 
-    \sa {declarative/animation/states}{states example}, {qmlstates}{States}, {state-transitions}{Transitions}, QtDeclarative
+    \sa {declarative/animation/states}{states example}, {qmlstates}{States},
+    {qdeclarativeanimation.html#transitions}{QML Transitions}, QtDeclarative
 */
-
-/*!
-    \internal
-    \class QDeclarativeState
-    \brief The QDeclarativeState class allows you to define configurations of objects and properties.
-
-
-    QDeclarativeState allows you to specify a state as a set of batched changes from the default
-    configuration.
-
-    \sa {states-transitions}{States and Transitions}
-*/
-
-
 QDeclarativeState::QDeclarativeState(QObject *parent)
 : QObject(*(new QDeclarativeStatePrivate), parent)
 {
@@ -229,20 +214,7 @@ bool QDeclarativeState::isWhenKnown() const
     be applied. For example, the following \l Rectangle changes in and out of the "hidden"
     state when the \l MouseArea is pressed:
 
-    \qml
-    Rectangle {
-        id: myRect
-        width: 100; height: 100
-        color: "red"
-
-        MouseArea { id: mouseArea; anchors.fill: parent }
-
-        states: State {
-            name: "hidden"; when: mouseArea.pressed
-            PropertyChanges { target: myRect; opacity: 0 }
-        }
-    }
-    \endqml
+    \snippet doc/src/snippets/declarative/state-when.qml 0
 
     If multiple states in a group have \c when clauses that evaluate to \c true at the same time,
     the first matching state will be applied. For example, in the following snippet
@@ -358,8 +330,10 @@ QDeclarativeStatePrivate::generateActionList(QDeclarativeStateGroup *group) cons
     if (!extends.isEmpty()) {
         QList<QDeclarativeState *> states = group->states();
         for (int ii = 0; ii < states.count(); ++ii)
-            if (states.at(ii)->name() == extends)
+            if (states.at(ii)->name() == extends) {
+                qmlExecuteDeferred(states.at(ii));
                 applyList = static_cast<QDeclarativeStatePrivate*>(states.at(ii)->d_func())->generateActionList(group);
+            }
     }
 
     foreach(QDeclarativeStateOperation *op, operations)

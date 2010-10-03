@@ -1,9 +1,9 @@
 TEMPLATE = subdirs
 SUBDIRS = \
-#        qdir \
+        qdir \
         qdiriterator \
-#        qfile \
-#        qfileinfo \
+        qfile \
+        qfileinfo \
         qiodevice \
         qtemporaryfile
 

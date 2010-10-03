@@ -43,6 +43,7 @@
 #define QDECLARATIVELISTVIEW_H
 
 #include "private/qdeclarativeflickable_p.h"
+#include "private/qdeclarativeguard_p.h"
 
 QT_BEGIN_HEADER
 
@@ -53,8 +54,8 @@ QT_MODULE(Declarative)
 class Q_AUTOTEST_EXPORT QDeclarativeViewSection : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QString property READ property WRITE setProperty NOTIFY changed)
-    Q_PROPERTY(SectionCriteria criteria READ criteria WRITE setCriteria NOTIFY changed)
+    Q_PROPERTY(QString property READ property WRITE setProperty NOTIFY propertyChanged)
+    Q_PROPERTY(SectionCriteria criteria READ criteria WRITE setCriteria NOTIFY criteriaChanged)
     Q_PROPERTY(QDeclarativeComponent *delegate READ delegate WRITE setDelegate NOTIFY delegateChanged)
     Q_ENUMS(SectionCriteria)
 public:
@@ -73,7 +74,8 @@ public:
     QString sectionString(const QString &value);
 
 Q_SIGNALS:
-    void changed();
+    void propertyChanged();
+    void criteriaChanged();
     void delegateChanged();
 
 private:
@@ -244,6 +246,7 @@ protected:
     virtual qreal minXExtent() const;
     virtual qreal maxXExtent() const;
     virtual void keyPressEvent(QKeyEvent *);
+    virtual void geometryChanged(const QRectF &newGeometry,const QRectF &oldGeometry);
     virtual void componentComplete();
 
 private Q_SLOTS:
@@ -267,8 +270,14 @@ public:
         : QObject(parent), m_view(0), m_isCurrent(false), m_delayRemove(false) {}
     ~QDeclarativeListViewAttached() {}
 
-    Q_PROPERTY(QDeclarativeListView *view READ view CONSTANT)
+    Q_PROPERTY(QDeclarativeListView *view READ view NOTIFY viewChanged)
     QDeclarativeListView *view() { return m_view; }
+    void setView(QDeclarativeListView *view) {
+        if (view != m_view) {
+            m_view = view;
+            emit viewChanged();
+        }
+    }
 
     Q_PROPERTY(bool isCurrentItem READ isCurrentItem NOTIFY currentItemChanged)
     bool isCurrentItem() const { return m_isCurrent; }
@@ -326,9 +335,10 @@ Q_SIGNALS:
     void delayRemoveChanged();
     void add();
     void remove();
+    void viewChanged();
 
 public:
-    QDeclarativeListView *m_view;
+    QDeclarativeGuard<QDeclarativeListView> m_view;
     mutable QString m_section;
     QString m_prevSection;
     QString m_nextSection;

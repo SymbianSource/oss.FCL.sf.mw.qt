@@ -114,6 +114,7 @@ QT_BEGIN_NAMESPACE
 
 /*!
   \qmlclass QtObject QObject
+  \ingroup qml-utility-elements
   \since 4.7
   \brief The QtObject element is the most basic element in QML.
 
@@ -184,11 +185,13 @@ void QDeclarativeEnginePrivate::defineModule()
 }
 
 /*!
-\keyword QmlGlobalQtObject
-\qmlclass Qt QDeclarativeEnginePrivate
+\qmlclass QML:Qt QDeclarativeEnginePrivate
+  \ingroup qml-utility-elements
 \brief The QML global Qt object provides useful enums and functions from Qt.
 
-The \c Qt object provides useful enums and functions from Qt, for use in all QML files. 
+\keyword QmlGlobalQtObject
+
+\brief The \c Qt object provides useful enums and functions from Qt, for use in all QML files. 
 
 The \c Qt object is not a QML element; it cannot be instantiated. It is a global object 
 with enums and functions.  To use it, call the members of the global \c Qt object directly. 
@@ -206,10 +209,9 @@ Text {
 
 \section1 Enums
 
-The Qt object contains all enums in the Qt namespace. For example, you can
-access the \c AlignLeft member of the \c Qt::AlignmentFlag enum with \c Qt.AlignLeft.
+The Qt object contains enums that declared into Qt's Meta-Object System. For example, you can access
+the \c Leftbutton member of the \c Qt::MouseButton enum with \c Qt.LeftButton.
 
-For a full list of enums, see the \l{Qt Namespace} documentation.
 
 \section1 Types
 The Qt object also contains helper functions for creating objects of specific
@@ -228,7 +230,7 @@ There are also string based constructors for these types. See \l{qdeclarativebas
 
 \section1 Date/Time Formatters
 
-The Qt object contains several functions for formatting dates and times.
+The Qt object contains several functions for formatting QDateTime, QDate and QTime values.
 
 \list
     \o \l{QML:Qt::formatDateTime}{string Qt.formatDateTime(datetime date, variant format)}
@@ -241,7 +243,7 @@ The format specification is described at \l{QML:Qt::formatDateTime}{Qt.formatDat
 
 \section1 Dynamic Object Creation
 The following functions on the global object allow you to dynamically create QML
-items from files or strings. See \l{Dynamic Object Management} for an overview
+items from files or strings. See \l{Dynamic Object Management in QML} for an overview
 of their use.
 
 \list
@@ -257,7 +259,7 @@ QDeclarativeEnginePrivate::QDeclarativeEnginePrivate(QDeclarativeEngine *e)
   objectClass(0), valueTypeClass(0), globalClass(0), cleanup(0), erroredBindings(0),
   inProgressCreations(0), scriptEngine(this), workerScriptEngine(0), componentAttached(0),
   inBeginCreate(false), networkAccessManager(0), networkAccessManagerFactory(0),
-  typeManager(e), importDatabase(e), uniqueId(1)
+  typeLoader(e), importDatabase(e), uniqueId(1)
 {
     if (!qt_QmlQtModule_registered) {
         qt_QmlQtModule_registered = true;
@@ -301,7 +303,9 @@ QDeclarativeScriptEngine::QDeclarativeScriptEngine(QDeclarativeEnginePrivate *pr
         + QDir::separator() + QLatin1String("OfflineStorage");
 #endif
 
+#ifndef QT_NO_XMLSTREAMREADER
     qt_add_qmlxmlhttprequest(this);
+#endif
     qt_add_qmlsqldatabase(this);
     // XXX A Multimedia "Qt.Sound" class also needs to be made available,
     // XXX but we don't want a dependency in that cirection.
@@ -329,7 +333,7 @@ QDeclarativeScriptEngine::QDeclarativeScriptEngine(QDeclarativeEnginePrivate *pr
         qtObject.setProperty(QLatin1String("tint"), newFunction(QDeclarativeEnginePrivate::tint, 2));
     }
 
-#ifndef QT_NO_TEXTDATE
+#ifndef QT_NO_DATESTRING
     //date/time formatting
     qtObject.setProperty(QLatin1String("formatDate"),newFunction(QDeclarativeEnginePrivate::formatDate, 2));
     qtObject.setProperty(QLatin1String("formatTime"),newFunction(QDeclarativeEnginePrivate::formatTime, 2));
@@ -434,8 +438,6 @@ void QDeclarativeEnginePrivate::clear(SimpleList<QDeclarativeParserStatus> &pss)
     pss.clear();
 }
 
-Q_GLOBAL_STATIC(QDeclarativeEngineDebugServer, qmlEngineDebugServer);
-
 void QDeclarativePrivate::qdeclarativeelement_destructor(QObject *o)
 {
     QObjectPrivate *p = QObjectPrivate::get(o);
@@ -477,9 +479,8 @@ void QDeclarativeEnginePrivate::init()
 
     if (QCoreApplication::instance()->thread() == q->thread() &&
         QDeclarativeEngineDebugServer::isDebuggingEnabled()) {
-        qmlEngineDebugServer();
         isDebugging = true;
-        QDeclarativeEngineDebugServer::addEngine(q);
+        QDeclarativeEngineDebugServer::instance()->addEngine(q);
     }
 }
 
@@ -543,11 +544,11 @@ QDeclarativeEngine::~QDeclarativeEngine()
 {
     Q_D(QDeclarativeEngine);
     if (d->isDebugging)
-        QDeclarativeEngineDebugServer::remEngine(this);
+        QDeclarativeEngineDebugServer::instance()->remEngine(this);
 }
 
 /*! \fn void QDeclarativeEngine::quit()
-    This signal is emitted when the QDeclarativeEngine quits.
+    This signal is emitted when the QML loaded by the engine would like to quit.
  */
 
 /*! \fn void QDeclarativeEngine::warnings(const QList<QDeclarativeError> &warnings)
@@ -564,7 +565,7 @@ QDeclarativeEngine::~QDeclarativeEngine()
 void QDeclarativeEngine::clearComponentCache()
 {
     Q_D(QDeclarativeEngine);
-    d->typeManager.clearCache();
+    d->typeLoader.clearCache();
 }
 
 /*!
@@ -670,7 +671,7 @@ void QDeclarativeEngine::addImageProvider(const QString &providerId, QDeclarativ
 {
     Q_D(QDeclarativeEngine);
     QMutexLocker locker(&d->mutex);
-    d->imageProviders.insert(providerId, provider);
+    d->imageProviders.insert(providerId, QSharedPointer<QDeclarativeImageProvider>(provider));
 }
 
 /*!
@@ -680,7 +681,7 @@ QDeclarativeImageProvider *QDeclarativeEngine::imageProvider(const QString &prov
 {
     Q_D(const QDeclarativeEngine);
     QMutexLocker locker(&d->mutex);
-    return d->imageProviders.value(providerId);
+    return d->imageProviders.value(providerId).data();
 }
 
 /*!
@@ -694,13 +695,14 @@ void QDeclarativeEngine::removeImageProvider(const QString &providerId)
 {
     Q_D(QDeclarativeEngine);
     QMutexLocker locker(&d->mutex);
-    delete d->imageProviders.take(providerId);
+    d->imageProviders.take(providerId);
 }
 
 QDeclarativeImageProvider::ImageType QDeclarativeEnginePrivate::getImageProviderType(const QUrl &url)
 {
     QMutexLocker locker(&mutex);
-    QDeclarativeImageProvider *provider = imageProviders.value(url.host());
+    QSharedPointer<QDeclarativeImageProvider> provider = imageProviders.value(url.host());
+    locker.unlock();
     if (provider)
         return provider->imageType();
     return static_cast<QDeclarativeImageProvider::ImageType>(-1);
@@ -710,7 +712,8 @@ QImage QDeclarativeEnginePrivate::getImageFromProvider(const QUrl &url, QSize *s
 {
     QMutexLocker locker(&mutex);
     QImage image;
-    QDeclarativeImageProvider *provider = imageProviders.value(url.host());
+    QSharedPointer<QDeclarativeImageProvider> provider = imageProviders.value(url.host());
+    locker.unlock();
     if (provider)
         image = provider->requestImage(url.path().mid(1), size, req_size);
     return image;
@@ -720,7 +723,8 @@ QPixmap QDeclarativeEnginePrivate::getPixmapFromProvider(const QUrl &url, QSize 
 {
     QMutexLocker locker(&mutex);
     QPixmap pixmap;
-    QDeclarativeImageProvider *provider = imageProviders.value(url.host());
+    QSharedPointer<QDeclarativeImageProvider> provider = imageProviders.value(url.host());
+    locker.unlock();
     if (provider)
         pixmap = provider->requestPixmap(url.path().mid(1), size, req_size);
     return pixmap;
@@ -1104,29 +1108,20 @@ QString QDeclarativeEnginePrivate::urlToLocalFileOrQrc(const QUrl& url)
 \qmlmethod object Qt::createComponent(url)
 
 Returns a \l Component object created using the QML file at the specified \a url,
-or \c null if there was an error in creating the component.
+or \c null if an empty string was given.
+
+The returned component's \l Component::status property indicates whether the
+component was successfully created. If the status is \c Component.Error, 
+see \l Component::errorString() for an error description.
 
 Call \l {Component::createObject()}{Component.createObject()} on the returned
 component to create an object instance of the component.
 
-Here is an example. Notice it checks whether the component \l{Component::status}{status} is
-\c Component.Ready before calling \l {Component::createObject()}{createObject()}
-in case the QML file is loaded over a network and thus is not ready immediately.
+For example:
 
-\snippet doc/src/snippets/declarative/componentCreation.js vars
-\codeline
-\snippet doc/src/snippets/declarative/componentCreation.js func
-\snippet doc/src/snippets/declarative/componentCreation.js remote
-\snippet doc/src/snippets/declarative/componentCreation.js func-end
-\codeline
-\snippet doc/src/snippets/declarative/componentCreation.js finishCreation
+\snippet doc/src/snippets/declarative/createComponent-simple.qml 0
 
-If you are certain the QML file to be loaded is a local file, you could omit the \c finishCreation() 
-function and call \l {Component::createObject()}{createObject()} immediately:
-
-\snippet doc/src/snippets/declarative/componentCreation.js func
-\snippet doc/src/snippets/declarative/componentCreation.js local
-\snippet doc/src/snippets/declarative/componentCreation.js func-end
+See \l {Dynamic Object Management in QML} for more information on using this function.
 
 To create a QML object from an arbitrary string of QML (instead of a file),
 use \l{QML:Qt::createQmlObject()}{Qt.createQmlObject()}.
@@ -1177,6 +1172,8 @@ Each object in this array has the members \c lineNumber, \c columnNumber, \c fil
 Note that this function returns immediately, and therefore may not work if
 the \a qml string loads new components (that is, external QML files that have not yet been loaded).
 If this is the case, consider using \l{QML:Qt::createComponent()}{Qt.createComponent()} instead.
+
+See \l {Dynamic Object Management in QML} for more information on using this function.
 */
 
 QScriptValue QDeclarativeEnginePrivate::createQmlObject(QScriptContext *ctxt, QScriptEngine *engine)
@@ -1301,7 +1298,7 @@ QScriptValue QDeclarativeEnginePrivate::vector3d(QScriptContext *ctxt, QScriptEn
 \qmlmethod string Qt::formatDate(datetime date, variant format)
 Returns the string representation of \c date, formatted according to \c format.
 */
-#ifndef QT_NO_TEXTDATE
+#ifndef QT_NO_DATESTRING
 QScriptValue QDeclarativeEnginePrivate::formatDate(QScriptContext*ctxt, QScriptEngine*engine)
 {
     int argCount = ctxt->argumentCount();
@@ -1442,7 +1439,7 @@ QScriptValue QDeclarativeEnginePrivate::formatDateTime(QScriptContext*ctxt, QScr
     }
     return engine->newVariant(qVariantFromValue(date.toString(enumFormat)));
 }
-#endif // QT_NO_TEXTDATE
+#endif // QT_NO_DATESTRING
 
 /*!
 \qmlmethod color Qt::rgba(real red, real green, real blue, real alpha)
@@ -1719,6 +1716,9 @@ void QDeclarativeEnginePrivate::sendQuit()
 {
     Q_Q(QDeclarativeEngine);
     emit q->quit();
+    if (q->receivers(SIGNAL(quit())) == 0) {
+        qWarning("Signal QDeclarativeEngine::quit() emitted, but no receivers connected to handle it.");
+    }
 }
 
 static void dumpwarning(const QDeclarativeError &error)
@@ -2079,7 +2079,7 @@ void QDeclarativeEnginePrivate::registerCompositeType(QDeclarativeCompiledData *
     QByteArray name = data->root->className();
 
     QByteArray ptr = name + '*';
-    QByteArray lst = "QDeclarativeListProperty<" + name + ">";
+    QByteArray lst = "QDeclarativeListProperty<" + name + '>';
 
     int ptr_type = QMetaType::registerType(ptr.constData(), voidptr_destructor,
                                            voidptr_constructor);
@@ -2113,7 +2113,7 @@ bool QDeclarativeEnginePrivate::isQObject(int t)
 QObject *QDeclarativeEnginePrivate::toQObject(const QVariant &v, bool *ok) const
 {
     int t = v.userType();
-    if (m_compositeTypes.contains(t)) {
+    if (t == QMetaType::QObjectStar || m_compositeTypes.contains(t)) {
         if (ok) *ok = true;
         return *(QObject **)(v.constData());
     } else {

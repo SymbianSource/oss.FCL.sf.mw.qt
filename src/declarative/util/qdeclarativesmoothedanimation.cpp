@@ -249,6 +249,7 @@ void QSmoothedAnimation::init()
 
 /*!
     \qmlclass SmoothedAnimation QDeclarativeSmoothedAnimation
+    \ingroup qml-animation-transition
     \since 4.7
     \inherits NumberAnimation
     \brief The SmoothedAnimation element allows a property to smoothly track a value.
@@ -287,7 +288,7 @@ void QSmoothedAnimation::init()
 
     Like any other animation element, a SmoothedAnimation can be applied in a
     number of ways, including transitions, behaviors and property value 
-    sources. The \l PropertyAnimation documentation shows a variety of methods
+    sources. The \l {QML Animation} documentation shows a variety of methods
     for creating animations.
 
     \sa SpringAnimation, NumberAnimation, {QML Animation}, {declarative/animation/basics}{Animation basics example}
@@ -375,7 +376,7 @@ void QDeclarativeSmoothedAnimation::transition(QDeclarativeStateActions &actions
 
     \list
     \o SmoothedAnimation.Eased (default) - the animation will smoothly decelerate, and then reverse direction
-    \o SmoothedAnimation.Immediate - the animation will immediately begin accelerating in the reverse direction, begining with a velocity of 0
+    \o SmoothedAnimation.Immediate - the animation will immediately begin accelerating in the reverse direction, beginning with a velocity of 0
     \o SmoothedAnimation.Sync - the property is immediately set to the target value
     \endlist
 */

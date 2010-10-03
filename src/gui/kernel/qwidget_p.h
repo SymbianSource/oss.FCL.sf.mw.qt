@@ -110,18 +110,18 @@ class QWidgetItemV2;
 
 class QStyle;
 
-class Q_AUTOTEST_EXPORT QRefCountedWidgetBackingStore
+class Q_AUTOTEST_EXPORT QWidgetBackingStoreTracker
 {
 
 public:
-    QRefCountedWidgetBackingStore();
-    ~QRefCountedWidgetBackingStore();
+    QWidgetBackingStoreTracker();
+    ~QWidgetBackingStoreTracker();
 
     void create(QWidget *tlw);
     void destroy();
 
-    void widgetShown(QWidget *w);
-    void widgetHidden(QWidget *w);
+    void registerWidget(QWidget *w);
+    void unregisterWidget(QWidget *w);
 
     inline QWidgetBackingStore* data()
     {
@@ -144,11 +144,11 @@ public:
     }
 
 private:
-    Q_DISABLE_COPY(QRefCountedWidgetBackingStore)
+    Q_DISABLE_COPY(QWidgetBackingStoreTracker)
 
 private:
     QWidgetBackingStore* m_ptr;
-    QSet<QWidget *> m_visibleWidgets;
+    QSet<QWidget *> m_widgets;
 };
 
 struct QTLWExtra {
@@ -157,7 +157,7 @@ struct QTLWExtra {
     // Regular pointers (keep them together to avoid gaps on 64 bits architectures).
     QIcon *icon; // widget icon
     QPixmap *iconPixmap;
-    QRefCountedWidgetBackingStore backingStore;
+    QWidgetBackingStoreTracker backingStore;
     QWindowSurface *windowSurface;
     QPainter *sharedPainter;
 

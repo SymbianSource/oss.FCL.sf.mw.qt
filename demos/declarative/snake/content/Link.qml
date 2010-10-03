@@ -73,14 +73,12 @@ Item { id:link
                 }
             }
 
-                    /*
             transform: Rotation {
                 id: actualImageRotation
                 origin.x: width/2; origin.y: height/2;
                 angle: rotation * 90
                 Behavior on angle { NumberAnimation { duration: spawned ? 200 : 0} }
             }
-            */
         }
 
         Image {
@@ -88,7 +86,6 @@ Item { id:link
         }
 
         opacity: 0
-        Behavior on opacity { NumberAnimation { duration: 200 } }
     }
 
 
@@ -116,4 +113,11 @@ Item { id:link
             PropertyChanges { target: img; opacity: 0 }
         }
     ]
+
+    transitions: [
+        Transition {
+            NumberAnimation { target: img; property: "opacity"; duration: 200 }
+        }
+    ]
+
 }

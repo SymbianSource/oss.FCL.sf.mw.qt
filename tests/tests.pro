@@ -1,2 +1,3 @@
 TEMPLATE = subdirs
-SUBDIRS = qtp
+SUBDIRS = auto \
+        benchmarks

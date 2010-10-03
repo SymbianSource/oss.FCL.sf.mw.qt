@@ -199,11 +199,26 @@ public:
         return widget;
     }
 
+    // destroys the share widget and prevents recreation
     void cleanup() {
         QGLWidget *w = widget;
         cleanedUp = true;
         widget = 0;
         delete w;
+    }
+
+    // destroys the share widget, but allows it to be recreated later on
+    void destroy() {
+        if (cleanedUp)
+            return;
+
+        QGLWidget *w = widget;
+
+        // prevent potential recursions
+        cleanedUp = true;
+        widget = 0;
+        delete w;
+        cleanedUp = false;
     }
 
     static bool cleanedUp;
@@ -233,6 +248,10 @@ QGLWidget* qt_gl_share_widget()
     return _qt_gl_share_widget()->shareWidget();
 }
 
+void qt_destroy_gl_share_widget()
+{
+    _qt_gl_share_widget()->destroy();
+}
 
 struct QGLWindowSurfacePrivate
 {
@@ -407,6 +426,20 @@ static void drawTexture(const QRectF &rect, GLuint tex_id, const QSize &texSize,
 
 void QGLWindowSurface::beginPaint(const QRegion &)
 {
+    if (! context())
+        return;
+
+    int clearFlags = 0;
+
+    if (context()->d_func()->workaround_needsFullClearOnEveryFrame)
+        clearFlags = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
+    else if (context()->format().alpha())
+        clearFlags = GL_COLOR_BUFFER_BIT;
+
+    if (clearFlags) {
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(clearFlags);
+    }
 }
 
 void QGLWindowSurface::endPaint(const QRegion &rgn)
@@ -494,10 +527,9 @@ void QGLWindowSurface::flush(QWidget *widget, const QRegion &rgn, const QPoint &
                 }
             }
 #endif
-            if (d_ptr->paintedRegion.boundingRect() != geometry()) {
-                // Emits warning if not supported. Should never happen unless
-                // setPartialUpdateSupport(true) has been called.
-                context()->d_func()->swapRegion(&d_ptr->paintedRegion);
+            if (d_ptr->paintedRegion.boundingRect() != geometry() && 
+                hasPartialUpdateSupport()) {
+                context()->d_func()->swapRegion(&d_ptr->paintedRegion);             
             } else
                 context()->swapBuffers();
 

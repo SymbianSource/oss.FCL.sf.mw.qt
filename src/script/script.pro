@@ -79,7 +79,10 @@ INCLUDEPATH += $$PWD
 
 include(script.pri)
 
-symbian:TARGET.UID3=0x2001B2E1
+symbian {
+    TARGET.UID3=0x2001B2E1
+    LIBS += -lhal
+}
 
 # :QTP:Fix header file clashes
 symbian: {

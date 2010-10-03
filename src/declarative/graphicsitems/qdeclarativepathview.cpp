@@ -67,7 +67,7 @@ inline qreal qmlMod(qreal x, qreal y)
 static QDeclarativeOpenMetaObjectType *qPathViewAttachedType = 0;
 
 QDeclarativePathViewAttached::QDeclarativePathViewAttached(QObject *parent)
-: QObject(parent), m_view(0), m_onPath(false), m_isCurrent(false)
+: QObject(parent), m_percent(-1), m_view(0), m_onPath(false), m_isCurrent(false)
 {
     if (qPathViewAttachedType) {
         m_metaobject = new QDeclarativeOpenMetaObject(this, qPathViewAttachedType);
@@ -88,6 +88,26 @@ QVariant QDeclarativePathViewAttached::value(const QByteArray &name) const
 void QDeclarativePathViewAttached::setValue(const QByteArray &name, const QVariant &val)
 {
     m_metaobject->setValue(name, val);
+}
+
+
+void QDeclarativePathViewPrivate::init()
+{
+    Q_Q(QDeclarativePathView);
+    offset = 0;
+    q->setAcceptedMouseButtons(Qt::LeftButton);
+    q->setFlag(QGraphicsItem::ItemIsFocusScope);
+    q->setFiltersChildEvents(true);
+    q->connect(&tl, SIGNAL(updated()), q, SLOT(ticked()));
+    lastPosTime.invalidate();
+    static int timelineCompletedIdx = -1;
+    static int movementEndingIdx = -1;
+    if (timelineCompletedIdx == -1) {
+        timelineCompletedIdx = QDeclarativeTimeLine::staticMetaObject.indexOfSignal("completed()");
+        movementEndingIdx = QDeclarativePathView::staticMetaObject.indexOfSlot("movementEnding()");
+    }
+    QMetaObject::connect(&tl, timelineCompletedIdx,
+                         q, movementEndingIdx, Qt::DirectConnection);
 }
 
 QDeclarativeItem *QDeclarativePathViewPrivate::getItem(int modelIndex)
@@ -144,8 +164,8 @@ void QDeclarativePathViewPrivate::clear()
 
 void QDeclarativePathViewPrivate::updateMappedRange()
 {
-    if (model && pathItems != -1 && pathItems < model->count())
-        mappedRange = qreal(pathItems)/model->count();
+    if (model && pathItems != -1 && pathItems < modelCount)
+        mappedRange = qreal(pathItems)/modelCount;
     else
         mappedRange = 1.0;
 }
@@ -154,13 +174,13 @@ qreal QDeclarativePathViewPrivate::positionOfIndex(qreal index) const
 {
     qreal pos = -1.0;
 
-    if (model && index >= 0 && index < model->count()) {
+    if (model && index >= 0 && index < modelCount) {
         qreal start = 0.0;
         if (haveHighlightRange && highlightRangeMode != QDeclarativePathView::NoHighlightRange)
             start = highlightRangeStart;
         qreal globalPos = index + offset;
-        globalPos = qmlMod(globalPos, qreal(model->count())) / model->count();
-        if (pathItems != -1 && pathItems < model->count()) {
+        globalPos = qmlMod(globalPos, qreal(modelCount)) / modelCount;
+        if (pathItems != -1 && pathItems < modelCount) {
             globalPos += start * mappedRange;
             globalPos = qmlMod(globalPos, 1.0);
             if (globalPos < mappedRange)
@@ -222,21 +242,22 @@ void QDeclarativePathViewPrivate::updateHighlight()
         } else {
             qreal target = currentIndex;
 
+            offsetAdj = 0.0;
             tl.reset(moveHighlight);
             moveHighlight.setValue(highlightPosition);
 
             const int duration = highlightMoveDuration;
 
-            if (target - highlightPosition > model->count()/2) {
+            if (target - highlightPosition > modelCount/2) {
                 highlightUp = false;
-                qreal distance = model->count() - target + highlightPosition;
+                qreal distance = modelCount - target + highlightPosition;
                 tl.move(moveHighlight, 0.0, QEasingCurve(QEasingCurve::InQuad), int(duration * highlightPosition / distance));
-                tl.set(moveHighlight, model->count()-0.01);
-                tl.move(moveHighlight, target, QEasingCurve(QEasingCurve::OutQuad), int(duration * (model->count()-target) / distance));
-            } else if (target - highlightPosition <= -model->count()/2) {
+                tl.set(moveHighlight, modelCount-0.01);
+                tl.move(moveHighlight, target, QEasingCurve(QEasingCurve::OutQuad), int(duration * (modelCount-target) / distance));
+            } else if (target - highlightPosition <= -modelCount/2) {
                 highlightUp = true;
-                qreal distance = model->count() - highlightPosition + target;
-                tl.move(moveHighlight, model->count()-0.01, QEasingCurve(QEasingCurve::InQuad), int(duration * (model->count()-highlightPosition) / distance));
+                qreal distance = modelCount - highlightPosition + target;
+                tl.move(moveHighlight, modelCount-0.01, QEasingCurve(QEasingCurve::InQuad), int(duration * (modelCount-highlightPosition) / distance));
                 tl.set(moveHighlight, 0.0);
                 tl.move(moveHighlight, target, QEasingCurve(QEasingCurve::OutQuad), int(duration * target / distance));
             } else {
@@ -257,7 +278,7 @@ void QDeclarativePathViewPrivate::setHighlightPosition(qreal pos)
             end = highlightRangeEnd;
         }
 
-        qreal range = qreal(model->count());
+        qreal range = qreal(modelCount);
         // calc normalized position of highlight relative to offset
         qreal relativeHighlight = qmlMod(pos + offset, range) / range;
 
@@ -280,6 +301,9 @@ void QDeclarativePathViewPrivate::setHighlightPosition(qreal pos)
 void QDeclarativePathViewPrivate::updateItem(QDeclarativeItem *item, qreal percent)
 {
     if (QDeclarativePathViewAttached *att = attached(item)) {
+        if (qFuzzyCompare(att->m_percent, percent))
+            return;
+        att->m_percent = percent;
         foreach(const QString &attr, path->attributes())
             att->setValue(attr.toUtf8(), path->attributeAt(attr, percent));
     }
@@ -306,6 +330,7 @@ void QDeclarativePathViewPrivate::regenerate()
 
 /*!
     \qmlclass PathView QDeclarativePathView
+    \ingroup qml-view-elements
     \since 4.7
     \brief The PathView element lays out model-provided items on a path.
     \inherits Item
@@ -314,7 +339,7 @@ void QDeclarativePathViewPrivate::regenerate()
     and XmlListModel, or custom model classes defined in C++ that inherit from
     QAbstractListModel.
 
-    A ListView has a \l model, which defines the data to be displayed, and
+    The view has a \l model, which defines the data to be displayed, and
     a \l delegate, which defines how the data should be displayed.  
     The \l delegate is instantiated for each item on the \l path.
     The items may be flicked to move them along the path.
@@ -333,6 +358,9 @@ void QDeclarativePathViewPrivate::regenerate()
     opacity of the items as they rotate. This additional code can be seen in the
     PathAttribute documentation.)
 
+    The \c focus can be set to \c true to enable keyboard navigation.
+    The path view itself is a focus scope (see \l{qmlfocus#Acquiring Focus and Focus Scopes}{the focus documentation page} for more details).
+
     Delegates are instantiated as needed and may be destroyed at any time.
     State should \e never be stored in a delegate.
 
@@ -341,7 +369,7 @@ void QDeclarativePathViewPrivate::regenerate()
     to set \e {clip: true} in order to have the out of view items clipped
     nicely.
 
-    \sa Path
+    \sa Path, {declarative/modelviews/pathview}{PathView example}
 */
 
 QDeclarativePathView::QDeclarativePathView(QDeclarativeItem *parent)
@@ -403,7 +431,7 @@ QDeclarativePathView::~QDeclarativePathView()
 
     The model provides a set of data that is used to create the items for the view.
     For large or dynamic datasets the model is usually provided by a C++ model object.
-    Models can also be created directly in XML, using the ListModel element.
+    Models can also be created directly in QML, using the ListModel element.
 
     \sa {qmlmodels}{Data Models}
 */
@@ -449,16 +477,19 @@ void QDeclarativePathView::setModel(const QVariant &model)
         if (QDeclarativeVisualDataModel *dataModel = qobject_cast<QDeclarativeVisualDataModel*>(d->model))
             dataModel->setModel(model);
     }
+    d->modelCount = 0;
     if (d->model) {
         connect(d->model, SIGNAL(itemsInserted(int,int)), this, SLOT(itemsInserted(int,int)));
         connect(d->model, SIGNAL(itemsRemoved(int,int)), this, SLOT(itemsRemoved(int,int)));
         connect(d->model, SIGNAL(itemsMoved(int,int,int)), this, SLOT(itemsMoved(int,int,int)));
         connect(d->model, SIGNAL(modelReset()), this, SLOT(modelReset()));
         connect(d->model, SIGNAL(createdItem(int, QDeclarativeItem*)), this, SLOT(createdItem(int,QDeclarativeItem*)));
-    }
-    d->offset = qmlMod(d->offset, qreal(d->model->count()));
-    if (d->offset < 0)
-        d->offset = d->model->count() + d->offset;
+        d->modelCount = d->model->count();
+        if (d->model->count())
+            d->offset = qmlMod(d->offset, qreal(d->model->count()));
+        if (d->offset < 0)
+            d->offset = d->model->count() + d->offset;
+}
     d->regenerate();
     d->fixOffset();
     emit countChanged();
@@ -472,7 +503,7 @@ void QDeclarativePathView::setModel(const QVariant &model)
 int QDeclarativePathView::count() const
 {
     Q_D(const QDeclarativePathView);
-    return d->model ? d->model->count() : 0;
+    return d->model ? d->modelCount : 0;
 }
 
 /*!
@@ -520,11 +551,11 @@ int QDeclarativePathView::currentIndex() const
 void QDeclarativePathView::setCurrentIndex(int idx)
 {
     Q_D(QDeclarativePathView);
-    if (d->model && d->model->count())
-        idx = qAbs(idx % d->model->count());
+    if (d->model && d->modelCount)
+        idx = qAbs(idx % d->modelCount);
     if (d->model && idx != d->currentIndex) {
-        if (d->model->count()) {
-            int itemIndex = (d->currentIndex - d->firstIndex + d->model->count()) % d->model->count();
+        if (d->modelCount) {
+            int itemIndex = (d->currentIndex - d->firstIndex + d->modelCount) % d->modelCount;
             if (itemIndex < d->items.count()) {
                 if (QDeclarativeItem *item = d->items.at(itemIndex)) {
                     if (QDeclarativePathViewAttached *att = d->attached(item))
@@ -535,10 +566,10 @@ void QDeclarativePathView::setCurrentIndex(int idx)
         d->currentItem = 0;
         d->moveReason = QDeclarativePathViewPrivate::SetIndex;
         d->currentIndex = idx;
-        if (d->model->count()) {
+        if (d->modelCount) {
             if (d->haveHighlightRange && d->highlightRangeMode == QDeclarativePathView::StrictlyEnforceRange)
                 d->snapToCurrent();
-            int itemIndex = (idx - d->firstIndex + d->model->count()) % d->model->count();
+            int itemIndex = (idx - d->firstIndex + d->modelCount) % d->modelCount;
             if (itemIndex < d->items.count()) {
                 d->currentItem = d->items.at(itemIndex);
                 d->currentItem->setFocus(true);
@@ -575,10 +606,10 @@ void QDeclarativePathView::incrementCurrentIndex()
 void QDeclarativePathView::decrementCurrentIndex()
 {
     Q_D(QDeclarativePathView);
-    if (d->model && d->model->count()) {
+    if (d->model && d->modelCount) {
         int idx = currentIndex()-1;
         if (idx < 0)
-            idx = d->model->count() - 1;
+            idx = d->modelCount - 1;
         setCurrentIndex(idx);
     }
 }
@@ -607,15 +638,20 @@ void QDeclarativePathViewPrivate::setOffset(qreal o)
     Q_Q(QDeclarativePathView);
     if (offset != o) {
         if (isValid() && q->isComponentComplete()) {
-            offset = qmlMod(o, qreal(model->count()));
+            offset = qmlMod(o, qreal(modelCount));
             if (offset < 0)
-                offset += qreal(model->count());
+                offset += qreal(modelCount);
             q->refill();
         } else {
             offset = o;
         }
         emit q->offsetChanged();
     }
+}
+
+void QDeclarativePathViewPrivate::setAdjustedOffset(qreal o)
+{
+    setOffset(o+offsetAdj);
 }
 
 /*!
@@ -627,8 +663,8 @@ void QDeclarativePathViewPrivate::setOffset(qreal o)
     so as to stay with the current item.
 
     The below example demonstrates how to make a simple highlight.  Note the use
-    of the PathView.onPath property to ensure that the highlight is hidden
-    when flicked off of the path.
+    of the \l{PathView::onPath}{PathView.onPath} attached property to ensure that
+    the highlight is hidden when flicked away from the path.
 
     \code
     Component {
@@ -679,6 +715,8 @@ QDeclarativeItem *QDeclarativePathView::highlightItem()
 
     These properties set the preferred range of the highlight (current item)
     within the view.  The preferred values must be in the range 0.0-1.0.
+
+    If highlightRangeMode is set to \e PathView.NoHighlightRange
 
     If highlightRangeMode is set to \e PathView.ApplyRange the view will
     attempt to maintain the highlight within the range, however
@@ -848,6 +886,61 @@ void QDeclarativePathView::setInteractive(bool interactive)
 }
 
 /*!
+    \qmlproperty bool PathView::moving
+
+    This property holds whether the view is currently moving
+    due to the user either dragging or flicking the view.
+*/
+bool QDeclarativePathView::isMoving() const
+{
+    Q_D(const QDeclarativePathView);
+    return d->moving;
+}
+
+/*!
+    \qmlproperty bool PathView::flicking
+
+    This property holds whether the view is currently moving
+    due to the user flicking the view.
+*/
+bool QDeclarativePathView::isFlicking() const
+{
+    Q_D(const QDeclarativePathView);
+    return d->flicking;
+}
+
+/*!
+    \qmlsignal PathView::onMovementStarted()
+
+    This handler is called when the view begins moving due to user
+    interaction.
+*/
+
+/*!
+    \qmlsignal PathView::onMovementEnded()
+
+    This handler is called when the view stops moving due to user
+    interaction.  If a flick was generated, this handler will
+    be triggered once the flick stops.  If a flick was not
+    generated, the handler will be triggered when the
+    user stops dragging - i.e. a mouse or touch release.
+*/
+
+/*!
+    \qmlsignal PathView::onFlickStarted()
+
+    This handler is called when the view is flicked.  A flick
+    starts from the point that the mouse or touch is released,
+    while still in motion.
+*/
+
+/*!
+    \qmlsignal PathView::onFlickEnded()
+
+    This handler is called when the view stops moving due to a flick.
+*/
+
+/*!
     \qmlproperty Component PathView::delegate
 
     The delegate provides a template defining each item instantiated by the view.
@@ -964,7 +1057,11 @@ void QDeclarativePathView::mousePressEvent(QGraphicsSceneMouseEvent *event)
             return;
     }
 
-    d->stealMouse = false;
+    if (d->tl.isActive() && d->flicking)
+        d->stealMouse = true; // If we've been flicked then steal the click.
+    else
+        d->stealMouse = false;
+
     d->lastElapsed = 0;
     d->lastDist = 0;
     QDeclarativeItemPrivate::start(d->lastPosTime);
@@ -979,7 +1076,7 @@ void QDeclarativePathView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
     if (!d->stealMouse) {
         QPointF delta = event->pos() - d->startPoint;
-        if (qAbs(delta.x()) > QApplication::startDragDistance() && qAbs(delta.y()) > QApplication::startDragDistance())
+        if (qAbs(delta.x()) > QApplication::startDragDistance() || qAbs(delta.y()) > QApplication::startDragDistance())
             d->stealMouse = true;
     }
 
@@ -987,18 +1084,23 @@ void QDeclarativePathView::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         d->moveReason = QDeclarativePathViewPrivate::Mouse;
         qreal newPc;
         d->pointNear(event->pos(), &newPc);
-        qreal diff = (newPc - d->startPc)*d->model->count()*d->mappedRange;
+        qreal diff = (newPc - d->startPc)*d->modelCount*d->mappedRange;
         if (diff) {
             setOffset(d->offset + diff);
 
-            if (diff > d->model->count()/2)
-                diff -= d->model->count();
-            else if (diff < -d->model->count()/2)
-                diff += d->model->count();
+            if (diff > d->modelCount/2)
+                diff -= d->modelCount;
+            else if (diff < -d->modelCount/2)
+                diff += d->modelCount;
 
             d->lastElapsed = QDeclarativeItemPrivate::restart(d->lastPosTime);
             d->lastDist = diff;
             d->startPc = newPc;
+        }
+        if (!d->moving) {
+            d->moving = true;
+            emit movingChanged();
+            emit movementStarted();
         }
     }
 }
@@ -1013,15 +1115,15 @@ void QDeclarativePathView::mouseReleaseEvent(QGraphicsSceneMouseEvent *)
 
     qreal elapsed = qreal(d->lastElapsed + QDeclarativeItemPrivate::elapsed(d->lastPosTime)) / 1000.;
     qreal velocity = elapsed > 0. ? d->lastDist / elapsed : 0;
-    if (d->model && d->model->count() && qAbs(velocity) > 1.) {
-        qreal count = d->pathItems == -1 ? d->model->count() : d->pathItems;
+    if (d->model && d->modelCount && qAbs(velocity) > 1.) {
+        qreal count = d->pathItems == -1 ? d->modelCount : d->pathItems;
         if (qAbs(velocity) > count * 2) // limit velocity
             velocity = (velocity > 0 ? count : -count) * 2;
         // Calculate the distance to be travelled
         qreal v2 = velocity*velocity;
         qreal accel = d->deceleration/10;
         // + 0.25 to encourage moving at least one item in the flick direction
-        qreal dist = qMin(qreal(d->model->count()-1), qreal(v2 / (accel * 2.0) + 0.25));
+        qreal dist = qMin(qreal(d->modelCount-1), qreal(v2 / (accel * 2.0) + 0.25));
         if (d->haveHighlightRange && d->highlightRangeMode == QDeclarativePathView::StrictlyEnforceRange) {
             // round to nearest item.
             if (velocity > 0.)
@@ -1036,15 +1138,23 @@ void QDeclarativePathView::mouseReleaseEvent(QGraphicsSceneMouseEvent *)
                 accel = v2 / (2.0f * qAbs(dist));
             }
         }
+        d->offsetAdj = 0.0;
         d->moveOffset.setValue(d->offset);
         d->tl.accel(d->moveOffset, velocity, accel, dist);
         d->tl.callback(QDeclarativeTimeLineCallback(&d->moveOffset, d->fixOffsetCallback, d));
+        if (!d->flicking) {
+            d->flicking = true;
+            emit flickingChanged();
+            emit flickStarted();
+        }
     } else {
         d->fixOffset();
     }
 
     d->lastPosTime.invalidate();
     ungrabMouse();
+    if (!d->tl.isActive())
+        movementEnding();
 }
 
 bool QDeclarativePathView::sendMouseEvent(QGraphicsSceneMouseEvent *event)
@@ -1164,79 +1274,81 @@ void QDeclarativePathView::refill()
             d->updateItem(item, 1.0);
             d->releaseItem(item);
             if (it == d->items.begin()) {
-                if (++d->firstIndex >= d->model->count())
+                if (++d->firstIndex >= d->modelCount)
                     d->firstIndex = 0;
             }
             it = d->items.erase(it);
         }
         ++idx;
-        if (idx >= d->model->count())
+        if (idx >= d->modelCount)
             idx = 0;
     }
 
-    // add items to beginning and end
-    int count = d->pathItems == -1 ? d->model->count() : qMin(d->pathItems, d->model->count());
-    if (d->items.count() < count) {
-        int idx = qRound(d->model->count() - d->offset) % d->model->count();
-        qreal startPos = 0.0;
-        if (d->haveHighlightRange && d->highlightRangeMode != QDeclarativePathView::NoHighlightRange)
-            startPos = d->highlightRangeStart;
-        if (d->firstIndex >= 0) {
-            startPos = d->positionOfIndex(d->firstIndex);
-            idx = (d->firstIndex + d->items.count()) % d->model->count();
-        }
-        qreal pos = d->positionOfIndex(idx);
-        while ((pos > startPos || !d->items.count()) && d->items.count() < count) {
-//            qDebug() << "append" << idx;
-            QDeclarativeItem *item = d->getItem(idx);
-            if (d->model->completePending())
-                item->setZValue(idx+1);
-            if (d->currentIndex == idx) {
-                item->setFocus(true);
-                if (QDeclarativePathViewAttached *att = d->attached(item))
-                    att->setIsCurrentItem(true);
-                currentVisible = true;
-                d->currentItemOffset = pos;
-                d->currentItem = item;
+    if (d->modelCount) {
+        // add items to beginning and end
+        int count = d->pathItems == -1 ? d->modelCount : qMin(d->pathItems, d->modelCount);
+        if (d->items.count() < count) {
+            int idx = qRound(d->modelCount - d->offset) % d->modelCount;
+            qreal startPos = 0.0;
+            if (d->haveHighlightRange && d->highlightRangeMode != QDeclarativePathView::NoHighlightRange)
+                startPos = d->highlightRangeStart;
+            if (d->firstIndex >= 0) {
+                startPos = d->positionOfIndex(d->firstIndex);
+                idx = (d->firstIndex + d->items.count()) % d->modelCount;
             }
-            if (d->items.count() == 0)
-                d->firstIndex = idx;
-            d->items.append(item);
-            d->updateItem(item, pos);
-            if (d->model->completePending())
-                d->model->completeItem();
-            ++idx;
-            if (idx >= d->model->count())
-                idx = 0;
-            pos = d->positionOfIndex(idx);
-        }
+            qreal pos = d->positionOfIndex(idx);
+            while ((pos > startPos || !d->items.count()) && d->items.count() < count) {
+    //            qDebug() << "append" << idx;
+                QDeclarativeItem *item = d->getItem(idx);
+                if (d->model->completePending())
+                    item->setZValue(idx+1);
+                if (d->currentIndex == idx) {
+                    item->setFocus(true);
+                    if (QDeclarativePathViewAttached *att = d->attached(item))
+                        att->setIsCurrentItem(true);
+                    currentVisible = true;
+                    d->currentItemOffset = pos;
+                    d->currentItem = item;
+                }
+                if (d->items.count() == 0)
+                    d->firstIndex = idx;
+                d->items.append(item);
+                d->updateItem(item, pos);
+                if (d->model->completePending())
+                    d->model->completeItem();
+                ++idx;
+                if (idx >= d->modelCount)
+                    idx = 0;
+                pos = d->positionOfIndex(idx);
+            }
 
-        idx = d->firstIndex - 1;
-        if (idx < 0)
-            idx = d->model->count() - 1;
-        pos = d->positionOfIndex(idx);
-        while (pos >= 0.0 && pos < startPos) {
-//            qDebug() << "prepend" << idx;
-            QDeclarativeItem *item = d->getItem(idx);
-            if (d->model->completePending())
-                item->setZValue(idx+1);
-            if (d->currentIndex == idx) {
-                item->setFocus(true);
-                if (QDeclarativePathViewAttached *att = d->attached(item))
-                    att->setIsCurrentItem(true);
-                currentVisible = true;
-                d->currentItemOffset = pos;
-                d->currentItem = item;
-            }
-            d->items.prepend(item);
-            d->updateItem(item, pos);
-            if (d->model->completePending())
-                d->model->completeItem();
-            d->firstIndex = idx;
             idx = d->firstIndex - 1;
             if (idx < 0)
-                idx = d->model->count() - 1;
+                idx = d->modelCount - 1;
             pos = d->positionOfIndex(idx);
+            while (pos >= 0.0 && pos < startPos) {
+    //            qDebug() << "prepend" << idx;
+                QDeclarativeItem *item = d->getItem(idx);
+                if (d->model->completePending())
+                    item->setZValue(idx+1);
+                if (d->currentIndex == idx) {
+                    item->setFocus(true);
+                    if (QDeclarativePathViewAttached *att = d->attached(item))
+                        att->setIsCurrentItem(true);
+                    currentVisible = true;
+                    d->currentItemOffset = pos;
+                    d->currentItem = item;
+                }
+                d->items.prepend(item);
+                d->updateItem(item, pos);
+                if (d->model->completePending())
+                    d->model->completeItem();
+                d->firstIndex = idx;
+                idx = d->firstIndex - 1;
+                if (idx < 0)
+                    idx = d->modelCount - 1;
+                pos = d->positionOfIndex(idx);
+            }
         }
     }
 
@@ -1252,6 +1364,8 @@ void QDeclarativePathView::refill()
         if (QDeclarativePathViewAttached *att = d->attached(d->highlightItem))
             att->setOnPath(currentVisible);
     }
+    while (d->itemCache.count())
+        d->releaseItem(d->itemCache.takeLast());
 }
 
 void QDeclarativePathView::itemsInserted(int modelIndex, int count)
@@ -1261,16 +1375,25 @@ void QDeclarativePathView::itemsInserted(int modelIndex, int count)
     if (!d->isValid() || !isComponentComplete())
         return;
 
-    QList<QDeclarativeItem *> removedItems = d->items;
+    d->itemCache += d->items;
     d->items.clear();
     if (modelIndex <= d->currentIndex) {
         d->currentIndex += count;
         emit currentIndexChanged();
+    } else if (d->offset != 0) {
+        d->offset += count;
+        d->offsetAdj += count;
     }
-    d->regenerate();
-    while (removedItems.count())
-        d->releaseItem(removedItems.takeLast());
-    d->updateCurrent();
+
+    d->modelCount = d->model->count();
+    if (d->flicking || d->moving) {
+        d->regenerate();
+        d->updateCurrent();
+    } else {
+        d->firstIndex = -1;
+        d->updateMappedRange();
+        d->scheduleLayout();
+    }
     emit countChanged();
 }
 
@@ -1278,7 +1401,7 @@ void QDeclarativePathView::itemsRemoved(int modelIndex, int count)
 {
     //XXX support animated removal
     Q_D(QDeclarativePathView);
-    if (!d->isValid() || !isComponentComplete())
+    if (!d->model || !d->modelCount || !d->model->isValid() || !d->path || !isComponentComplete())
         return;
 
     // fix current
@@ -1288,7 +1411,7 @@ void QDeclarativePathView::itemsRemoved(int modelIndex, int count)
         currentChanged = true;
     } else if (d->currentIndex >= modelIndex && d->currentIndex < modelIndex + count) {
         // current item has been removed.
-        d->currentIndex = qMin(modelIndex, d->model->count()-1);
+        d->currentIndex = qMin(modelIndex, d->modelCount-1);
         if (d->currentItem) {
             if (QDeclarativePathViewAttached *att = d->attached(d->currentItem))
                 att->setIsCurrentItem(true);
@@ -1296,15 +1419,21 @@ void QDeclarativePathView::itemsRemoved(int modelIndex, int count)
         currentChanged = true;
     }
 
-    QList<QDeclarativeItem *> removedItems = d->items;
+    d->itemCache += d->items;
     d->items.clear();
-    if (d->offset >= d->model->count())
-        d->offset = d->model->count() - 1;
 
+    if (modelIndex > d->currentIndex) {
+        if (d->offset >= count) {
+            d->offset -= count;
+            d->offsetAdj -= count;
+        }
+    }
+
+    d->modelCount = d->model->count();
     d->regenerate();
-    while (removedItems.count())
-        d->releaseItem(removedItems.takeLast());
     d->updateCurrent();
+    if (!d->modelCount)
+        update();
     if (currentChanged)
         emit currentIndexChanged();
     emit countChanged();
@@ -1335,6 +1464,7 @@ void QDeclarativePathView::itemsMoved(int /*from*/, int /*to*/, int /*count*/)
 void QDeclarativePathView::modelReset()
 {
     Q_D(QDeclarativePathView);
+    d->modelCount = d->model->count();
     d->regenerate();
     emit countChanged();
 }
@@ -1372,16 +1502,31 @@ void QDeclarativePathView::ticked()
     d->updateCurrent();
 }
 
+void QDeclarativePathView::movementEnding()
+{
+    Q_D(QDeclarativePathView);
+    if (d->flicking) {
+        d->flicking = false;
+        emit flickingChanged();
+        emit flickEnded();
+    }
+    if (d->moving && !d->stealMouse) {
+        d->moving = false;
+        emit movingChanged();
+        emit movementEnded();
+    }
+}
+
 // find the item closest to the snap position
 int QDeclarativePathViewPrivate::calcCurrentIndex()
 {
     int current = -1;
     if (model && items.count()) {
-        offset = qmlMod(offset, model->count());
+        offset = qmlMod(offset, modelCount);
         if (offset < 0)
-            offset += model->count();
-        current = qRound(qAbs(qmlMod(model->count() - offset, model->count())));
-        current = current % model->count();
+            offset += modelCount;
+        current = qRound(qAbs(qmlMod(modelCount - offset, modelCount)));
+        current = current % modelCount;
     }
 
     return current;
@@ -1397,7 +1542,7 @@ void QDeclarativePathViewPrivate::updateCurrent()
 
     int idx = calcCurrentIndex();
     if (model && idx != currentIndex) {
-        int itemIndex = (currentIndex - firstIndex + model->count()) % model->count();
+        int itemIndex = (currentIndex - firstIndex + modelCount) % modelCount;
         if (itemIndex < items.count()) {
             if (QDeclarativeItem *item = items.at(itemIndex)) {
                 if (QDeclarativePathViewAttached *att = attached(item))
@@ -1406,7 +1551,7 @@ void QDeclarativePathViewPrivate::updateCurrent()
         }
         currentIndex = idx;
         currentItem = 0;
-        itemIndex = (idx - firstIndex + model->count()) % model->count();
+        itemIndex = (idx - firstIndex + modelCount) % modelCount;
         if (itemIndex < items.count()) {
             currentItem = items.at(itemIndex);
             currentItem->setFocus(true);
@@ -1438,25 +1583,26 @@ void QDeclarativePathViewPrivate::fixOffset()
 
 void QDeclarativePathViewPrivate::snapToCurrent()
 {
-    if (!model || model->count() <= 0)
+    if (!model || modelCount <= 0)
         return;
 
-    qreal targetOffset = model->count() - currentIndex;
+    qreal targetOffset = modelCount - currentIndex;
 
     moveReason = Other;
+    offsetAdj = 0.0;
     tl.reset(moveOffset);
     moveOffset.setValue(offset);
 
     const int duration = highlightMoveDuration;
 
-    if (targetOffset - offset > model->count()/2) {
-        qreal distance = model->count() - targetOffset + offset;
+    if (targetOffset - offset > modelCount/2) {
+        qreal distance = modelCount - targetOffset + offset;
         tl.move(moveOffset, 0.0, QEasingCurve(QEasingCurve::InQuad), int(duration * offset / distance));
-        tl.set(moveOffset, model->count());
-        tl.move(moveOffset, targetOffset, QEasingCurve(QEasingCurve::OutQuad), int(duration * (model->count()-targetOffset) / distance));
-    } else if (targetOffset - offset <= -model->count()/2) {
-        qreal distance = model->count() - offset + targetOffset;
-        tl.move(moveOffset, model->count(), QEasingCurve(QEasingCurve::InQuad), int(duration * (model->count()-offset) / distance));
+        tl.set(moveOffset, modelCount);
+        tl.move(moveOffset, targetOffset, QEasingCurve(QEasingCurve::OutQuad), int(duration * (modelCount-targetOffset) / distance));
+    } else if (targetOffset - offset <= -modelCount/2) {
+        qreal distance = modelCount - offset + targetOffset;
+        tl.move(moveOffset, modelCount, QEasingCurve(QEasingCurve::InQuad), int(duration * (modelCount-offset) / distance));
         tl.set(moveOffset, 0.0);
         tl.move(moveOffset, targetOffset, QEasingCurve(QEasingCurve::OutQuad), int(duration * targetOffset / distance));
     } else {

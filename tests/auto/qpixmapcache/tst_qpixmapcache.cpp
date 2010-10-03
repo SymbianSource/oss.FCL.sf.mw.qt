@@ -497,26 +497,22 @@ void tst_QPixmapCache::pixmapKey()
     QVERIFY(!getPrivate(key8));
 }
 
-//QTP: remove temporarily to get the code compiled.
-// The following function is implemented in qpixmapcache.cpp in GUI but export for 
-// auto test only with marco Q_AUTOTEST_EXPORT
-
-//QT_BEGIN_NAMESPACE
-//extern int q_QPixmapCache_keyHashSize();
-//QT_END_NAMESPACE
+QT_BEGIN_NAMESPACE
+extern int q_QPixmapCache_keyHashSize();
+QT_END_NAMESPACE
 
 void tst_QPixmapCache::noLeak()
 {
     QPixmapCache::Key key;
 
-    int oldSize = 0;//q_QPixmapCache_keyHashSize();
+    int oldSize = q_QPixmapCache_keyHashSize();
     for (int i = 0; i < 100; ++i) {
         QPixmap pm(128, 128);
         pm.fill(Qt::transparent);
         key = QPixmapCache::insert(pm);
         QPixmapCache::remove(key);
     }
-    int newSize = 0;//q_QPixmapCache_keyHashSize();
+    int newSize = q_QPixmapCache_keyHashSize();
 
     QCOMPARE(oldSize, newSize);
 }

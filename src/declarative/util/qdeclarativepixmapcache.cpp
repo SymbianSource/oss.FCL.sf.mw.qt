@@ -70,6 +70,16 @@
 
 QT_BEGIN_NAMESPACE
 
+// The cache limit describes the maximum "junk" in the cache.
+// These are the same defaults as QPixmapCache
+#if defined(Q_OS_SYMBIAN)
+static int cache_limit = 1024 * 1024; // 1048 KB cache limit for symbian
+#elif defined(Q_WS_QWS) || defined(Q_WS_WINCE)
+static int cache_limit = 2048 * 1024; // 2048 KB cache limit for embedded
+#else
+static int cache_limit = 10240 * 1024; // 10 MB cache limit for desktop
+#endif
+
 class QDeclarativePixmapReader;
 class QDeclarativePixmapData;
 class QDeclarativePixmapReply : public QObject
@@ -145,7 +155,7 @@ protected:
 private:
     friend class QDeclarativePixmapReaderThreadObject;
     void processJobs();
-    void processJob(QDeclarativePixmapReply *);
+    void processJob(QDeclarativePixmapReply *, const QUrl &, const QSize &);
     void networkRequestDone(QNetworkReply *);
 
     QList<QDeclarativePixmapReply*> jobs;
@@ -424,23 +434,24 @@ void QDeclarativePixmapReader::processJobs()
             QDeclarativePixmapReply *runningJob = jobs.takeLast();
             runningJob->loading = true;
 
+            QUrl url = runningJob->data->url;
+            QSize requestSize = runningJob->data->requestSize;
             locker.unlock();
-            processJob(runningJob);
+            processJob(runningJob, url, requestSize);
             locker.relock();
         }
     }
 }
 
-void QDeclarativePixmapReader::processJob(QDeclarativePixmapReply *runningJob)
+void QDeclarativePixmapReader::processJob(QDeclarativePixmapReply *runningJob, const QUrl &url, 
+                                          const QSize &requestSize)
 {
-    QUrl url = runningJob->data->url;
-
     // fetch
     if (url.scheme() == QLatin1String("image")) {
         // Use QmlImageProvider
         QSize readSize;
         QDeclarativeEnginePrivate *ep = QDeclarativeEnginePrivate::get(engine);
-        QImage image = ep->getImageFromProvider(url, &readSize, runningJob->data->requestSize);
+        QImage image = ep->getImageFromProvider(url, &readSize, requestSize);
 
         QDeclarativePixmapReply::ReadError errorCode = QDeclarativePixmapReply::NoError;
         QString errorStr;
@@ -462,7 +473,7 @@ void QDeclarativePixmapReader::processJob(QDeclarativePixmapReply *runningJob)
             QFile f(lf);
             QSize readSize;
             if (f.open(QIODevice::ReadOnly)) {
-                if (!readImage(url, &f, &image, &errorStr, &readSize, runningJob->data->requestSize))
+                if (!readImage(url, &f, &image, &errorStr, &readSize, requestSize))
                     errorCode = QDeclarativePixmapReply::Loading;
             } else {
                 errorStr = QDeclarativePixmap::tr("Cannot open: %1").arg(url.toString());
@@ -515,6 +526,7 @@ void QDeclarativePixmapReader::cancel(QDeclarativePixmapReply *reply)
     mutex.lock();
     if (reply->loading) {
         cancelled.append(reply);
+        reply->data = 0;
         // XXX 
         if (threadObject) threadObject->processJobs();
     } else {
@@ -580,6 +592,8 @@ public:
     QHash<QDeclarativePixmapKey, QDeclarativePixmapData *> m_cache;
 
 private:
+    void shrinkCache(int remove);
+
     QDeclarativePixmapData *m_unreferencedPixmaps;
     QDeclarativePixmapData *m_lastUnreferencedPixmap;
 
@@ -613,7 +627,9 @@ void QDeclarativePixmapStore::unreferencePixmap(QDeclarativePixmapData *data)
 
     m_unreferencedCost += data->cost();
 
-    if (m_timerId == -1)
+    shrinkCache(-1); // Shrink the cache incase it has become larger than cache_limit
+
+    if (m_timerId == -1 && m_unreferencedPixmaps) 
         m_timerId = startTimer(CACHE_EXPIRE_TIME * 1000);
 }
 
@@ -636,11 +652,9 @@ void QDeclarativePixmapStore::referencePixmap(QDeclarativePixmapData *data)
     m_unreferencedCost -= data->cost();
 }
 
-void QDeclarativePixmapStore::timerEvent(QTimerEvent *)
+void QDeclarativePixmapStore::shrinkCache(int remove)
 {
-    int removalCost = m_unreferencedCost / CACHE_REMOVAL_FRACTION;
-
-    while (removalCost > 0 && m_lastUnreferencedPixmap) {
+    while ((remove > 0 || m_unreferencedCost > cache_limit) && m_lastUnreferencedPixmap) {
         QDeclarativePixmapData *data = m_lastUnreferencedPixmap;
         Q_ASSERT(data->nextUnreferenced == 0);
 
@@ -649,10 +663,18 @@ void QDeclarativePixmapStore::timerEvent(QTimerEvent *)
         data->prevUnreferencedPtr = 0;
         data->prevUnreferenced = 0;
 
-        removalCost -= data->cost();
+        remove -= data->cost();
+        m_unreferencedCost -= data->cost();
         data->removeFromCache();
         delete data;
     }
+}
+
+void QDeclarativePixmapStore::timerEvent(QTimerEvent *)
+{
+    int removalCost = m_unreferencedCost / CACHE_REMOVAL_FRACTION;
+
+    shrinkCache(removalCost);
 
     if (m_unreferencedPixmaps == 0) {
         killTimer(m_timerId);
@@ -702,7 +724,7 @@ bool QDeclarativePixmapReply::event(QEvent *event)
 
 int QDeclarativePixmapData::cost() const
 {
-    return pixmap.width() * pixmap.height() * pixmap.depth();
+    return (pixmap.width() * pixmap.height() * pixmap.depth()) / 8;
 }
 
 void QDeclarativePixmapData::addref()
@@ -719,7 +741,6 @@ void QDeclarativePixmapData::release()
 
     if (refCount == 0) {
         if (reply) {
-            reply->data = 0;
             reply->reader->cancel(reply);
             reply = 0;
         }

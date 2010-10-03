@@ -81,7 +81,6 @@
 #if defined(Q_OS_SYMBIAN)
 #include <e32def.h>
 #include <e32debug.h>
-#include <flogger.h>
 #include <f32file.h>
 #include <e32math.h>
 # include "private/qcore_symbian_p.h"
@@ -1829,6 +1828,7 @@ QSysInfo::S60Version QSysInfo::s60Version()
     CDir* contents;
     TInt err = fileFinder.FindWildByDir(qt_S60Filter, qt_S60SystemInstallDir, contents);
     if (err == KErrNone) {
+        QScopedPointer<CDir> contentsDeleter(contents);
         err = contents->Sort(EDescending|ESortByName);
         if (err == KErrNone && contents->Count() > 0 && (*contents)[0].iName.Length() >= 12) {
             TInt major = (*contents)[0].iName[9] - '0';
@@ -1851,7 +1851,6 @@ QSysInfo::S60Version QSysInfo::s60Version()
                 }
             }
         }
-        delete contents;
     }
 
 #  ifdef Q_CC_NOKIAX86
@@ -1878,9 +1877,9 @@ QSysInfo::SymbianVersion QSysInfo::symbianVersion()
     case SV_S60_5_0:
         return SV_9_4;
     case SV_S60_5_1:
-        return SV_9_4;
+        return SV_SF_2;
     case SV_S60_5_2:
-        return SV_9_4;
+        return SV_SF_3;
     default:
         return SV_Unknown;
     }
@@ -2222,20 +2221,6 @@ void qt_message_output(QtMsgType msgType, const char *buf)
             RDebug::Print(format, hbuffer);
         }
         delete hbuffer;
-        _LIT( KLogDir, "QT" );
-        _LIT( KLogFile, "QT.log" );
-        _LIT( KLogStarting, "Starting: %S");
-        static bool logStarted;
-        if ( !logStarted ){
-            RProcess curProc;
-            TBuf<KMaxFullName + 20> procName;
-            TFullName fullName = curProc.FullName();
-            procName.Format(KLogStarting, &fullName);
-            RFileLogger::Write( KLogDir, KLogFile, EFileLoggingModeAppend, procName);
-            logStarted = true; 
-        }
-
-        RFileLogger::Write( KLogDir, KLogFile, EFileLoggingModeAppend, ptr );
 #else
         fprintf(stderr, "%s\n", buf);
         fflush(stderr);
@@ -2389,7 +2374,7 @@ void qDebug(const char *msg, ...)
     This syntax inserts a space between each item, and
     appends a newline at the end.
 
-    To supress the output at runtime, install your own message handler
+    To suppress the output at runtime, install your own message handler
     with qInstallMsgHandler().
 
     \sa qDebug(), qCritical(), qFatal(), qInstallMsgHandler(),
@@ -2425,7 +2410,7 @@ void qWarning(const char *msg, ...)
     A space is inserted between the items, and a newline is
     appended at the end.
 
-    To supress the output at runtime, install your own message handler
+    To suppress the output at runtime, install your own message handler
     with qInstallMsgHandler().
 
     \sa qDebug(), qWarning(), qFatal(), qInstallMsgHandler(),
@@ -2490,7 +2475,7 @@ void qErrnoWarning(int code, const char *msg, ...)
     Example:
     \snippet doc/src/snippets/code/src_corelib_global_qglobal.cpp 30
 
-    To supress the output at runtime, install your own message handler
+    To suppress the output at runtime, install your own message handler
     with qInstallMsgHandler().
 
     \sa qDebug(), qCritical(), qWarning(), qInstallMsgHandler(),
@@ -2929,8 +2914,9 @@ int qrand()
     \relates <QtGlobal>
 
     You can use this macro to specify information about a custom type
-    \a Type. With accurate type information, Qt's \l{generic
-    containers} can choose appropriate storage methods and algorithms.
+    \a Type. With accurate type information, Qt's \l{Container Classes}
+    {generic containers} can choose appropriate storage methods and
+    algorithms.
 
     \a Flags can be one of the following:
 

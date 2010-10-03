@@ -36,7 +36,6 @@ symbian: {
     # Workaroud for problems with paging this dll
     MMP_RULES -= PAGED
     MMP_RULES *= UNPAGED
-    LIBS += -lflogger
 
     # Partial upgrade SIS file
     vendorinfo = \
@@ -54,39 +53,9 @@ symbian: {
     DEPLOYMENT = partial_upgrade $$DEPLOYMENT
 }
 
-mmx {
-    DEFINES += QT_HAVE_MMX
-}
-3dnow {
-    DEFINES += QT_HAVE_3DNOW
-}
-sse {
-    DEFINES += QT_HAVE_SSE
-    DEFINES += QT_HAVE_MMXEXT
-}
-sse2 {
-    DEFINES += QT_HAVE_SSE2
-}
-sse3 {
-    DEFINES += QT_HAVE_SSE3
-}
-ssse3 {
-    DEFINES += QT_HAVE_SSSE3
-}
-sse4_1 {
-    DEFINES += QT_HAVE_SSE4_1
-}
-sse4_2 {
-    DEFINES += QT_HAVE_SSE4_2
-}
-avx {
-    DEFINES += QT_HAVE_AVX
-}
-iwmmxt {
-    DEFINES += QT_HAVE_IWMMXT
-}
 neon {
     DEFINES += QT_HAVE_NEON
     QMAKE_CXXFLAGS *= -mfpu=neon
 }
+
 

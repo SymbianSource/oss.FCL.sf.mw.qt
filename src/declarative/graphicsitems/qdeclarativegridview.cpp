@@ -64,7 +64,7 @@ public:
     FxGridItem(QDeclarativeItem *i, QDeclarativeGridView *v) : item(i), view(v) {
         attached = static_cast<QDeclarativeGridViewAttached*>(qmlAttachedPropertiesObject<QDeclarativeGridView>(item));
         if (attached)
-            attached->m_view = view;
+            attached->setView(view);
     }
     ~FxGridItem() {}
 
@@ -1056,6 +1056,8 @@ void QDeclarativeGridViewPrivate::flick(AxisData &data, qreal minExtent, qreal m
 /*!
     \qmlclass GridView QDeclarativeGridView
     \since 4.7
+    \ingroup qml-view-elements
+
     \inherits Flickable
     \brief The GridView item provides a grid view of items provided by a model.
 
@@ -1085,12 +1087,14 @@ void QDeclarativeGridViewPrivate::flick(AxisData &data, qreal minExtent, qreal m
     \c portrait data directly.
 
     An improved grid view is shown below. The delegate is visually improved and is moved 
-    into a separate \c contactDelegate component. Also, the currently selected item is highlighted
-    with a blue \l Rectangle using the \l highlight property, and \c focus is set to \c true
-    to enable keyboard navigation for the grid view.
+    into a separate \c contactDelegate component.
     
     \snippet doc/src/snippets/declarative/gridview/gridview.qml classdocs advanced
     \image gridview-highlight.png
+
+    The currently selected item is highlighted with a blue \l Rectangle using the \l highlight property,
+    and \c focus is set to \c true to enable keyboard navigation for the grid view.
+    The grid view itself is a focus scope (see \l{qmlfocus#Acquiring Focus and Focus Scopes}{the focus documentation page} for more details).
 
     Delegates are instantiated as needed and may be destroyed at any time.
     State should \e never be stored in a delegate.
@@ -1276,6 +1280,11 @@ void QDeclarativeGridView::setDelegate(QDeclarativeComponent *delegate)
     if (QDeclarativeVisualDataModel *dataModel = qobject_cast<QDeclarativeVisualDataModel*>(d->model)) {
         dataModel->setDelegate(delegate);
         if (isComponentComplete()) {
+            for (int i = 0; i < d->visibleItems.count(); ++i)
+                d->releaseItem(d->visibleItems.at(i));
+            d->visibleItems.clear();
+            d->releaseItem(d->currentItem);
+            d->currentItem = 0;
             refill();
             d->moveReason = QDeclarativeGridViewPrivate::SetIndex;
             d->updateCurrent(d->currentIndex);
@@ -2203,7 +2212,7 @@ void QDeclarativeGridView::trackedPositionChanged()
                 if (trackedPos < d->startPosition() + d->highlightRangeStart) {
                     pos = d->startPosition();
                 } else if (d->trackedItem->endRowPos() > d->endPosition() - d->size() + d->highlightRangeEnd) {
-                    pos = d->endPosition() - d->size();
+                    pos = d->endPosition() - d->size() + 1;
                     if (pos < d->startPosition())
                         pos = d->startPosition();
                 } else {
@@ -2217,14 +2226,14 @@ void QDeclarativeGridView::trackedPositionChanged()
         } else {
             if (trackedPos < viewPos && d->currentItem->rowPos() < viewPos) {
                 pos = d->currentItem->rowPos() < trackedPos ? trackedPos : d->currentItem->rowPos();
-            } else if (d->trackedItem->endRowPos() > viewPos + d->size()
-                && d->currentItem->endRowPos() > viewPos + d->size()) {
-                if (d->trackedItem->endRowPos() < d->currentItem->endRowPos()) {
-                    pos = d->trackedItem->endRowPos() - d->size();
+            } else if (d->trackedItem->endRowPos() >= viewPos + d->size()
+                && d->currentItem->endRowPos() >= viewPos + d->size()) {
+                if (d->trackedItem->endRowPos() <= d->currentItem->endRowPos()) {
+                    pos = d->trackedItem->endRowPos() - d->size() + 1;
                     if (d->rowSize() > d->size())
                         pos = trackedPos;
                 } else {
-                    pos = d->currentItem->endRowPos() - d->size();
+                    pos = d->currentItem->endRowPos() - d->size() + 1;
                     if (d->rowSize() > d->size())
                         pos = d->currentItem->rowPos();
                 }

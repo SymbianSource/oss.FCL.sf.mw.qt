@@ -52,7 +52,7 @@ class SymbianOrientation : public DeviceOrientation, public MSensrvDataListener
     Q_OBJECT
 public:
     SymbianOrientation()
-        : DeviceOrientation(), m_current(UnknownOrientation), m_sensorChannel(0)
+        : DeviceOrientation(), m_current(UnknownOrientation), m_sensorChannel(0), m_channelOpen(false)
     {
         TRAP_IGNORE(initL());
         if (!m_sensorChannel)
@@ -84,6 +84,7 @@ public:
                 TRAP(error, m_sensorChannel->OpenChannelL());
             if (!error) {
                 TRAP(error, m_sensorChannel->StartDataListeningL(this, 1, 1, 0));
+                m_channelOpen = true;
                 break;
            }
             if (error) {
@@ -107,25 +108,54 @@ public:
 private:
     DeviceOrientation::Orientation m_current;
     CSensrvChannel *m_sensorChannel;
+    bool m_channelOpen;
+    void pauseListening() {
+        if (m_sensorChannel && m_channelOpen) {
+            m_sensorChannel->StopDataListening();
+            m_sensorChannel->CloseChannel();
+            m_channelOpen = false;
+        }
+    }
+
+    void resumeListening() {
+        if (m_sensorChannel && !m_channelOpen) {
+            TRAPD(error, m_sensorChannel->OpenChannelL());
+            if (!error) {
+                TRAP(error, m_sensorChannel->StartDataListeningL(this, 1, 1, 0));
+                if (!error) {
+                    m_channelOpen = true;
+                }
+            }
+            if (error) {
+                delete m_sensorChannel;
+                m_sensorChannel = 0;
+            }
+        }
+    }
 
     void DataReceived(CSensrvChannel &channel, TInt count, TInt dataLost)
     {
+        Q_UNUSED(dataLost)
         if (channel.GetChannelInfo().iChannelType == KSensrvChannelTypeIdOrientationData) {
             TSensrvOrientationData data;
             for (int i = 0; i < count; ++i) {
                 TPckgBuf<TSensrvOrientationData> dataBuf;
                 channel.GetData(dataBuf);
                 data = dataBuf();
-                Orientation o = UnknownOrientation;
+                Orientation orientation = UnknownOrientation;
                 switch (data.iDeviceOrientation) {
                 case TSensrvOrientationData::EOrientationDisplayUp:
-                    o = Portrait;
+                    orientation = Portrait;
                     break;
                 case TSensrvOrientationData::EOrientationDisplayRightUp:
-                    o = Landscape;
+                    orientation = Landscape;
                     break;
                 case TSensrvOrientationData::EOrientationDisplayLeftUp:
+                    orientation = LandscapeInverted;
+                    break;
                 case TSensrvOrientationData::EOrientationDisplayDown:
+                    orientation = PortraitInverted;
+                    break;
                 case TSensrvOrientationData::EOrientationUndefined:
                 case TSensrvOrientationData::EOrientationDisplayUpwards:
                 case TSensrvOrientationData::EOrientationDisplayDownwards:
@@ -133,8 +163,8 @@ private:
                     break;
                 }
 
-                if (m_current != o && o != UnknownOrientation) {
-                    m_current = o;
+                if (m_current != orientation && orientation != UnknownOrientation) {
+                    m_current = orientation;
                     emit orientationChanged();
                 }
            }

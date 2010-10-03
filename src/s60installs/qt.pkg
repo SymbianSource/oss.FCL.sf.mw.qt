@@ -29,6 +29,7 @@
 "/epoc32/release/armv5/urel/QtXml.dll"    - "!:\sys\bin\QtXml.dll"
 "/epoc32/release/armv5/urel/QtGui.dll"    - "!:\sys\bin\QtGui.dll"
 "/epoc32/release/armv5/urel/QtNetwork.dll"    - "!:\sys\bin\QtNetwork.dll"
+"/epoc32/release/armv5/urel/qsymbianbearer.dll" - "!:\sys\bin\qsymbianbearer.dll"
 "/epoc32/release/armv5/urel/QtTest.dll"    - "!:\sys\bin\QtTest.dll"
 "/epoc32/release/armv5/urel/QtSql.dll"    - "!:\sys\bin\QtSql.dll"
 "/epoc32/release/armv5/urel/QtSvg.dll"    - "!:\sys\bin\QtSvg.dll"
@@ -63,6 +64,7 @@
 "/epoc32/data/z/resource/qt/plugins/graphicssystems/qvggraphicssystem.qtplugin"    - "!:\resource\qt\plugins\graphicssystems\qvggraphicssystem.qtplugin"
 "/epoc32/release/armv5/urel/qsvgicon.dll"    - "!:\sys\bin\qsvgicon.dll"
 "/epoc32/data/z/resource/qt/plugins/iconengines/qsvgicon.qtplugin"    - "!:\resource\qt\plugins\iconengines\qsvgicon.qtplugin"
+ "/epoc32/data/z/resource/qt/plugins/bearer/qsymbianbearer.qtplugin" - "c:\resource\qt\plugins\bearer\qsymbianbearer.qtplugin"
 
 ; Manual PKG post-rules from PRO files
 IF package(0x1028315F)
